@@ -3,9 +3,12 @@ package me.nov.dalvikgate.asm;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 public class ASMCommons implements Opcodes {
 
@@ -39,5 +42,15 @@ public class ASMCommons implements Opcodes {
 			return new IntInsnNode(SIPUSH, i);
 		}
 		return new LdcInsnNode(i);
+	}
+
+	public static InsnList makeExceptionThrow(String name, String text) {
+		InsnList il = new InsnList();
+		il.add(new TypeInsnNode(NEW, name));
+		il.add(new InsnNode(DUP));
+		il.add(new LdcInsnNode(text));
+		il.add(new MethodInsnNode(INVOKESPECIAL, name, "<init>", "(Ljava/lang/String;)V"));
+		il.add(new InsnNode(ATHROW));
+		return il;
 	}
 }

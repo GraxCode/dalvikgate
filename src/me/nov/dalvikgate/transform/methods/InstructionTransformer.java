@@ -86,28 +86,31 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction30t) i).getTarget())));
 				continue;
 
-				
+			////////////////////////// VOID RETURNS //////////////////////////
 			case Format10x:
 				if (i.getOpcode() != Opcode.NOP) {
 					// only void returns, ignore NOPs
 					il.add(new InsnNode(RETURN));
 				}
 				continue;
+
+			////////////////////////// CONST //////////////////////////
 			case Format11n:
 				// const 4 bits
 				BuilderInstruction11n _11n = (BuilderInstruction11n) i;
 				il.add(ASMCommons.makeIntPush(_11n.getNarrowLiteral()));
 				il.add(new VarInsnNode(ISTORE, _11n.getRegisterA()));
 				continue;
+
 			case Format11x:
 				visitSingleRegister((BuilderInstruction11x) i);
 				continue;
 			case Format12x:
 				visitDoubleRegister((BuilderInstruction12x) i);
 				continue;
-			case Format20bc: // TODO
-
-				throw new IllegalArgumentException("throw-verification-error instruction");
+			case Format20bc:
+				il.add(ASMCommons.makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
+				continue;
 			case Format21c:
 				visitReferenceSingleRegister((BuilderInstruction21c) i);
 				continue;
@@ -131,7 +134,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				visitIntJump((BuilderInstruction21t) i);
 				continue;
 			case Format22b:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format22c:
 				continue;
 			case Format22cs:
