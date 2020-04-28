@@ -60,6 +60,25 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 		this.dexInstructions = builder.getInstructions();
 	}
 
+	private void buildLabels() {
+		labels = new HashMap<>();
+		// build labels first so we can reference them while rewriting;
+		for (BuilderInstruction i : dexInstructions) {
+			if (!i.getLocation().getLabels().isEmpty()) {
+				labels.put(i, new LabelNode());
+			}
+		}
+	}
+
+	public LabelNode getASMLabel(Label label) {
+		return labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst().get());
+	}
+
+	@Override
+	public InsnList get() {
+		return il;
+	}
+
 	@Override
 	public void build() {
 		il = new InsnList();
@@ -199,25 +218,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				throw new IllegalArgumentException(i.getClass().getName());
 			}
 		}
-	}
-
-	private void buildLabels() {
-		labels = new HashMap<>();
-		// build labels first so we can reference them while rewriting;
-		for (BuilderInstruction i : dexInstructions) {
-			if (!i.getLocation().getLabels().isEmpty()) {
-				labels.put(i, new LabelNode());
-			}
-		}
-	}
-
-	public LabelNode getASMLabel(Label label) {
-		return labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst().get());
-	}
-
-	@Override
-	public InsnList get() {
-		return il;
 	}
 
 	private void visitSingleRegister(BuilderInstruction11x i) {
