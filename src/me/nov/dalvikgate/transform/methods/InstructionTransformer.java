@@ -110,12 +110,13 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(new VarInsnNode(ISTORE, _31c.getRegisterA()));
 				continue;
 			case Format31i:
-				//const 32 bits
-				//TODO unsure if const-wide-32 need some bitshifting
+				// const 32 bits
+				// TODO unsure if const-wide-32 need some bitshifting
 				BuilderInstruction31i _31i = (BuilderInstruction31i) i;
 				il.add(ASMCommons.makeIntPush(_31i.getNarrowLiteral()));
 				il.add(new VarInsnNode(ISTORE, _31i.getRegisterA()));
 				continue;
+
 			case Format11x:
 				visitSingleRegister((BuilderInstruction11x) i);
 				continue;
@@ -150,46 +151,49 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 			case Format22b:
 				throw new IllegalArgumentException("unsupported instruction");
 			case Format22c:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format22cs:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format22s:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format22t:
 				// conditional jumps
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format22x:
 				// move from 16
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format23x:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format31t:
-				continue;
+				// fill-array-data and switches
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format32x:
-				continue;
+				// more moves
+				throw new IllegalArgumentException("unsupported instruction");
+
 			case Format35c:
 				visit35c((BuilderInstruction35c) i);
-				break;
+				continue;
 			case Format35mi:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format35ms:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format3rc:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format3rmi:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format3rms:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format45cc:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format4rcc:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case Format51l:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case PackedSwitchPayload:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case SparseSwitchPayload:
-				continue;
+				throw new IllegalArgumentException("unsupported instruction");
 			case UnresolvedOdexInstruction:
 			default:
 				throw new IllegalArgumentException(i.getClass().getName());
