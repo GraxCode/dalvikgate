@@ -581,22 +581,23 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
     String name = mr.getName();
     String desc = ASMCommons.buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
-    int registers = i.getRegisterCount();
-    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum();
+    int registers = i.getRegisterCount(); // sum of all local sizes
+    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); //sum of all parameter sizes (parameters + reference = registers)
+    int parIdx = 0;
+    int regIdx = 0;
     if (registers > parameters) {
       if (registers > parameters + 1) {
         throw new IllegalArgumentException("too many registers: " + registers + " for method with desc " + desc);
       }
-      // load "this" before invoking, as it isn't a parameter
-      il.add(new VarInsnNode(ALOAD, 0));
-      registers--;
+      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterC())));
+      registers--; // reference can only be size 1
+      regIdx++;
     }
     @SuppressWarnings("unchecked")
     List<String> parameterTypes = (List<String>) mr.getParameterTypes();
-    int pIdx = 0;
     while (registers > 0) {
       int register;
-      switch (pIdx) {
+      switch (regIdx) {
       case 0:
         register = i.getRegisterC();
         break;
@@ -615,10 +616,11 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       default:
         throw new IllegalArgumentException("more than 5 parameters: " + desc);
       }
-      String pDesc = parameterTypes.get(pIdx);
+      regIdx++;
+      String pDesc = parameterTypes.get(parIdx);
       il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(pDesc), regToLocal(register)));
       registers -= Type.getType(pDesc).getSize();
-      pIdx++;
+      parIdx++;
     }
     switch (i.getOpcode()) {
     case INVOKE_SUPER:
