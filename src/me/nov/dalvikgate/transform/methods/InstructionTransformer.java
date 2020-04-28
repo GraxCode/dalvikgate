@@ -61,6 +61,11 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     this.dexInstructions = builder.getInstructions();
   }
 
+  @Override
+  public InsnList get() {
+    return il;
+  }
+
   private void buildLabels() {
     labels = new HashMap<>();
     // build labels first so we can reference them while rewriting
@@ -75,9 +80,9 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     return labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst().get());
   }
 
-  @Override
-  public InsnList get() {
-    return il;
+  private int regToLocal(int register) {
+    // FIXME here we have to somehow convert register index to local index
+    return register;
   }
 
   @Override
@@ -127,7 +132,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // TODO unsure if const-wide-32 need some bitshifting
         BuilderInstruction31i _31i = (BuilderInstruction31i) i;
         il.add(ASMCommons.makeIntPush(_31i.getNarrowLiteral()));
-        il.add(new VarInsnNode(ISTORE, _31i.getRegisterA()));
+        il.add(new VarInsnNode(ISTORE, _31regToLocal(i.getRegisterA())));
         continue;
       case Format51l:
         // const 64 bit
@@ -231,7 +236,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void visitSingleRegister(BuilderInstruction11x i) {
-    int source = i.getRegisterA();
+    int source = regToLocal(i.getRegisterA());
     switch (i.getOpcode()) {
     case MOVE_RESULT:
       il.add(new VarInsnNode(ISTORE, source));
@@ -275,8 +280,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void visitDoubleRegister(BuilderInstruction12x i) {
-    int source = i.getRegisterB();
-    int destination = i.getRegisterA();
+    int source = regToLocal(i.getRegisterB());
+    int destination = regToLocal(i.getRegisterA());
     switch (i.getOpcode()) {
     case MOVE:
       if (source == destination)
@@ -441,7 +446,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void visitReferenceSingleRegister(BuilderInstruction21c i) {
-    int register = i.getRegisterA();
+    int register = regToLocal(i.getRegisterA());
     Reference ref = i.getReference();
     switch (i.getOpcode()) {
     case CONST_STRING:
@@ -515,7 +520,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void visitIntJump(BuilderInstruction21t i) {
-    int source = i.getRegisterA();
+    int source = regToLocal(i.getRegisterA());
     Label label = i.getTarget();
     il.add(new VarInsnNode(ILOAD, source));
     switch (i.getOpcode()) {
@@ -562,19 +567,19 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     // TODO analyze variable types using desc and use right load types
     int args = i.getRegisterCount();
     if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, i.getRegisterC()));
+      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterC())));
     }
     if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, i.getRegisterD()));
+      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterD())));
     }
     if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, i.getRegisterE()));
+      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterE())));
     }
     if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, i.getRegisterF()));
+      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterF())));
     }
     if (args > 0) {
-      il.add(new VarInsnNode(ALOAD, i.getRegisterG()));
+      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterG())));
     }
     switch (i.getOpcode()) {
     case INVOKE_SUPER:
@@ -600,5 +605,4 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       throw new IllegalArgumentException(i.getOpcode().name);
     }
   }
-
 }
