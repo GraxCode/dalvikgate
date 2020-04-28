@@ -42,7 +42,7 @@ import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
 /**
- * FIXME two-word variables are not identifiable in dalvik, find out if either long or double. shouldn't be that much of a problem
+ * FIXME registers do NOT equal locals. need to somehow find out what is what
  */
 @SuppressWarnings("unused")
 public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
@@ -63,7 +63,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 
   private void buildLabels() {
     labels = new HashMap<>();
-    // build labels first so we can reference them while rewriting;
+    // build labels first so we can reference them while rewriting
     for (BuilderInstruction i : dexInstructions) {
       if (!i.getLocation().getLabels().isEmpty()) {
         labels.put(i, new LabelNode());
@@ -279,22 +279,28 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     int destination = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE:
+      if (source == destination)
+        break;
       il.add(new VarInsnNode(ILOAD, source));
       il.add(new VarInsnNode(ISTORE, destination));
       break;
     case MOVE_WIDE:
+      if (source == destination)
+        break;
       // TODO find out if double or long
       il.add(new VarInsnNode(LLOAD, source));
       il.add(new VarInsnNode(LSTORE, destination));
       break;
     case MOVE_OBJECT:
+      if (source == destination)
+        break;
       il.add(new VarInsnNode(ALOAD, source));
       il.add(new VarInsnNode(ASTORE, destination));
       break;
     case ARRAY_LENGTH:
       il.add(new VarInsnNode(ALOAD, source));
       il.add(new InsnNode(ARRAYLENGTH));
-      il.add(new VarInsnNode(ASTORE, destination));
+      il.add(new VarInsnNode(ISTORE, destination));
       break;
     case NEG_INT:
       il.add(new VarInsnNode(ILOAD, source));
