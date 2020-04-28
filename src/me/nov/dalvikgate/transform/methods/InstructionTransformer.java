@@ -3,9 +3,7 @@ package me.nov.dalvikgate.transform.methods;
 import java.util.HashMap;
 import java.util.List;
 
-import org.jf.dexlib2.Format;
 import org.jf.dexlib2.Opcode;
-import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
@@ -18,6 +16,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction30t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.iface.reference.FieldReference;
@@ -72,10 +71,21 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 			switch (i.getFormat()) {
 			case ArrayPayload:
 				continue;
+
+			////////////////////////// GOTOS //////////////////////////
 			case Format10t:
 				// 8 bit goto
 				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction10t) i).getTarget())));
 				continue;
+			case Format20t:
+				// 16 bit goto
+				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction20t) i).getTarget())));
+				continue;
+			case Format30t:
+				// 32 bit goto
+				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction30t) i).getTarget())));
+				continue;
+
 			case Format10x:
 				if (i.getOpcode() != Opcode.NOP) {
 					// only void returns, ignore NOPs
@@ -97,10 +107,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 			case Format20bc: // TODO
 
 				throw new IllegalArgumentException("throw-verification-error instruction");
-			case Format20t:
-				// 16 bit goto
-				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction20t) i).getTarget())));
-				continue;
 			case Format21c:
 				visitReferenceSingleRegister((BuilderInstruction21c) i);
 				continue;
@@ -136,8 +142,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 			case Format22x:
 				continue;
 			case Format23x:
-				continue;
-			case Format30t:
 				continue;
 			case Format31c:
 				continue;
