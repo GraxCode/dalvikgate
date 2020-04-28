@@ -550,11 +550,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
     String name = mr.getName();
     String desc = ASMCommons.buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
-    if(i.getOpcode() == Opcode.INVOKE_SUPER) {
-      //load "this" before invoking
+    if (i.getOpcode() == Opcode.INVOKE_SUPER) {
+      // load "this" before invoking
       il.add(new VarInsnNode(ALOAD, 0));
     }
-    
     // TODO analyze variable types using desc and use right load types
     int args = i.getRegisterCount();
     if (args-- > 0) {
@@ -578,18 +577,20 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       il.add(new MethodInsnNode(INVOKESPECIAL, owner, name, desc));
       break;
     case INVOKE_VIRTUAL:
-    case INVOKE_DIRECT:
       il.add(new MethodInsnNode(INVOKEVIRTUAL, owner, name, desc));
+      break;
+    case INVOKE_DIRECT:
+      il.add(new MethodInsnNode(name.equals("<init>") ? INVOKESPECIAL : INVOKEVIRTUAL, owner, name, desc));
       break;
     case INVOKE_STATIC:
       il.add(new MethodInsnNode(INVOKESTATIC, owner, name, desc));
       break;
     case INVOKE_INTERFACE:
       il.add(new MethodInsnNode(INVOKEINTERFACE, owner, name, desc));
-      
+
       break;
     case INVOKE_CUSTOM:
-      //like invokedynamic
+      // like invokedynamic
     default:
       throw new IllegalArgumentException(i.getOpcode().name);
     }
