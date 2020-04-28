@@ -40,7 +40,8 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import me.nov.dalvikgate.asm.ASMCommons;
-import me.nov.dalvikgate.asm.DexLibCommons;
+import me.nov.dalvikgate.asm.Access;
+import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
 /**
@@ -56,10 +57,12 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   private HashMap<BuilderInstruction, LabelNode> labels;
   private List<BuilderInstruction> dexInstructions;
   private int argumentRegisters;
+  private boolean isStatic;
 
   public InstructionTransformer(MethodNode mn, DexBackedMethod method, MutableMethodImplementation builder) {
     this.mn = mn;
     this.method = method;
+    this.isStatic = Access.isStatic(method.accessFlags); // dalvik and java bytecode have the same access values
     this.builder = builder;
     this.dexInstructions = builder.getInstructions();
     this.argumentRegisters = method.getParameters().stream().mapToInt(p -> DexLibCommons.getSize(p)).sum();
@@ -85,10 +88,11 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private int regToLocal(int register) {
+    // TODO what register does "this" have?
     // The N arguments to a method land in the last N registers of the method's invocation frame, in order
     int startingArgs = builder.getRegisterCount() - argumentRegisters;
-    if(register >= startingArgs) {
-      return register - startingArgs;
+    if (register >= startingArgs) {
+      return register - startingArgs + (isStatic ? 0 : 1); //0 is reserved for "this"
     }
     return register + startingArgs;
   }

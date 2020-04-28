@@ -1,4 +1,4 @@
-package me.nov.dalvikgate.asm;
+package me.nov.dalvikgate.dexlib;
 
 import org.jf.dexlib2.iface.MethodParameter;
 
