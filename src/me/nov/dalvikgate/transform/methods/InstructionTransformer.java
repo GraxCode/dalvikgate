@@ -1,8 +1,8 @@
 package me.nov.dalvikgate.transform.methods;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.BuilderInstruction;
@@ -36,6 +36,7 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -65,7 +66,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     this.builder = builder;
     this.dexInstructions = builder.getInstructions();
     this.isStatic = Access.isStatic(method.accessFlags); // dalvik and java bytecode have the same access values
-    //"this" reference is passed as argument in dalvik
+    // "this" reference is passed as argument in dalvik
     this.argumentRegisterCount = method.getParameters().stream().mapToInt(p -> DexLibCommons.getSize(p)).sum() + (isStatic ? 0 : 1);
   }
 
@@ -81,6 +82,14 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       if (!i.getLocation().getLabels().isEmpty()) {
         labels.put(i, new LabelNode());
       }
+    }
+  }
+
+  private void transformTryCatchBlocks() {
+    if (builder.getTryBlocks() != null) {
+      mn.tryCatchBlocks = new ArrayList<>();
+      builder.getTryBlocks().forEach(tb -> mn.tryCatchBlocks.add(
+          new TryCatchBlockNode(getASMLabel(tb.start), getASMLabel(tb.end), getASMLabel(tb.exceptionHandler.getHandler()), Type.getType(tb.exceptionHandler.getExceptionType()).getInternalName())));
     }
   }
 
@@ -101,6 +110,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   public void build() {
     il = new InsnList();
     this.buildLabels();
+    this.transformTryCatchBlocks();
     for (BuilderInstruction i : dexInstructions) {
       if (labels.containsKey(i)) {
         // add labels to the code
