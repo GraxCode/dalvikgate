@@ -70,6 +70,7 @@ public class ASMCommons implements Opcodes {
     case 'S':
     case 'Z':
     case 'C':
+    case 'B':
       return ILOAD;
     case 'J':
       return LLOAD;
@@ -91,6 +92,7 @@ public class ASMCommons implements Opcodes {
     case 'S':
     case 'Z':
     case 'C':
+    case 'B':
       return ISTORE;
     case 'J':
       return LSTORE;
