@@ -17,6 +17,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction30t;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.iface.reference.FieldReference;
@@ -101,7 +102,14 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(ASMCommons.makeIntPush(_11n.getNarrowLiteral()));
 				il.add(new VarInsnNode(ISTORE, _11n.getRegisterA()));
 				continue;
-
+			case Format31c:
+				// const jumbo string
+				BuilderInstruction31c _31c = (BuilderInstruction31c) i;
+				il.add(new LdcInsnNode(((StringReference) _31c.getReference()).getString()));
+				il.add(new VarInsnNode(ISTORE, _31c.getRegisterA()));
+				continue;
+				
+				
 			case Format11x:
 				visitSingleRegister((BuilderInstruction11x) i);
 				continue;
@@ -142,12 +150,12 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 			case Format22s:
 				continue;
 			case Format22t:
+				// conditional jumps
 				continue;
 			case Format22x:
+				// move from 16
 				continue;
 			case Format23x:
-				continue;
-			case Format31c:
 				continue;
 			case Format31i:
 				continue;
