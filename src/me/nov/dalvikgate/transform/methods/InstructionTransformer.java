@@ -137,12 +137,12 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         il.add(new VarInsnNode(ISTORE, _31i.getRegisterA()));
         continue;
       case Format51l:
-        //const 64 bit
+        // const 64 bit
         BuilderInstruction51l _51l = (BuilderInstruction51l) i;
         il.add(new LdcInsnNode(_51l.getWideLiteral()));
         il.add(new VarInsnNode(LSTORE, _51l.getRegisterA()));
         continue;
-        
+
       case Format11x:
         visitSingleRegister((BuilderInstruction11x) i);
         continue;
@@ -197,18 +197,26 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // more moves
         throw new IllegalArgumentException("unsupported instruction");
 
+      ////////////////////////// INVOKE //////////////////////////
       case Format35c:
-        visit35c((BuilderInstruction35c) i);
+        visitInvoke((BuilderInstruction35c) i);
         continue;
-      case Format35mi:
-        throw new IllegalArgumentException("unsupported instruction");
       case Format35ms:
+        // invokeQuick
         throw new IllegalArgumentException("unsupported instruction");
       case Format3rc:
         throw new IllegalArgumentException("unsupported instruction");
-      case Format3rmi:
+
+      ////////////////////////// EXECUTE INLINE //////////////////////////
+      case Format35mi:
+        // execute inline range
         throw new IllegalArgumentException("unsupported instruction");
+      case Format3rmi:
+        // execute inline range
+        throw new IllegalArgumentException("unsupported instruction");
+
       case Format3rms:
+        // invoke quick range
         throw new IllegalArgumentException("unsupported instruction");
 
       ////////////////////////// INVOKE POLYMORPHIC //////////////////////////
@@ -534,7 +542,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     }
   }
 
-  private void visit35c(BuilderInstruction35c i) { // TODO
+  private void visitInvoke(BuilderInstruction35c i) { // TODO
     switch (i.getOpcode()) {
     default:
       break;
