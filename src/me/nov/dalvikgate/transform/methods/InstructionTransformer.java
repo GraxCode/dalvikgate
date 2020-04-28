@@ -132,7 +132,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // TODO unsure if const-wide-32 need some bitshifting
         BuilderInstruction31i _31i = (BuilderInstruction31i) i;
         il.add(ASMCommons.makeIntPush(_31i.getNarrowLiteral()));
-        il.add(new VarInsnNode(ISTORE, _31regToLocal(i.getRegisterA())));
+        il.add(new VarInsnNode(ISTORE, regToLocal(_31i.getRegisterA())));
         continue;
       case Format51l:
         // const 64 bit
