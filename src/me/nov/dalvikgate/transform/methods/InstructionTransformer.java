@@ -56,16 +56,17 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   private MutableMethodImplementation builder;
   private HashMap<BuilderInstruction, LabelNode> labels;
   private List<BuilderInstruction> dexInstructions;
-  private int argumentRegisters;
+  private int argumentRegisterCount;
   private boolean isStatic;
 
   public InstructionTransformer(MethodNode mn, DexBackedMethod method, MutableMethodImplementation builder) {
     this.mn = mn;
     this.method = method;
-    this.isStatic = Access.isStatic(method.accessFlags); // dalvik and java bytecode have the same access values
     this.builder = builder;
     this.dexInstructions = builder.getInstructions();
-    this.argumentRegisters = method.getParameters().stream().mapToInt(p -> DexLibCommons.getSize(p)).sum();
+    this.isStatic = Access.isStatic(method.accessFlags); // dalvik and java bytecode have the same access values
+    //"this" reference is passed as argument in dalvik
+    this.argumentRegisterCount = method.getParameters().stream().mapToInt(p -> DexLibCommons.getSize(p)).sum() + (isStatic ? 0 : 1);
   }
 
   @Override
@@ -88,11 +89,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private int regToLocal(int register) {
-    // TODO what register does "this" have?
     // The N arguments to a method land in the last N registers of the method's invocation frame, in order
-    int startingArgs = builder.getRegisterCount() - argumentRegisters;
+    int startingArgs = builder.getRegisterCount() - argumentRegisterCount;
     if (register >= startingArgs) {
-      return register - startingArgs + (isStatic ? 0 : 1); //0 is reserved for "this"
+      return register - startingArgs; // 0 is reserved for "this"
     }
     return register + startingArgs;
   }
