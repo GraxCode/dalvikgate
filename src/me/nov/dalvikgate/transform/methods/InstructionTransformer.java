@@ -591,20 +591,34 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       il.add(new VarInsnNode(ALOAD, 0));
       registers--;
     }
-    if (registers-- > 0) {
-      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(0)), regToLocal(i.getRegisterC())));
-    }
-    if (registers-- > 0) {
-      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(1)), regToLocal(i.getRegisterD())));
-    }
-    if (registers-- > 0) {
-      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(2)), regToLocal(i.getRegisterE())));
-    }
-    if (registers-- > 0) {
-      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(3)), regToLocal(i.getRegisterF())));
-    }
-    if (registers > 0) {
-      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(4)), regToLocal(i.getRegisterG())));
+    @SuppressWarnings("unchecked")
+    List<String> parameterTypes = (List<String>) mr.getParameterTypes();
+    int pIdx = 0;
+    while (registers > 0) {
+      int register;
+      switch (pIdx) {
+      case 0:
+        register = i.getRegisterC();
+        break;
+      case 1:
+        register = i.getRegisterD();
+        break;
+      case 2:
+        register = i.getRegisterE();
+        break;
+      case 3:
+        register = i.getRegisterF();
+        break;
+      case 4:
+        register = i.getRegisterG();
+        break;
+      default:
+        throw new IllegalArgumentException("more than 5 parameters: " + desc);
+      }
+      String pDesc = parameterTypes.get(pIdx);
+      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(pDesc), regToLocal(register)));
+      registers -= Type.getType(pDesc).getSize();
+      pIdx++;
     }
     switch (i.getOpcode()) {
     case INVOKE_SUPER:
