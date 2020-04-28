@@ -57,12 +57,6 @@ public class ASMCommons implements Opcodes {
   }
 
   public static String buildMethodDesc(List<? extends CharSequence> parameterTypes, String returnType) {
-    StringBuilder sb = new StringBuilder("(");
-    for (CharSequence parameter : parameterTypes) {
-      sb.append(parameter);
-    }
-    sb.append(")");
-    sb.append(returnType);
-    return sb.toString();
+    return Type.getMethodDescriptor(Type.getType(returnType), parameterTypes.stream().map(s -> Type.getType((String) s)).toArray(Type[]::new));
   }
 }

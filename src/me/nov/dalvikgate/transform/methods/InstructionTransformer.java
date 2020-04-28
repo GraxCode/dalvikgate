@@ -84,7 +84,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   public void build() {
     il = new InsnList();
     this.buildLabels();
-
     for (BuilderInstruction i : dexInstructions) {
       if (labels.containsKey(i)) {
         // add labels to the code
