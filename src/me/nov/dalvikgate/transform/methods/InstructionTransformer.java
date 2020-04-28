@@ -17,6 +17,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction20t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.iface.reference.FieldReference;
@@ -25,7 +26,6 @@ import org.jf.dexlib2.iface.reference.StringReference;
 import org.jf.dexlib2.iface.reference.TypeReference;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -89,10 +89,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(new VarInsnNode(ISTORE, _11n.getRegisterA()));
 				continue;
 			case Format11x:
-				visit11x((BuilderInstruction11x) i);
+				visitSingleRegister((BuilderInstruction11x) i);
 				continue;
 			case Format12x:
-				visit12x((BuilderInstruction12x) i);
+				visitDoubleRegister((BuilderInstruction12x) i);
 				continue;
 			case Format20bc: // TODO
 
@@ -102,7 +102,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction20t) i).getTarget())));
 				continue;
 			case Format21c:
-				visit21c((BuilderInstruction21c) i);
+				visitReferenceSingleRegister((BuilderInstruction21c) i);
 				continue;
 			case Format21ih:
 				BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
@@ -120,8 +120,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(ASMCommons.makeIntPush(_21s.getNarrowLiteral()));
 				il.add(new VarInsnNode(ISTORE, _21s.getRegisterA()));
 				continue;
-			// TODO rest
 			case Format21t:
+				visitIntJump((BuilderInstruction21t) i);
 				continue;
 			case Format22b:
 				continue;
@@ -196,7 +196,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 		return il;
 	}
 
-	private void visit11x(BuilderInstruction11x i) {
+	private void visitSingleRegister(BuilderInstruction11x i) {
 		int source = i.getRegisterA();
 		switch (i.getOpcode()) {
 		case MOVE_RESULT:
@@ -240,7 +240,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 		}
 	}
 
-	private void visit12x(BuilderInstruction12x i) {
+	private void visitDoubleRegister(BuilderInstruction12x i) {
 		int source = i.getRegisterB();
 		int destination = i.getRegisterA();
 		switch (i.getOpcode()) {
@@ -400,7 +400,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 		}
 	}
 
-	private void visit21c(BuilderInstruction21c i) {
+	private void visitReferenceSingleRegister(BuilderInstruction21c i) {
 		int register = i.getRegisterA();
 		Reference ref = i.getReference();
 		switch (i.getOpcode()) {
@@ -420,8 +420,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 			il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
 			return;
 		case NEW_INSTANCE:
-			il.add(new VarInsnNode(ALOAD, register));
 			il.add(new TypeInsnNode(NEW, Type.getType(((TypeReference) ref).getType()).getInternalName()));
+			il.add(new VarInsnNode(ASTORE, register));
 			return;
 		default:
 			break;
@@ -468,6 +468,34 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 		case SPUT_OBJECT_VOLATILE:
 			il.add(new VarInsnNode(ALOAD, register));
 			il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
+			break;
+		default:
+			throw new IllegalArgumentException(i.getOpcode().name);
+		}
+	}
+
+	private void visitIntJump(BuilderInstruction21t i) {
+		int source = i.getRegisterA();
+		Label label = i.getTarget();
+		il.add(new VarInsnNode(ILOAD, source));
+		switch (i.getOpcode()) {
+		case IF_EQZ:
+			il.add(new JumpInsnNode(IFEQ, getASMLabel(label)));
+			break;
+		case IF_NEZ:
+			il.add(new JumpInsnNode(IFNE, getASMLabel(label)));
+			break;
+		case IF_LTZ:
+			il.add(new JumpInsnNode(IFLT, getASMLabel(label)));
+			break;
+		case IF_GEZ:
+			il.add(new JumpInsnNode(IFGE, getASMLabel(label)));
+			break;
+		case IF_GTZ:
+			il.add(new JumpInsnNode(IFGT, getASMLabel(label)));
+			break;
+		case IF_LEZ:
+			il.add(new JumpInsnNode(IFLE, getASMLabel(label)));
 			break;
 		default:
 			throw new IllegalArgumentException(i.getOpcode().name);

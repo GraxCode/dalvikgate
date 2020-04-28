@@ -15,7 +15,7 @@ public interface ITransformer<T> {
 	public static final String SIGNATURE_ANNOTATION = "Ldalvik/annotation/Signature;";
 
 	default String getSignature(Set<? extends Annotation> set) {
-		//TODO
+		// TODO
 		Annotation signature = set.stream().filter(a -> a.getType().equals(SIGNATURE_ANNOTATION)).findFirst().orElse(null);
 		if (signature != null) {
 			DexBackedArrayEncodedValue sig = (DexBackedArrayEncodedValue) signature.getElements().iterator().next().getValue();
