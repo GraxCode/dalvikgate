@@ -5,24 +5,23 @@ import java.util.List;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.BuilderInstruction;
+import org.jf.dexlib2.builder.BuilderOffsetInstruction;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction10t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction12x;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction20t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction30t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction51l;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.iface.reference.FieldReference;
+import org.jf.dexlib2.iface.reference.MethodReference;
 import org.jf.dexlib2.iface.reference.Reference;
 import org.jf.dexlib2.iface.reference.StringReference;
 import org.jf.dexlib2.iface.reference.TypeReference;
@@ -34,6 +33,7 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -96,16 +96,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 
       ////////////////////////// GOTOS //////////////////////////
       case Format10t:
-        // 8 bit goto
-        il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction10t) i).getTarget())));
-        continue;
       case Format20t:
-        // 16 bit goto
-        il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction20t) i).getTarget())));
-        continue;
       case Format30t:
-        // 32 bit goto
-        il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction30t) i).getTarget())));
+        // 8, 16 and 32 bit goto
+        il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderOffsetInstruction) i).getTarget())));
         continue;
 
       ////////////////////////// VOID RETURNS //////////////////////////
@@ -148,9 +142,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         continue;
       case Format12x:
         visitDoubleRegister((BuilderInstruction12x) i);
-        continue;
-      case Format20bc:
-        il.add(ASMCommons.makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
         continue;
       case Format21c:
         visitReferenceSingleRegister((BuilderInstruction21c) i);
@@ -225,6 +216,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format4rcc:
         throw new IllegalArgumentException("unsupported instruction");
 
+      ////////////////////////// SPECIAL INSTRUCTIONS //////////////////////////
+      case Format20bc:
+        il.add(ASMCommons.makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
+        continue;
       case PackedSwitchPayload:
         throw new IllegalArgumentException("unsupported instruction");
       case SparseSwitchPayload:
@@ -542,22 +537,61 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     }
   }
 
-  private void visitInvoke(BuilderInstruction35c i) { // TODO
+  /**
+   * Visit invoke instruction with a maximum of 5 arguments
+   * 
+   * @param i
+   */
+  private void visitInvoke(BuilderInstruction35c i) {
+    if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY) {
+      throw new IllegalArgumentException("filled-new-array");
+    }
+    MethodReference mr = (MethodReference) i.getReference();
+    String owner = Type.getType(mr.getDefiningClass()).getInternalName();
+    String name = mr.getName();
+    String desc = ASMCommons.buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
+    if(i.getOpcode() == Opcode.INVOKE_SUPER) {
+      //load "this" before invoking
+      il.add(new VarInsnNode(ALOAD, 0));
+    }
+    
+    // TODO analyze variable types using desc and use right load types
+    int args = i.getRegisterCount();
+    if (args-- > 0) {
+      il.add(new VarInsnNode(ALOAD, i.getRegisterC()));
+    }
+    if (args-- > 0) {
+      il.add(new VarInsnNode(ALOAD, i.getRegisterD()));
+    }
+    if (args-- > 0) {
+      il.add(new VarInsnNode(ALOAD, i.getRegisterE()));
+    }
+    if (args-- > 0) {
+      il.add(new VarInsnNode(ALOAD, i.getRegisterF()));
+    }
+    if (args > 0) {
+      il.add(new VarInsnNode(ALOAD, i.getRegisterG()));
+    }
     switch (i.getOpcode()) {
-    default:
+    case INVOKE_SUPER:
+    case INVOKE_DIRECT_EMPTY:
+      il.add(new MethodInsnNode(INVOKESPECIAL, owner, name, desc));
       break;
-//		 INVOKE_VIRTUAL
-//	    INVOKE_SUPER
-//	    INVOKE_DIRECT
-//	    INVOKE_STATIC
-//	    INVOKE_INTERFACE
-//	    INVOKE_VIRTUAL_RANGE
-//	    INVOKE_SUPER_RANGE
-//	    INVOKE_DIRECT_RANGE
-//	    INVOKE_STATIC_RANGE
-//	    INVOKE_INTERFACE_RANGE
-    // INVOKE_CUSTOM
-    // FILLED_NEW_ARRAY
+    case INVOKE_VIRTUAL:
+    case INVOKE_DIRECT:
+      il.add(new MethodInsnNode(INVOKEVIRTUAL, owner, name, desc));
+      break;
+    case INVOKE_STATIC:
+      il.add(new MethodInsnNode(INVOKESTATIC, owner, name, desc));
+      break;
+    case INVOKE_INTERFACE:
+      il.add(new MethodInsnNode(INVOKEINTERFACE, owner, name, desc));
+      
+      break;
+    case INVOKE_CUSTOM:
+      //like invokedynamic
+    default:
+      throw new IllegalArgumentException(i.getOpcode().name);
     }
   }
 

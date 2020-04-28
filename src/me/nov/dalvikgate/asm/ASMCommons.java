@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.asm;
 
+import java.util.List;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -52,5 +54,15 @@ public class ASMCommons implements Opcodes {
     il.add(new MethodInsnNode(INVOKESPECIAL, name, "<init>", "(Ljava/lang/String;)V"));
     il.add(new InsnNode(ATHROW));
     return il;
+  }
+
+  public static String buildMethodDesc(List<? extends CharSequence> parameterTypes, String returnType) {
+    StringBuilder sb = new StringBuilder("(");
+    for (CharSequence parameter : parameterTypes) {
+      sb.append(parameter);
+    }
+    sb.append(")");
+    sb.append(returnType);
+    return sb.toString();
   }
 }

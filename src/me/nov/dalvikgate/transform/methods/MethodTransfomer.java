@@ -40,7 +40,7 @@ public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
     try {
       it.build();
     } catch (Exception e) {
-      e.printStackTrace();
+//      e.printStackTrace();
       mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException", "dalvikgate error: " + e.toString());
       return;
     }
