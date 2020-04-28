@@ -45,9 +45,6 @@ import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
-/**
- * FIXME registers do NOT equal locals. need to somehow find out what is what
- */
 @SuppressWarnings("unused")
 public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 
@@ -584,26 +581,30 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
     String name = mr.getName();
     String desc = ASMCommons.buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
-    if (i.getOpcode() == Opcode.INVOKE_SUPER) {
-      // load "this" before invoking
+    int registers = i.getRegisterCount();
+    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum();
+    if (registers > parameters) {
+      if (registers > parameters + 1) {
+        throw new IllegalArgumentException("too many registers: " + registers + " for method with desc " + desc);
+      }
+      // load "this" before invoking, as it isn't a parameter
       il.add(new VarInsnNode(ALOAD, 0));
+      registers--;
     }
-    // TODO analyze variable types using desc and use right load types
-    int args = i.getRegisterCount();
-    if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterC())));
+    if (registers-- > 0) {
+      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(0)), regToLocal(i.getRegisterC())));
     }
-    if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterD())));
+    if (registers-- > 0) {
+      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(1)), regToLocal(i.getRegisterD())));
     }
-    if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterE())));
+    if (registers-- > 0) {
+      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(2)), regToLocal(i.getRegisterE())));
     }
-    if (args-- > 0) {
-      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterF())));
+    if (registers-- > 0) {
+      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(3)), regToLocal(i.getRegisterF())));
     }
-    if (args > 0) {
-      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterG())));
+    if (registers > 0) {
+      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(mr.getParameterTypes().get(4)), regToLocal(i.getRegisterG())));
     }
     switch (i.getOpcode()) {
     case INVOKE_SUPER:

@@ -59,4 +59,46 @@ public class ASMCommons implements Opcodes {
   public static String buildMethodDesc(List<? extends CharSequence> parameterTypes, String returnType) {
     return Type.getMethodDescriptor(Type.getType(returnType), parameterTypes.stream().map(s -> Type.getType((String) s)).toArray(Type[]::new));
   }
+
+  public static int getLoadOpForDesc(CharSequence cs) {
+    String desc = (String) cs;
+    switch (desc.charAt(0)) {
+    case 'L':
+    case '[':
+      return ALOAD;
+    case 'I':
+    case 'S':
+    case 'Z':
+    case 'C':
+      return ILOAD;
+    case 'J':
+      return LLOAD;
+    case 'D':
+      return DLOAD;
+    case 'F':
+      return FLOAD;
+    }
+    throw new IllegalArgumentException("illegal desc: " + cs);
+  }
+
+  public static int getStoreOpForDesc(CharSequence cs) {
+    String desc = (String) cs;
+    switch (desc.charAt(0)) {
+    case 'L':
+    case '[':
+      return ASTORE;
+    case 'I':
+    case 'S':
+    case 'Z':
+    case 'C':
+      return ISTORE;
+    case 'J':
+      return LSTORE;
+    case 'D':
+      return DSTORE;
+    case 'F':
+      return FSTORE;
+    }
+    throw new IllegalArgumentException("illegal desc: " + cs);
+  }
 }
