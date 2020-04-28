@@ -203,10 +203,13 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         throw new IllegalArgumentException("unsupported instruction");
       case Format3rms:
         throw new IllegalArgumentException("unsupported instruction");
+
+      ////////////////////////// INVOKE POLYMORPHIC //////////////////////////
       case Format45cc:
         throw new IllegalArgumentException("unsupported instruction");
       case Format4rcc:
         throw new IllegalArgumentException("unsupported instruction");
+
       case Format51l:
         throw new IllegalArgumentException("unsupported instruction");
       case PackedSwitchPayload:
