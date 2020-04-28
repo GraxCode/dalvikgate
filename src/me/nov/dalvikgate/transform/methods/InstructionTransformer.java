@@ -86,6 +86,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 				il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderInstruction30t) i).getTarget())));
 				continue;
 
+				
 			case Format10x:
 				if (i.getOpcode() != Opcode.NOP) {
 					// only void returns, ignore NOPs
