@@ -20,6 +20,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction30t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction51l;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.iface.reference.FieldReference;
 import org.jf.dexlib2.iface.reference.Reference;
@@ -135,7 +136,13 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         il.add(ASMCommons.makeIntPush(_31i.getNarrowLiteral()));
         il.add(new VarInsnNode(ISTORE, _31i.getRegisterA()));
         continue;
-
+      case Format51l:
+        //const 64 bit
+        BuilderInstruction51l _51l = (BuilderInstruction51l) i;
+        il.add(new LdcInsnNode(_51l.getWideLiteral()));
+        il.add(new VarInsnNode(LSTORE, _51l.getRegisterA()));
+        continue;
+        
       case Format11x:
         visitSingleRegister((BuilderInstruction11x) i);
         continue;
@@ -210,8 +217,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format4rcc:
         throw new IllegalArgumentException("unsupported instruction");
 
-      case Format51l:
-        throw new IllegalArgumentException("unsupported instruction");
       case PackedSwitchPayload:
         throw new IllegalArgumentException("unsupported instruction");
       case SparseSwitchPayload:
