@@ -167,7 +167,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         il.add(new VarInsnNode(ISTORE, _21s.getRegisterA()));
         continue;
       case Format21t:
-        visitIntJump((BuilderInstruction21t) i);
+        visitSingleJump((BuilderInstruction21t) i);
         continue;
       case Format22b:
         throw new IllegalArgumentException("unsupported instruction");
@@ -519,16 +519,18 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     }
   }
 
-  private void visitIntJump(BuilderInstruction21t i) {
+  private void visitSingleJump(BuilderInstruction21t i) {
     int source = regToLocal(i.getRegisterA());
+    //TODO check if object
+    boolean refIsObject = false; //dalvik has no ifnull / ifnonnull
     Label label = i.getTarget();
     il.add(new VarInsnNode(ILOAD, source));
     switch (i.getOpcode()) {
     case IF_EQZ:
-      il.add(new JumpInsnNode(IFEQ, getASMLabel(label)));
+      il.add(new JumpInsnNode(refIsObject ? IFNULL : IFEQ, getASMLabel(label)));
       break;
     case IF_NEZ:
-      il.add(new JumpInsnNode(IFNE, getASMLabel(label)));
+      il.add(new JumpInsnNode(refIsObject ? IFNONNULL : IFNE, getASMLabel(label)));
       break;
     case IF_LTZ:
       il.add(new JumpInsnNode(IFLT, getASMLabel(label)));
