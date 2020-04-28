@@ -2,6 +2,7 @@ package me.nov.dalvikgate.transform.methods;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.BuilderInstruction;
@@ -39,6 +40,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import me.nov.dalvikgate.asm.ASMCommons;
+import me.nov.dalvikgate.asm.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
 /**
@@ -53,12 +55,14 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   private MutableMethodImplementation builder;
   private HashMap<BuilderInstruction, LabelNode> labels;
   private List<BuilderInstruction> dexInstructions;
+  private int argumentRegisters;
 
   public InstructionTransformer(MethodNode mn, DexBackedMethod method, MutableMethodImplementation builder) {
     this.mn = mn;
     this.method = method;
     this.builder = builder;
     this.dexInstructions = builder.getInstructions();
+    this.argumentRegisters = method.getParameters().stream().mapToInt(p -> DexLibCommons.getSize(p)).sum();
   }
 
   @Override
@@ -81,8 +85,12 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private int regToLocal(int register) {
-    // FIXME here we have to somehow convert register index to local index
-    return register;
+    // The N arguments to a method land in the last N registers of the method's invocation frame, in order
+    int startingArgs = builder.getRegisterCount() - argumentRegisters;
+    if(register >= startingArgs) {
+      return register - startingArgs;
+    }
+    return register + startingArgs;
   }
 
   @Override
@@ -521,10 +529,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 
   private void visitSingleJump(BuilderInstruction21t i) {
     int source = regToLocal(i.getRegisterA());
-    //TODO check if object
-    boolean refIsObject = false; //dalvik has no ifnull / ifnonnull
+    // TODO check if object
+    boolean refIsObject = false; // dalvik has no ifnull / ifnonnull
     Label label = i.getTarget();
-    il.add(new VarInsnNode(ILOAD, source));
+    il.add(new VarInsnNode(refIsObject ? ALOAD : ILOAD /* get type here */, source));
     switch (i.getOpcode()) {
     case IF_EQZ:
       il.add(new JumpInsnNode(refIsObject ? IFNULL : IFEQ, getASMLabel(label)));
