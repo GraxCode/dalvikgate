@@ -4,3 +4,6 @@ build/*
 
 # IDE files
 .idea/*
+
+# Local files
+in/*
