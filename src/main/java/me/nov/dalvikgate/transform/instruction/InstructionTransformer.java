@@ -268,16 +268,16 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         }
       case Format22cs:
         // iput/iget-type-quick ==> Not listed on dalvik bytecode page?
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format22s:
         visitInt16Math((BuilderInstruction22s) i);
         continue;
       case Format22t:
         // conditional jumps
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format22x:
         // move from 16
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format23x:
         // Perform the indicated floating point or long comparison, setting a to 0 if b == c, 1 if b > c, or -1 if b < c.
         // The "bias" listed for the floating point operations indicates how NaN comparisons are treated: "gt bias" instructions return 1 for NaN comparisons,
@@ -290,45 +290,45 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // A: destination register (8 bits)
         // B: first source register or pair
         // C: second source register or pair
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format31t:
         // fill-array-data and switches
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format32x:
         // more moves
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       ////////////////////////// INVOKE //////////////////////////
       case Format35c:
         visitInvoke((BuilderInstruction35c) i);
         continue;
       case Format35ms:
         // invokeQuick
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format3rc:
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       ////////////////////////// EXECUTE INLINE //////////////////////////
       case Format35mi:
         // execute inline range
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format3rmi:
         // execute inline range
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format3rms:
         // invoke quick range
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       ////////////////////////// INVOKE POLYMORPHIC //////////////////////////
       case Format45cc:
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case Format4rcc:
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       ////////////////////////// SPECIAL INSTRUCTIONS //////////////////////////
       case Format20bc:
         il.add(ASMCommons.makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
         continue;
       case PackedSwitchPayload:
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case SparseSwitchPayload:
-        throw new IllegalArgumentException("unsupported instruction");
+        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       case UnresolvedOdexInstruction:
       default:
         throw new IllegalArgumentException(i.getClass().getName());

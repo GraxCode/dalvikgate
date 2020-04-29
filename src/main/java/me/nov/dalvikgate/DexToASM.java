@@ -19,7 +19,6 @@ import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
-import me.nov.threadtear.swing.Utils;
 
 public class DexToASM {
   public static void main(String[] args) throws IOException {
