@@ -223,7 +223,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
             // A: destination
             addVarInsn(ALOAD, regToLocal(_22c.getRegisterB()));
             il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
-            addVarInsn(ASMCommons.getLoadOpForDesc(desc), regToLocal(_22c.getRegisterA()));
+            addVarInsn(ASMCommons.getStoreOpForDesc(desc), regToLocal(_22c.getRegisterA()));
           } else {
             // B: object reference
             // A: value
