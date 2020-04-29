@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -18,6 +19,7 @@ import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
+import me.nov.threadtear.swing.Utils;
 
 public class DexToASM {
   public static void main(String[] args) throws IOException {
@@ -39,7 +41,7 @@ public class DexToASM {
     for (DexBackedClassDef clazz : baseClassDefs) {
       ClassTransformer transformer = new ClassTransformer(clazz, 52);
       transformer.build();
-      asmClasses.add(transformer.get());
+      asmClasses.add(transformer.getTransformed());
     }
     return asmClasses;
   }
@@ -48,7 +50,7 @@ public class DexToASM {
     try {
       JarOutputStream out = new JarOutputStream(new FileOutputStream(output));
       out.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"));
-      out.write("Manifest-Version: 1.0\r\nTransformed-By: dalvikgate\r\n".getBytes());
+      out.write(makeManifest().getBytes());
       out.closeEntry();
       for (ClassNode c : classes) {
         try {
@@ -63,6 +65,25 @@ public class DexToASM {
       out.close();
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+
+  private static String makeManifest() {
+    String lineSeparator = "\r\n";
+    StringBuilder manifest = new StringBuilder();
+    manifest.append("Manifest-Version: 1.0");
+    manifest.append(lineSeparator);
+    manifest.append("Transformed-By: dalvikgate ");
+    manifest.append(getVersion());
+    manifest.append(lineSeparator);
+    return manifest.toString();
+  }
+
+  public static String getVersion() {
+    try {
+      return Objects.requireNonNull(DexToASM.class.getPackage().getImplementationVersion());
+    } catch (NullPointerException e) {
+      return "(dev)";
     }
   }
 }

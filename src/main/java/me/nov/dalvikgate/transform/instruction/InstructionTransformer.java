@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.ReferenceType;
@@ -79,8 +80,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   @Override
-  public InsnList get() {
-    return il;
+  public InsnList getTransformed() {
+    return Objects.requireNonNull(il);
   }
 
   private void buildLabels() {

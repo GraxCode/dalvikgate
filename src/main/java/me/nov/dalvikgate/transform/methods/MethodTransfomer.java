@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.transform.methods;
 
+import java.util.Objects;
+
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
@@ -32,8 +34,8 @@ public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
   }
 
   @Override
-  public MethodNode get() {
-    return mn;
+  public MethodNode getTransformed() {
+    return Objects.requireNonNull(mn);
   }
 
   private void rewriteImplementation() {
@@ -47,7 +49,7 @@ public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
           "dalvikgate error: " + e.toString() + " / " + (e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : " no stack trace"));
       return;
     }
-    mn.instructions = it.get();
+    mn.instructions = it.getTransformed();
   }
 
 }

@@ -113,7 +113,7 @@ public class ClassTransformer implements ITransformer<ClassNode> {
         } else if (type != null) {
           // TODO normal annotations
           // if(anno.getVisibility() == ...)
-          if(cn.visibleAnnotations == null) {
+          if (cn.visibleAnnotations == null) {
             cn.visibleAnnotations = new ArrayList<>();
           }
           cn.visibleAnnotations.add(new AnnotationNode(type));
@@ -130,17 +130,17 @@ public class ClassTransformer implements ITransformer<ClassNode> {
   public void addMethod(DexBackedMethod m) {
     MethodTransfomer mt = new MethodTransfomer(m);
     mt.build();
-    cn.methods.add(mt.get());
+    cn.methods.add(mt.getTransformed());
   }
 
   public void addField(DexBackedField f) {
     FieldTransfomer ft = new FieldTransfomer(f);
     ft.build();
-    cn.fields.add(ft.get());
+    cn.fields.add(ft.getTransformed());
   }
 
   @Override
-  public ClassNode get() {
+  public ClassNode getTransformed() {
     return Objects.requireNonNull(cn);
   }
 }

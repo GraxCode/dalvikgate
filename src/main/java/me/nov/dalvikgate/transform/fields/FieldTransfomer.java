@@ -1,6 +1,7 @@
 package me.nov.dalvikgate.transform.fields;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Set;
 
 import org.jf.dexlib2.dexbacked.DexBackedAnnotation;
@@ -51,8 +52,8 @@ public class FieldTransfomer implements ITransformer<FieldNode>, Opcodes {
   }
 
   @Override
-  public FieldNode get() {
-    return fn;
+  public FieldNode getTransformed() {
+    return Objects.requireNonNull(fn);
   }
 
 }
