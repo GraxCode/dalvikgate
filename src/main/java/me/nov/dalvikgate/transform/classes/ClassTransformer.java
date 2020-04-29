@@ -14,8 +14,8 @@ import org.jf.dexlib2.dexbacked.value.DexBackedMethodEncodedValue;
 import org.jf.dexlib2.dexbacked.value.DexBackedStringEncodedValue;
 import org.jf.dexlib2.dexbacked.value.DexBackedTypeEncodedValue;
 import org.jf.dexlib2.iface.reference.MethodReference;
-import org.jf.dexlib2.iface.value.IntEncodedValue;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InnerClassNode;
 
@@ -67,11 +67,11 @@ public class ClassTransformer implements ITransformer<ClassNode> {
           String innerType = null;
           for (DexBackedAnnotationElement element : anno.getElements()) {
             if ("accessFlags".equals(element.getName())) {
-              innerAcc = ((IntEncodedValue) element.getValue()).getValue();
+              innerAcc = (Integer) ValueBridge.toObject(element.getValue());
             } else if ("name".equals(element.getName())) {
               // Some elements are "null", do we do anything with those?
               if (element.getValue() instanceof DexBackedStringEncodedValue) {
-                innerType = ((DexBackedStringEncodedValue) element.getValue()).getValue();
+                innerType = (String) ValueBridge.toObject(element.getValue());
               }
             }
           }
@@ -111,8 +111,13 @@ public class ClassTransformer implements ITransformer<ClassNode> {
         } else if ("Ldalvik/annotation/EnclosingClass;".equals(type)) {
           DexBackedTypeEncodedValue encodedValue = (DexBackedTypeEncodedValue) anno.getElements().iterator().next().getValue();
           cn.outerClass = Type.getType(encodedValue.getValue()).getInternalName();
-        } else {
-          System.getProperty("user.dir");
+        } else if (type != null) {
+          // TODO normal annotations
+          // if(anno.getVisibility() == ...)
+          if(cn.visibleAnnotations == null) {
+            cn.visibleAnnotations = new ArrayList<>();
+          }
+          cn.visibleAnnotations.add(new AnnotationNode(type));
         }
         // Ignore: Ldalvik/annotation/SourceDebugExtension;
         // Ignore: Lkotlin/Metadata;
