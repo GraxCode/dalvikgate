@@ -37,6 +37,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -213,7 +214,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format22c:
         BuilderInstruction22c _22c = (BuilderInstruction22c) i;
         if (_22c.getReferenceType() == ReferenceType.FIELD) {
-          //non-static field ops
+          // non-static field ops
           FieldReference fieldReference = (FieldReference) _22c.getReference();
           String owner = Type.getType(fieldReference.getDefiningClass()).getInternalName();
           String name = fieldReference.getName();
@@ -235,14 +236,20 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         } else {
           TypeReference typeReference = (TypeReference) _22c.getReference();
           if (i.getOpcode() == Opcode.INSTANCE_OF) {
-            addVarInsn(ALOAD, regToLocal(_22c.getRegisterB()));
+            addVarInsn(ALOAD, regToLocal(_22c.getRegisterB())); // object reference
             il.add(new TypeInsnNode(INSTANCEOF, Type.getType(typeReference.getType()).getInternalName()));
             addVarInsn(ISTORE, regToLocal(_22c.getRegisterA()));
             continue;
           }
           if (i.getOpcode() == Opcode.NEW_ARRAY) {
-            addVarInsn(ILOAD, regToLocal(_22c.getRegisterB()));
-            il.add(new TypeInsnNode(ANEWARRAY, Type.getType(typeReference.getType()).getInternalName()));
+            System.out.println(typeReference.getType());
+            addVarInsn(ILOAD, regToLocal(_22c.getRegisterB())); // array size
+            Type arrayType = Type.getType(typeReference.getType()).getElementType();
+            if (arrayType.getSort() == Type.OBJECT) {
+              il.add(new TypeInsnNode(ANEWARRAY, arrayType.getInternalName()));
+            } else {
+              il.add(new IntInsnNode(NEWARRAY, ASMCommons.getPrimitiveIndex(arrayType.getDescriptor())));
+            }
             addVarInsn(ASTORE, regToLocal(_22c.getRegisterA()));
             continue;
           }

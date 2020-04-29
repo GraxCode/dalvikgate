@@ -112,4 +112,29 @@ public class ASMCommons implements Opcodes {
     }
     throw new IllegalArgumentException("illegal desc: " + cs);
   }
+
+  public static int getPrimitiveIndex(String primitive) {
+    if (primitive.length() > 1) {
+      throw new IllegalArgumentException("not a primitive: " + primitive);
+    }
+    switch (primitive.charAt(0)) {
+    case 'Z':
+      return 4;
+    case 'C':
+      return 5;
+    case 'F':
+      return 6;
+    case 'D':
+      return 7;
+    case 'B':
+      return 8;
+    case 'S':
+      return 9;
+    case 'I':
+      return 10;
+    case 'J':
+      return 11;
+    }
+    throw new IllegalArgumentException("not a primitive: " + primitive);
+  }
 }
