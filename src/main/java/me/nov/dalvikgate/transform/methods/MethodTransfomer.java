@@ -19,7 +19,12 @@ public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
 
   @Override
   public void build() {
-    mn = new MethodNode(method.getAccessFlags(), method.getName(), ASMCommons.buildMethodDesc(method.getParameterTypes(), method.getReturnType()), null, null);
+    String name = method.getName();
+    int flags = method.getAccessFlags();
+    if (name.startsWith("$$") || name.startsWith("_$_") || name.startsWith("access$")) {
+      flags |= ACC_BRIDGE | ACC_SYNTHETIC;
+    }
+    mn = new MethodNode(flags, name, ASMCommons.buildMethodDesc(method.getParameterTypes(), method.getReturnType()), null, null);
     if (method.getImplementation() != null) {
       rewriteImplementation();
     }

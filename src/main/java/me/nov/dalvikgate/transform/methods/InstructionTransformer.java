@@ -3,24 +3,16 @@ package me.nov.dalvikgate.transform.methods;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.BuilderOffsetInstruction;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction12x;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction51l;
+import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
+import org.jf.dexlib2.dexbacked.reference.DexBackedFieldReference;
 import org.jf.dexlib2.iface.reference.FieldReference;
 import org.jf.dexlib2.iface.reference.MethodReference;
 import org.jf.dexlib2.iface.reference.Reference;
@@ -47,7 +39,7 @@ import me.nov.dalvikgate.transform.ITransformer;
 
 @SuppressWarnings("unused")
 public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
-
+  private Map<Integer, Boolean> variableIsObject = new HashMap<>();
   private InsnList il;
   private MethodNode mn;
   private DexBackedMethod method;
@@ -124,7 +116,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // 8, 16 and 32 bit goto
         il.add(new JumpInsnNode(GOTO, getASMLabel(((BuilderOffsetInstruction) i).getTarget())));
         continue;
-
       ////////////////////////// VOID RETURNS //////////////////////////
       case Format10x:
         if (i.getOpcode() != Opcode.NOP) {
@@ -132,34 +123,43 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
           il.add(new InsnNode(RETURN));
         }
         continue;
-
       ////////////////////////// CONST //////////////////////////
       case Format11n:
-        // const 4 bits
+        // Move the given literal value (sign-extended to 32 bits) into the specified register.
+        // A: destination register (4 bits)
+        // B: signed int (4 bits)
         BuilderInstruction11n _11n = (BuilderInstruction11n) i;
         il.add(ASMCommons.makeIntPush(_11n.getNarrowLiteral()));
-        il.add(new VarInsnNode(ISTORE, _11n.getRegisterA()));
+        addVarInsn(ISTORE, _11n.getRegisterA());
         continue;
       case Format31c:
-        // const jumbo string
+        // Move a reference to the string specified by the given index into the specified register.
+        // A: destination register (8 bits)
+        // B: string index
         BuilderInstruction31c _31c = (BuilderInstruction31c) i;
         il.add(new LdcInsnNode(((StringReference) _31c.getReference()).getString()));
-        il.add(new VarInsnNode(ISTORE, _31c.getRegisterA()));
+        addVarInsn(ISTORE, _31c.getRegisterA());
         continue;
       case Format31i:
-        // const 32 bits
+        // 0x14: Move the given literal value into the specified register.
+        // A: destination register (8 bits)
+        // B: arbitrary 32-bit constant
+        // 0x17: Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
+        // A: destination register (8 bits)
+        // B: signed int (32 bits)
         // TODO unsure if const-wide-32 need some bitshifting
         BuilderInstruction31i _31i = (BuilderInstruction31i) i;
         il.add(ASMCommons.makeIntPush(_31i.getNarrowLiteral()));
-        il.add(new VarInsnNode(ISTORE, regToLocal(_31i.getRegisterA())));
+        addVarInsn(ISTORE, regToLocal(_31i.getRegisterA()));
         continue;
       case Format51l:
-        // const 64 bit
+        // Move the given literal value into the specified register-pair.
+        // A: destination register (8 bits)
+        // B: arbitrary double-width (64-bit) constant
         BuilderInstruction51l _51l = (BuilderInstruction51l) i;
         il.add(new LdcInsnNode(_51l.getWideLiteral()));
-        il.add(new VarInsnNode(LSTORE, _51l.getRegisterA()));
+        addVarInsn(LSTORE, _51l.getRegisterA());
         continue;
-
       case Format11x:
         visitSingleRegister((BuilderInstruction11x) i);
         continue;
@@ -172,30 +172,46 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format21ih:
         BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
         il.add(ASMCommons.makeIntPush(_21ih.getNarrowLiteral()));
-        il.add(new VarInsnNode(ISTORE, _21ih.getRegisterA()));
+        addVarInsn(ISTORE, _21ih.getRegisterA());
         continue;
-      case Format21lh: // TODO
-        throw new IllegalArgumentException("unsupported instruction: const-wide-high16");
+      case Format21lh:
+        // Move the given literal value (right-zero-extended to 64 bits) into the specified register-pair
+        // A: destination register (8 bits)
+        // B: signed int (16 bits)
+        BuilderInstruction21lh _21lh = (BuilderInstruction21lh) i;
+        il.add(ASMCommons.makeLongPush(_21lh.getWideLiteral()));
+        addVarInsn(LSTORE, regToLocal(_21lh.getRegisterA()));
+        continue;
       case Format21s:
+        // Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
+        // A: destination register (8 bits)
+        // B: signed int (16 bits)
         BuilderInstruction21s _21s = (BuilderInstruction21s) i;
-        if (i.getOpcode() == Opcode.CONST_WIDE_16) {
-          // TODO
-          throw new IllegalArgumentException("unsupported instruction: const-wide-16 with value " + _21s.getNarrowLiteral());
-        }
         il.add(ASMCommons.makeIntPush(_21s.getNarrowLiteral()));
-        il.add(new VarInsnNode(ISTORE, _21s.getRegisterA()));
+        addVarInsn(ISTORE, _21s.getRegisterA());
         continue;
       case Format21t:
         visitSingleJump((BuilderInstruction21t) i);
         continue;
       case Format22b:
-        throw new IllegalArgumentException("unsupported instruction");
+        visitInt8Math((BuilderInstruction22b)i);
+        continue;
       case Format22c:
-        throw new IllegalArgumentException("unsupported instruction");
+        BuilderInstruction22c _22c = (BuilderInstruction22c) i;
+        DexBackedFieldReference fieldReference = (DexBackedFieldReference) _22c.getReference();
+        String owner = Type.getType(fieldReference.getDefiningClass()).getInternalName();
+        String name = fieldReference.getName();
+        String desc = fieldReference.getType();
+        addVarInsn(ALOAD, _22c.getRegisterA());
+        il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
+        addVarInsn(ASTORE, _22c.getRegisterB());
+        continue;
       case Format22cs:
+        // iput/iget-type-quick ==> Not listed on dalvik bytecode page?
         throw new IllegalArgumentException("unsupported instruction");
       case Format22s:
-        throw new IllegalArgumentException("unsupported instruction");
+        visitInt16Math((BuilderInstruction22s)i);
+        continue;
       case Format22t:
         // conditional jumps
         throw new IllegalArgumentException("unsupported instruction");
@@ -203,6 +219,17 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // move from 16
         throw new IllegalArgumentException("unsupported instruction");
       case Format23x:
+        // Perform the indicated floating point or long comparison, setting a to 0 if b == c, 1 if b > c, or -1 if b < c.
+        // The "bias" listed for the floating point operations indicates how NaN comparisons are treated: "gt bias" instructions return 1 for NaN comparisons,
+        // and "lt bias" instructions return -1.
+        //
+        // For example, to check to see if floating point x < y it is advisable to use cmpg-float;
+        // a result of -1 indicates that the test was true, and the other values indicate it was false
+        // either due to a valid comparison or because one of the values was NaN.
+        //
+        // A: destination register (8 bits)
+        // B: first source register or pair
+        // C: second source register or pair
         throw new IllegalArgumentException("unsupported instruction");
       case Format31t:
         // fill-array-data and switches
@@ -210,7 +237,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format32x:
         // more moves
         throw new IllegalArgumentException("unsupported instruction");
-
       ////////////////////////// INVOKE //////////////////////////
       case Format35c:
         visitInvoke((BuilderInstruction35c) i);
@@ -220,7 +246,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         throw new IllegalArgumentException("unsupported instruction");
       case Format3rc:
         throw new IllegalArgumentException("unsupported instruction");
-
       ////////////////////////// EXECUTE INLINE //////////////////////////
       case Format35mi:
         // execute inline range
@@ -228,17 +253,14 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format3rmi:
         // execute inline range
         throw new IllegalArgumentException("unsupported instruction");
-
       case Format3rms:
         // invoke quick range
         throw new IllegalArgumentException("unsupported instruction");
-
       ////////////////////////// INVOKE POLYMORPHIC //////////////////////////
       case Format45cc:
         throw new IllegalArgumentException("unsupported instruction");
       case Format4rcc:
         throw new IllegalArgumentException("unsupported instruction");
-
       ////////////////////////// SPECIAL INSTRUCTIONS //////////////////////////
       case Format20bc:
         il.add(ASMCommons.makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
@@ -254,43 +276,142 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     }
   }
 
+  private void addVarInsn(int opcode, int index) {
+    il.add(new VarInsnNode(opcode, index));
+    variableIsObject.put(index, (opcode == ALOAD || opcode == ASTORE));
+  }
+
+  private void visitInt8Math(BuilderInstruction22b i) {
+    // Perform the indicated binary op on the indicated register (first argument) and literal value (second argument),
+    // storing the result in the destination register.
+    // A: destination register (8 bits)
+    // B: source register (8 bits)
+    // C: signed int constant (8 bits)
+    addVarInsn(ILOAD, i.getRegisterB());
+    addVarInsn(ILOAD, i.getRegisterA());
+    switch (i.getOpcode()) {
+    case ADD_INT_LIT8:
+      il.add(new InsnNode(IADD));
+      break;
+    case RSUB_INT_LIT8:
+      il.add(new InsnNode(ISUB));
+      break;
+    case MUL_INT_LIT8:
+      il.add(new InsnNode(IMUL));
+      break;
+    case DIV_INT_LIT8:
+      il.add(new InsnNode(IDIV));
+      break;
+    case REM_INT_LIT8:
+      il.add(new InsnNode(IREM));
+      break;
+    case AND_INT_LIT8:
+      il.add(new InsnNode(IAND));
+      break;
+    case OR_INT_LIT8:
+      il.add(new InsnNode(IOR));
+      break;
+    case XOR_INT_LIT8:
+      il.add(new InsnNode(IXOR));
+      break;
+    case SHL_INT_LIT8:
+      il.add(new InsnNode(ISHL));
+      break;
+    case SHR_INT_LIT8:
+      il.add(new InsnNode(ISHR));
+      break;
+    case USHR_INT_LIT8:
+      il.add(new InsnNode(IUSHR));
+      break;
+    }
+    addVarInsn(ISTORE, i.getRegisterA());
+  }
+
+  private void visitInt16Math(BuilderInstruction22s i) {
+    // Perform the indicated binary op on the indicated register (first argument) and literal value (second argument),
+    // storing the result in the destination register.
+    // A: destination register (4 bits)
+    // B: source register (4 bits)
+    // C: signed int constant (16 bits)
+    addVarInsn(ILOAD, i.getRegisterB());
+    addVarInsn(ILOAD, i.getRegisterA());
+    switch (i.getOpcode()) {
+    case ADD_INT_LIT8:
+      il.add(new InsnNode(IADD));
+      break;
+    case RSUB_INT_LIT8:
+      il.add(new InsnNode(ISUB));
+      break;
+    case MUL_INT_LIT8:
+      il.add(new InsnNode(IMUL));
+      break;
+    case DIV_INT_LIT8:
+      il.add(new InsnNode(IDIV));
+      break;
+    case REM_INT_LIT8:
+      il.add(new InsnNode(IREM));
+      break;
+    case AND_INT_LIT8:
+      il.add(new InsnNode(IAND));
+      break;
+    case OR_INT_LIT8:
+      il.add(new InsnNode(IOR));
+      break;
+    case XOR_INT_LIT8:
+      il.add(new InsnNode(IXOR));
+      break;
+    case SHL_INT_LIT8:
+      il.add(new InsnNode(ISHL));
+      break;
+    case SHR_INT_LIT8:
+      il.add(new InsnNode(ISHR));
+      break;
+    case USHR_INT_LIT8:
+      il.add(new InsnNode(IUSHR));
+      break;
+    }
+    addVarInsn(ISTORE, i.getRegisterA());
+  }
+
   private void visitSingleRegister(BuilderInstruction11x i) {
+    // Move immediate word value into register.
+    // A: destination register
     int source = regToLocal(i.getRegisterA());
     switch (i.getOpcode()) {
     case MOVE_RESULT:
-      il.add(new VarInsnNode(ISTORE, source));
+      addVarInsn(ISTORE, source);
       break;
     case MOVE_EXCEPTION:
     case MOVE_RESULT_OBJECT:
-      il.add(new VarInsnNode(ASTORE, source));
+      addVarInsn(ASTORE, source);
       break;
     case MOVE_RESULT_WIDE:
       // TODO move result has method as previous, find out if double or long
-      il.add(new VarInsnNode(LSTORE, source));
+      addVarInsn(LSTORE, source);
       break;
     case MONITOR_ENTER:
-      il.add(new VarInsnNode(ALOAD, source));
+      addVarInsn(ALOAD, source);
       il.add(new InsnNode(MONITORENTER));
       break;
     case MONITOR_EXIT:
-      il.add(new VarInsnNode(ALOAD, source));
+      addVarInsn(ALOAD, source);
       il.add(new InsnNode(MONITOREXIT));
       break;
     case RETURN:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(IRETURN));
       break;
     case RETURN_WIDE:
       // TODO find out if double or long
-      il.add(new VarInsnNode(LLOAD, source));
+      addVarInsn(LLOAD, source);
       il.add(new InsnNode(LRETURN));
       break;
     case RETURN_OBJECT:
-      il.add(new VarInsnNode(ALOAD, source));
+      addVarInsn(ALOAD, source);
       il.add(new InsnNode(ARETURN));
       break;
     case THROW:
-      il.add(new VarInsnNode(ALOAD, source));
+      addVarInsn(ALOAD, source);
       il.add(new InsnNode(ATHROW));
       break;
     default:
@@ -305,125 +426,125 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case MOVE:
       if (source == destination)
         break;
-      il.add(new VarInsnNode(ILOAD, source));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ILOAD, source);
+      addVarInsn(ISTORE, destination);
       break;
     case MOVE_WIDE:
       if (source == destination)
         break;
       // TODO find out if double or long
-      il.add(new VarInsnNode(LLOAD, source));
-      il.add(new VarInsnNode(LSTORE, destination));
+      addVarInsn(LLOAD, source);
+      addVarInsn(LSTORE, destination);
       break;
     case MOVE_OBJECT:
       if (source == destination)
         break;
-      il.add(new VarInsnNode(ALOAD, source));
-      il.add(new VarInsnNode(ASTORE, destination));
+      addVarInsn(ALOAD, source);
+      addVarInsn(ASTORE, destination);
       break;
     case ARRAY_LENGTH:
-      il.add(new VarInsnNode(ALOAD, source));
+      addVarInsn(ALOAD, source);
       il.add(new InsnNode(ARRAYLENGTH));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case NEG_INT:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(INEG));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case NOT_INT:
       throw new IllegalArgumentException("not-int"); // TODO
     case NEG_LONG:
-      il.add(new VarInsnNode(LLOAD, source));
+      addVarInsn(LLOAD, source);
       il.add(new InsnNode(LNEG));
-      il.add(new VarInsnNode(LSTORE, destination));
+      addVarInsn(LSTORE, destination);
       break;
     case NOT_LONG:
       throw new IllegalArgumentException("not-long"); // TODO
     case NEG_FLOAT:
-      il.add(new VarInsnNode(FLOAD, source));
+      addVarInsn(FLOAD, source);
       il.add(new InsnNode(FNEG));
-      il.add(new VarInsnNode(FSTORE, destination));
+      addVarInsn(FSTORE, destination);
       break;
     case NEG_DOUBLE:
-      il.add(new VarInsnNode(DLOAD, source));
+      addVarInsn(DLOAD, source);
       il.add(new InsnNode(DNEG));
-      il.add(new VarInsnNode(DSTORE, destination));
+      addVarInsn(DSTORE, destination);
       break;
     case INT_TO_LONG:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(I2L));
-      il.add(new VarInsnNode(LSTORE, destination));
+      addVarInsn(LSTORE, destination);
       break;
     case INT_TO_FLOAT:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(I2F));
-      il.add(new VarInsnNode(FSTORE, destination));
+      addVarInsn(FSTORE, destination);
       break;
     case INT_TO_DOUBLE:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(I2D));
-      il.add(new VarInsnNode(DSTORE, destination));
+      addVarInsn(DSTORE, destination);
       break;
     case LONG_TO_INT:
-      il.add(new VarInsnNode(LLOAD, source));
+      addVarInsn(LLOAD, source);
       il.add(new InsnNode(L2I));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case LONG_TO_FLOAT:
-      il.add(new VarInsnNode(LLOAD, source));
+      addVarInsn(LLOAD, source);
       il.add(new InsnNode(L2F));
-      il.add(new VarInsnNode(FSTORE, destination));
+      addVarInsn(FSTORE, destination);
       break;
     case LONG_TO_DOUBLE:
-      il.add(new VarInsnNode(LLOAD, source));
+      addVarInsn(LLOAD, source);
       il.add(new InsnNode(L2D));
-      il.add(new VarInsnNode(DSTORE, destination));
+      addVarInsn(DSTORE, destination);
       break;
     case FLOAT_TO_INT:
-      il.add(new VarInsnNode(FLOAD, source));
+      addVarInsn(FLOAD, source);
       il.add(new InsnNode(F2I));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case FLOAT_TO_LONG:
-      il.add(new VarInsnNode(FLOAD, source));
+      addVarInsn(FLOAD, source);
       il.add(new InsnNode(F2L));
-      il.add(new VarInsnNode(LSTORE, destination));
+      addVarInsn(LSTORE, destination);
       break;
     case FLOAT_TO_DOUBLE:
-      il.add(new VarInsnNode(FLOAD, source));
+      addVarInsn(FLOAD, source);
       il.add(new InsnNode(F2D));
-      il.add(new VarInsnNode(DSTORE, destination));
+      addVarInsn(DSTORE, destination);
       break;
     case DOUBLE_TO_INT:
-      il.add(new VarInsnNode(DLOAD, source));
+      addVarInsn(DLOAD, source);
       il.add(new InsnNode(D2I));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case DOUBLE_TO_LONG:
-      il.add(new VarInsnNode(DLOAD, source));
+      addVarInsn(DLOAD, source);
       il.add(new InsnNode(D2L));
-      il.add(new VarInsnNode(LSTORE, destination));
+      addVarInsn(LSTORE, destination);
       break;
     case DOUBLE_TO_FLOAT:
-      il.add(new VarInsnNode(DLOAD, source));
+      addVarInsn(DLOAD, source);
       il.add(new InsnNode(D2F));
-      il.add(new VarInsnNode(FSTORE, destination));
+      addVarInsn(FSTORE, destination);
       break;
     case INT_TO_BYTE:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(I2B));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case INT_TO_CHAR:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(I2C));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case INT_TO_SHORT:
-      il.add(new VarInsnNode(ILOAD, source));
+      addVarInsn(ILOAD, source);
       il.add(new InsnNode(I2S));
-      il.add(new VarInsnNode(ISTORE, destination));
+      addVarInsn(ISTORE, destination);
       break;
     case ADD_INT_2ADDR:
     case SUB_INT_2ADDR:
@@ -465,27 +586,30 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void visitReferenceSingleRegister(BuilderInstruction21c i) {
+    // Move a reference to the string specified by the given index into the specified register.
+    // A: destination register (8 bits)
+    // B: string or type index
     int register = regToLocal(i.getRegisterA());
     Reference ref = i.getReference();
     switch (i.getOpcode()) {
     case CONST_STRING:
       il.add(new LdcInsnNode(((StringReference) ref).getString()));
-      il.add(new VarInsnNode(ASTORE, register));
+      addVarInsn(ASTORE, register);
       return;
     case CONST_CLASS:
       il.add(new LdcInsnNode(Type.getType(((TypeReference) ref).getType())));
-      il.add(new VarInsnNode(ASTORE, register));
+      addVarInsn(ASTORE, register);
       return;
     case CONST_METHOD_HANDLE:
     case CONST_METHOD_TYPE:
       throw new IllegalArgumentException("unsupported instruction: " + i.getOpcode().name);
     case CHECK_CAST:
-      il.add(new VarInsnNode(ALOAD, register));
+      addVarInsn(ALOAD, register);
       il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
       return;
     case NEW_INSTANCE:
       il.add(new TypeInsnNode(NEW, Type.getType(((TypeReference) ref).getType()).getInternalName()));
-      il.add(new VarInsnNode(ASTORE, register));
+      addVarInsn(ASTORE, register);
       return;
     default:
       break;
@@ -502,17 +626,17 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case SGET_CHAR:
     case SGET_SHORT:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      il.add(new VarInsnNode(ISTORE, register));
+      addVarInsn(ISTORE, register);
       break;
     case SGET_WIDE:
     case SGET_WIDE_VOLATILE:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      il.add(new VarInsnNode(desc.equals("J") ? LSTORE : DSTORE, register));
+      addVarInsn(desc.equals("J") ? LSTORE : DSTORE, register);
       break;
     case SGET_OBJECT:
     case SGET_OBJECT_VOLATILE:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      il.add(new VarInsnNode(ASTORE, register));
+      addVarInsn(ASTORE, register);
       break;
     case SPUT:
     case SPUT_VOLATILE:
@@ -520,17 +644,17 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case SPUT_BYTE:
     case SPUT_CHAR:
     case SPUT_SHORT:
-      il.add(new VarInsnNode(ILOAD, register));
+      addVarInsn(ILOAD, register);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     case SPUT_WIDE:
     case SPUT_WIDE_VOLATILE:
-      il.add(new VarInsnNode(desc.equals("J") ? LLOAD : DLOAD, register));
+      addVarInsn(desc.equals("J") ? LLOAD : DLOAD, register);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     case SPUT_OBJECT:
     case SPUT_OBJECT_VOLATILE:
-      il.add(new VarInsnNode(ALOAD, register));
+      addVarInsn(ALOAD, register);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     default:
@@ -539,9 +663,14 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void visitSingleJump(BuilderInstruction21t i) {
+    // Branch to the given destination if the given register's value compares with 0 as specified.
+    // A: register to test (8 bits)
+    // B: signed branch offset (16 bits)
     int source = regToLocal(i.getRegisterA());
     // TODO check if object
-    boolean refIsObject = false; // dalvik has no ifnull / ifnonnull
+    // Dalvik has no ifnull / ifnonnull
+    // So we must track variable usage and infer the type. Is it an object or primitive?
+    boolean refIsObject = variableIsObject.getOrDefault(source, false);
     Label label = i.getTarget();
     il.add(new VarInsnNode(refIsObject ? ALOAD : ILOAD /* get type here */, source));
     switch (i.getOpcode()) {
@@ -570,10 +699,14 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 
   /**
    * Visit invoke instruction with a maximum of 5 arguments
-   * 
+   *
    * @param i
    */
   private void visitInvoke(BuilderInstruction35c i) {
+    // Call the indicated method. The result (if any) may be stored with an appropriate move-result* variant as the immediately subsequent instruction.
+    // A: argument word count (4 bits)
+    // B: method reference index (16 bits)
+    // C..G: argument registers (4 bits each)
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY) {
       throw new IllegalArgumentException("filled-new-array");
     }
@@ -589,7 +722,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       if (registers > parameters + 1) {
         throw new IllegalArgumentException("too many registers: " + registers + " for method with desc " + desc);
       }
-      il.add(new VarInsnNode(ALOAD, regToLocal(i.getRegisterC())));
+      addVarInsn(ALOAD, regToLocal(i.getRegisterC()));
       registers--; // reference can only be size 1
       regIdx++;
     }
@@ -618,7 +751,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       }
       regIdx++;
       String pDesc = parameterTypes.get(parIdx);
-      il.add(new VarInsnNode(ASMCommons.getLoadOpForDesc(pDesc), regToLocal(register)));
+      addVarInsn(ASMCommons.getLoadOpForDesc(pDesc), regToLocal(register));
       registers -= Type.getType(pDesc).getSize();
       parIdx++;
     }
