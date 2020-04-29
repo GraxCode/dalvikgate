@@ -98,8 +98,11 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   private void transformTryCatchBlocks() {
     if (builder.getTryBlocks() != null) {
       mn.tryCatchBlocks = new ArrayList<>();
-      builder.getTryBlocks().forEach(tb -> mn.tryCatchBlocks.add(
-          new TryCatchBlockNode(getASMLabel(tb.start), getASMLabel(tb.end), getASMLabel(tb.exceptionHandler.getHandler()), Type.getType(tb.exceptionHandler.getExceptionType()).getInternalName())));
+      builder.getTryBlocks().forEach(tb -> {
+        String handlerType = tb.exceptionHandler.getExceptionType();
+        String handler = handlerType == null ? null : Type.getType(handlerType).getInternalName();
+        mn.tryCatchBlocks.add(new TryCatchBlockNode(getASMLabel(tb.start), getASMLabel(tb.end), getASMLabel(tb.exceptionHandler.getHandler()), handler));
+      });
     }
   }
 
