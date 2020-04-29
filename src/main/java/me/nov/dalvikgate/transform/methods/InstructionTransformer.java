@@ -34,6 +34,7 @@ import org.jf.dexlib2.iface.reference.StringReference;
 import org.jf.dexlib2.iface.reference.TypeReference;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -52,6 +53,9 @@ import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
+/**
+ * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
+ */
 @SuppressWarnings("unused")
 public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   private Map<Integer, Boolean> variableIsObject = new HashMap<>();
@@ -107,7 +111,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     if (register >= startingArgs) {
       return register - startingArgs; // 0 is reserved for "this"
     }
-    return register + startingArgs;
+    return register + argumentRegisterCount;
   }
 
   @Override
@@ -242,7 +246,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
             continue;
           }
           if (i.getOpcode() == Opcode.NEW_ARRAY) {
-            System.out.println(typeReference.getType());
             addVarInsn(ILOAD, regToLocal(_22c.getRegisterB())); // array size
             Type arrayType = Type.getType(typeReference.getType()).getElementType();
             if (arrayType.getSort() == Type.OBJECT) {
