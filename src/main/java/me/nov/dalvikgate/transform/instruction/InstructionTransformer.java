@@ -23,6 +23,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22b;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22s;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction22t;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
@@ -274,7 +275,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         continue;
       case Format22t:
         // conditional jumps
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        visitCompareJump((BuilderInstruction22t) i);
+        continue;
       case Format22x:
         // move from 16
         throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
@@ -333,6 +335,44 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       default:
         throw new IllegalArgumentException(i.getClass().getName());
       }
+    }
+  }
+
+  private void visitCompareJump(BuilderInstruction22t i) {
+    // Branch to the given destination if the given two registers' values compare as specified.
+    // A: first register to test (4 bits)
+    // B: second register to test (4 bits)
+    int first = i.getRegisterA();
+    int second = i.getRegisterB();
+
+    // TODO check if object
+    // Dalvik has no ifnull / ifnonnull
+    // So we must track variable usage and infer the type. Is it an object or primitive?
+    boolean refsAreObjects = false;
+    Label label = i.getTarget();
+    addLocalGetSet(false, first);
+    addLocalGetSet(false, second);
+    switch (i.getOpcode()) {
+    case IF_EQ:
+      il.add(new JumpInsnNode(refsAreObjects ? IF_ACMPEQ : IF_ICMPEQ, getASMLabel(label)));
+      break;
+    case IF_NE:
+      il.add(new JumpInsnNode(refsAreObjects ? IF_ACMPNE : IF_ICMPNE, getASMLabel(label)));
+      break;
+    case IF_LT:
+      il.add(new JumpInsnNode(IF_ICMPLT, getASMLabel(label)));
+      break;
+    case IF_GE:
+      il.add(new JumpInsnNode(IF_ICMPGE, getASMLabel(label)));
+      break;
+    case IF_GT:
+      il.add(new JumpInsnNode(IF_ICMPGT, getASMLabel(label)));
+      break;
+    case IF_LE:
+      il.add(new JumpInsnNode(IF_ICMPLE, getASMLabel(label)));
+      break;
+    default:
+      throw new IllegalArgumentException(i.getOpcode().name);
     }
   }
 
