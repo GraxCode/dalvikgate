@@ -32,6 +32,15 @@ public class ASMCommons implements Opcodes {
     }
   }
 
+  public static AbstractInsnNode makeLongPush(long l) {
+    if (l == 0) {
+      return new InsnNode(LCONST_0);
+    } else if (l == 1) {
+      return new InsnNode(LCONST_1);
+    }
+    return new LdcInsnNode(l);
+  }
+
   public static AbstractInsnNode makeIntPush(int i) {
     if (i >= -1 && i <= 5) {
       return new InsnNode(i + 3); // iconst_i

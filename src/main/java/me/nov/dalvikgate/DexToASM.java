@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -13,6 +14,7 @@ import org.jf.dexlib2.DexFileFactory;
 import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.dexbacked.DexBackedClassDef;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
@@ -27,15 +29,17 @@ public class DexToASM {
     }
   }
 
-  private static ArrayList<ClassNode> convertToASMTree(File file) throws IOException {
+  private static List<ClassNode> convertToASMTree(File file) throws IOException {
     if (!file.exists()) {
       throw new FileNotFoundException();
     }
     DexBackedDexFile baseBackedDexFile = DexFileFactory.loadDexFile(file, Opcodes.forApi(52));
-    final Set<? extends DexBackedClassDef> baseClassDefs = baseBackedDexFile.getClasses();
-    ArrayList<ClassNode> asmClasses = new ArrayList<>();
+    Set<? extends DexBackedClassDef> baseClassDefs = baseBackedDexFile.getClasses();
+    List<ClassNode> asmClasses = new ArrayList<>();
 
     for (DexBackedClassDef clazz : baseClassDefs) {
+      if (!clazz.getType().startsWith("Ldev"))
+        continue;
       ClassTransformer transformer = new ClassTransformer(clazz, 52);
       transformer.build();
       asmClasses.add(transformer.get());
@@ -43,7 +47,7 @@ public class DexToASM {
     return asmClasses;
   }
 
-  public static void saveAsJar(File output, ArrayList<ClassNode> classes) {
+  public static void saveAsJar(File output, List<ClassNode> classes) {
     try {
       JarOutputStream out = new JarOutputStream(new FileOutputStream(output));
       out.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"));
@@ -52,9 +56,10 @@ public class DexToASM {
       for (ClassNode c : classes) {
         try {
           out.putNextEntry(new JarEntry(c.name + ".class"));
-          out.write(Conversion.toBytecode(c, true));
+          out.write(Conversion.toBytecode(c));
           out.closeEntry();
         } catch (Exception e) {
+          // TODO: Log and alert user
           e.printStackTrace();
         }
       }
