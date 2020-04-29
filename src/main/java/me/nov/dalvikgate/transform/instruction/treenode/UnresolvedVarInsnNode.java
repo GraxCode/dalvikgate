@@ -12,7 +12,7 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
   private boolean store;
 
   public UnresolvedVarInsnNode(boolean store, int register) {
-    super(store ? ASTORE : ALOAD, register/* 0xbadface */); // TODO: remove register
+    super(store ? ASTORE : ALOAD, 0xbadface);
     this.store = store;
     this.register = register;
   }
@@ -26,9 +26,8 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
     }
   }
 
-  public void updateVar() {
-
-    this.var = 0;
+  public void updateVar(int var) {
+    this.var = var;
   }
 
   public int getRegister() {

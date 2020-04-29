@@ -116,8 +116,9 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void addLocalGetSet(boolean store, int register) {
-    register = regToLocal(register); // only for now. this only works when no variables are reused.
-    il.add(new UnresolvedVarInsnNode(store, register));
+    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store, register);
+    var.updateVar(regToLocal(register)); // only for now. this only works when no variables are reused.
+    il.add(var);
   }
 
   @Override
