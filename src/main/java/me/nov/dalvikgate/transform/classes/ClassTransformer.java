@@ -54,7 +54,7 @@ public class ClassTransformer implements ITransformer<ClassNode> {
     cn.sourceFile = clazz.getSourceFile();
 
     Set<? extends DexBackedAnnotation> annotations = clazz.getAnnotations();
-    if (annotations != null && !annotations.isEmpty()) {
+    if (annotations != null) {
       for (DexBackedAnnotation anno : annotations) {
         String type = anno.getType();
         if ("Ldalvik/annotation/SourceDebugExtension;".equals(type)) {
@@ -69,16 +69,16 @@ public class ClassTransformer implements ITransformer<ClassNode> {
             } else if ("name".equals(element.getName())) {
               // Some elements are "null", do we do anything with those?
               if (element.getValue() instanceof DexBackedStringEncodedValue) {
-                innerType = ((DexBackedStringEncodedValue)element.getValue()).getValue();
+                innerType = ((DexBackedStringEncodedValue) element.getValue()).getValue();
               }
             }
           }
-          // Add if type discoered
+          // Add if type discovered
           if (innerType != null) {
             // Self-reference
             if (cn.name.endsWith("$" + innerType)) {
               // TODO: What if outerClass is not yet parsed? Maybe have a "todo" set of operations that are executed
-              //   once the necessary data is loaded.
+              // once the necessary data is loaded.
               cn.innerClasses.add(new InnerClassNode(cn.name, cn.outerClass, innerType, innerAcc));
             }
             // True inner
@@ -120,12 +120,6 @@ public class ClassTransformer implements ITransformer<ClassNode> {
         // Ignore: Ldalvik/annotation/SourceDebugExtension;
         // Ignore: Lkotlin/Metadata;
       }
-      /**
-       * TODO transform
-       * 
-       * @EnclosingMethod
-       * @InnerClass
-       */
 //			cn.visibleAnnotations = new ArrayList<>();
 //			clazz.getAnnotations().forEach(a -> cn.visibleAnnotations.add(new AnnotationNode(a.getType())));
     }

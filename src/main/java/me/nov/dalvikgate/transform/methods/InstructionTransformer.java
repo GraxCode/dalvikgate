@@ -6,13 +6,27 @@ import java.util.List;
 import java.util.Map;
 
 import org.jf.dexlib2.Opcode;
+import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.BuilderOffsetInstruction;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
-import org.jf.dexlib2.builder.instruction.*;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction12x;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21lh;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction22b;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction22c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction22s;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction51l;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
-import org.jf.dexlib2.dexbacked.reference.DexBackedFieldReference;
 import org.jf.dexlib2.iface.reference.FieldReference;
 import org.jf.dexlib2.iface.reference.MethodReference;
 import org.jf.dexlib2.iface.reference.Reference;
@@ -130,7 +144,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // B: signed int (4 bits)
         BuilderInstruction11n _11n = (BuilderInstruction11n) i;
         il.add(ASMCommons.makeIntPush(_11n.getNarrowLiteral()));
-        addVarInsn(ISTORE, _11n.getRegisterA());
+        addVarInsn(ISTORE, regToLocal(_11n.getRegisterA()));
         continue;
       case Format31c:
         // Move a reference to the string specified by the given index into the specified register.
@@ -138,7 +152,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // B: string index
         BuilderInstruction31c _31c = (BuilderInstruction31c) i;
         il.add(new LdcInsnNode(((StringReference) _31c.getReference()).getString()));
-        addVarInsn(ISTORE, _31c.getRegisterA());
+        addVarInsn(ISTORE, regToLocal(_31c.getRegisterA()));
         continue;
       case Format31i:
         // 0x14: Move the given literal value into the specified register.
@@ -158,7 +172,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // B: arbitrary double-width (64-bit) constant
         BuilderInstruction51l _51l = (BuilderInstruction51l) i;
         il.add(new LdcInsnNode(_51l.getWideLiteral()));
-        addVarInsn(LSTORE, _51l.getRegisterA());
+        addVarInsn(LSTORE, regToLocal(_51l.getRegisterA()));
         continue;
       case Format11x:
         visitSingleRegister((BuilderInstruction11x) i);
@@ -172,7 +186,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format21ih:
         BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
         il.add(ASMCommons.makeIntPush(_21ih.getNarrowLiteral()));
-        addVarInsn(ISTORE, _21ih.getRegisterA());
+        addVarInsn(ISTORE, regToLocal(_21ih.getRegisterA()));
         continue;
       case Format21lh:
         // Move the given literal value (right-zero-extended to 64 bits) into the specified register-pair
@@ -188,29 +202,45 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         // B: signed int (16 bits)
         BuilderInstruction21s _21s = (BuilderInstruction21s) i;
         il.add(ASMCommons.makeIntPush(_21s.getNarrowLiteral()));
-        addVarInsn(ISTORE, _21s.getRegisterA());
+        addVarInsn(ISTORE, regToLocal(_21s.getRegisterA()));
         continue;
       case Format21t:
         visitSingleJump((BuilderInstruction21t) i);
         continue;
       case Format22b:
-        visitInt8Math((BuilderInstruction22b)i);
+        visitInt8Math((BuilderInstruction22b) i);
         continue;
       case Format22c:
         BuilderInstruction22c _22c = (BuilderInstruction22c) i;
-        DexBackedFieldReference fieldReference = (DexBackedFieldReference) _22c.getReference();
-        String owner = Type.getType(fieldReference.getDefiningClass()).getInternalName();
-        String name = fieldReference.getName();
-        String desc = fieldReference.getType();
-        addVarInsn(ALOAD, _22c.getRegisterA());
-        il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
-        addVarInsn(ASTORE, _22c.getRegisterB());
-        continue;
+        if (_22c.getReferenceType() == ReferenceType.FIELD) {
+          FieldReference fieldReference = (FieldReference) _22c.getReference();
+          String owner = Type.getType(fieldReference.getDefiningClass()).getInternalName();
+          String name = fieldReference.getName();
+          String desc = fieldReference.getType();
+          addVarInsn(ALOAD, regToLocal(_22c.getRegisterA()));
+          il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
+          addVarInsn(ASTORE, regToLocal(_22c.getRegisterB()));
+          continue;
+        } else {
+          TypeReference typeReference = (TypeReference) _22c.getReference();
+          if (i.getOpcode() == Opcode.INSTANCE_OF) {
+            addVarInsn(ALOAD, regToLocal(_22c.getRegisterB()));
+            il.add(new TypeInsnNode(INSTANCEOF, Type.getType(typeReference.getType()).getInternalName()));
+            addVarInsn(ISTORE, regToLocal(_22c.getRegisterA()));
+            continue;
+          }
+          if (i.getOpcode() == Opcode.NEW_ARRAY) {
+            addVarInsn(ILOAD, regToLocal(_22c.getRegisterB()));
+            il.add(new TypeInsnNode(ANEWARRAY, Type.getType(typeReference.getType()).getInternalName()));
+            addVarInsn(ASTORE, regToLocal(_22c.getRegisterA()));
+            continue;
+          }
+        }
       case Format22cs:
         // iput/iget-type-quick ==> Not listed on dalvik bytecode page?
         throw new IllegalArgumentException("unsupported instruction");
       case Format22s:
-        visitInt16Math((BuilderInstruction22s)i);
+        visitInt16Math((BuilderInstruction22s) i);
         continue;
       case Format22t:
         // conditional jumps
@@ -287,8 +317,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     // A: destination register (8 bits)
     // B: source register (8 bits)
     // C: signed int constant (8 bits)
-    addVarInsn(ILOAD, i.getRegisterB());
-    addVarInsn(ILOAD, i.getRegisterA());
+    addVarInsn(ILOAD, regToLocal(i.getRegisterB()));
+    addVarInsn(ILOAD, regToLocal(i.getRegisterA()));
     switch (i.getOpcode()) {
     case ADD_INT_LIT8:
       il.add(new InsnNode(IADD));
@@ -715,7 +745,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     String name = mr.getName();
     String desc = ASMCommons.buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
     int registers = i.getRegisterCount(); // sum of all local sizes
-    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); //sum of all parameter sizes (parameters + reference = registers)
+    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); // sum of all parameter sizes (parameters + reference = registers)
     int parIdx = 0;
     int regIdx = 0;
     if (registers > parameters) {

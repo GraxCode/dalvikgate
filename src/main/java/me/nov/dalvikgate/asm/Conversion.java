@@ -7,7 +7,6 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.TraceClassVisitor;
@@ -59,7 +58,7 @@ public class Conversion {
   }
 
   /**
-   * Convert a class-node to disassembled text.
+   * Convert a ClassNode to disassembled text.
    *
    * @param cn Node of class.
    * @return Disassembled code of class.
@@ -71,7 +70,7 @@ public class Conversion {
   }
 
   /**
-   * Write a classnode to a file.
+   * Write a ClassNode to a file.
    *
    * @param cn Node to save.
    * @throws IOException When writing the file failed.
