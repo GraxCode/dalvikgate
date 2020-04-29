@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
+import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 
 public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
 
@@ -41,8 +42,7 @@ public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
     try {
       it.build();
     } catch (Exception e) {
-//      if (!e.toString().contains("unsupported instruction"))
-//        e.printStackTrace();
+      e.printStackTrace();
       mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException",
           "dalvikgate error: " + e.toString() + " / " + (e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : " no stack trace"));
       return;
