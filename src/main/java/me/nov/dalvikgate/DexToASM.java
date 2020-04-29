@@ -38,8 +38,6 @@ public class DexToASM {
     List<ClassNode> asmClasses = new ArrayList<>();
 
     for (DexBackedClassDef clazz : baseClassDefs) {
-      if (!clazz.getType().startsWith("Ldev"))
-        continue;
       ClassTransformer transformer = new ClassTransformer(clazz, 52);
       transformer.build();
       asmClasses.add(transformer.get());
