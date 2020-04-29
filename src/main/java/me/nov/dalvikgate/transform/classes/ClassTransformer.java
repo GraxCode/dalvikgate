@@ -23,7 +23,6 @@ import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.fields.FieldTransfomer;
 import me.nov.dalvikgate.transform.methods.MethodTransfomer;
-import me.nov.dalvikgate.values.ValueBridge;
 
 public class ClassTransformer implements ITransformer<ClassNode> {
 
@@ -67,11 +66,11 @@ public class ClassTransformer implements ITransformer<ClassNode> {
           String innerType = null;
           for (DexBackedAnnotationElement element : anno.getElements()) {
             if ("accessFlags".equals(element.getName())) {
-              innerAcc = (Integer) ValueBridge.toObject(element.getValue());
+              innerAcc = (Integer) DexLibCommons.toObject(element.getValue());
             } else if ("name".equals(element.getName())) {
               // Some elements are "null", do we do anything with those?
               if (element.getValue() instanceof DexBackedStringEncodedValue) {
-                innerType = (String) ValueBridge.toObject(element.getValue());
+                innerType = (String) DexLibCommons.toObject(element.getValue());
               }
             }
           }
@@ -97,7 +96,7 @@ public class ClassTransformer implements ITransformer<ClassNode> {
         } else if ("Ldalvik/annotation/Signature;".equals(type)) {
           // Signatures stored in an array of strings.
           // Concatting all items will yield the full signature.
-          cn.signature = ValueBridge.arrayToString((DexBackedArrayEncodedValue) anno.getElements().iterator().next().getValue());
+          cn.signature = DexLibCommons.arrayToString((DexBackedArrayEncodedValue) anno.getElements().iterator().next().getValue());
         } else if ("Lkotlin/Metadata;".equals(type)) {
           // Do nothing
         } else if ("Ldalvik/annotation/EnclosingMethod;".equals(type)) {
