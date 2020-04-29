@@ -115,6 +115,11 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     return register + argumentRegisterCount;
   }
 
+  private void addLocalGetSet(boolean store, int register) {
+    register = regToLocal(register); // only for now. this only works when no variables are reused.
+    il.add(new UnresolvedVarInsnNode(store, register));
+  }
+
   @Override
   public void build() {
     il = new InsnList();
@@ -327,11 +332,6 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
         throw new IllegalArgumentException(i.getClass().getName());
       }
     }
-  }
-
-  private void addLocalGetSet(boolean store, int register) {
-    register = regToLocal(register); // only for now. this only works when no variables are reused.
-    il.add(new UnresolvedVarInsnNode(store, register));
   }
 
   private void visitInt8Math(BuilderInstruction22b i) {
