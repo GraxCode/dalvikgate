@@ -4,24 +4,26 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
 
-import me.nov.dalvikgate.dexlib.DexLibCommons;
-import org.jf.dexlib2.dexbacked.*;
+import org.jf.dexlib2.dexbacked.DexBackedAnnotation;
+import org.jf.dexlib2.dexbacked.DexBackedAnnotationElement;
+import org.jf.dexlib2.dexbacked.DexBackedClassDef;
+import org.jf.dexlib2.dexbacked.DexBackedField;
+import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.dexbacked.value.DexBackedArrayEncodedValue;
 import org.jf.dexlib2.dexbacked.value.DexBackedMethodEncodedValue;
 import org.jf.dexlib2.dexbacked.value.DexBackedStringEncodedValue;
 import org.jf.dexlib2.dexbacked.value.DexBackedTypeEncodedValue;
 import org.jf.dexlib2.iface.reference.MethodReference;
-import org.jf.dexlib2.iface.value.EncodedValue;
 import org.jf.dexlib2.iface.value.IntEncodedValue;
-import org.jf.dexlib2.immutable.value.ImmutableNullEncodedValue;
-import org.jf.dexlib2.util.ReferenceUtil;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InnerClassNode;
 
+import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.fields.FieldTransfomer;
 import me.nov.dalvikgate.transform.methods.MethodTransfomer;
-import org.objectweb.asm.tree.InnerClassNode;
+import me.nov.dalvikgate.values.ValueBridge;
 
 public class ClassTransformer implements ITransformer<ClassNode> {
 
@@ -95,12 +97,7 @@ public class ClassTransformer implements ITransformer<ClassNode> {
         } else if ("Ldalvik/annotation/Signature;".equals(type)) {
           // Signatures stored in an array of strings.
           // Concatting all items will yield the full signature.
-          StringBuilder signature = new StringBuilder();
-          DexBackedArrayEncodedValue value = (DexBackedArrayEncodedValue) anno.getElements().iterator().next().getValue();
-          for (EncodedValue arrayEntryValue : ((DexBackedArrayEncodedValue) value).getValue()) {
-            signature.append(((DexBackedStringEncodedValue) arrayEntryValue).getValue());
-          }
-          cn.signature = signature.toString();
+          cn.signature = ValueBridge.arrayToString((DexBackedArrayEncodedValue) anno.getElements().iterator().next().getValue());
         } else if ("Lkotlin/Metadata;".equals(type)) {
           // Do nothing
         } else if ("Ldalvik/annotation/EnclosingMethod;".equals(type)) {
@@ -120,8 +117,6 @@ public class ClassTransformer implements ITransformer<ClassNode> {
         // Ignore: Ldalvik/annotation/SourceDebugExtension;
         // Ignore: Lkotlin/Metadata;
       }
-//			cn.visibleAnnotations = new ArrayList<>();
-//			clazz.getAnnotations().forEach(a -> cn.visibleAnnotations.add(new AnnotationNode(a.getType())));
     }
 
     clazz.getMethods().forEach(this::addMethod);
