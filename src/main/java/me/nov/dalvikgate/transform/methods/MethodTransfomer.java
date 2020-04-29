@@ -43,7 +43,8 @@ public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
     } catch (Exception e) {
 //      if (!e.toString().contains("unsupported instruction"))
 //        e.printStackTrace();
-      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException", "dalvikgate error: " + e.toString() + " / " + e.getStackTrace()[0].toString());
+      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException",
+          "dalvikgate error: " + e.toString() + " / " + (e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : " no stack trace"));
       return;
     }
     mn.instructions = it.get();

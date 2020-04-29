@@ -213,13 +213,24 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       case Format22c:
         BuilderInstruction22c _22c = (BuilderInstruction22c) i;
         if (_22c.getReferenceType() == ReferenceType.FIELD) {
+          //non-static field ops
           FieldReference fieldReference = (FieldReference) _22c.getReference();
           String owner = Type.getType(fieldReference.getDefiningClass()).getInternalName();
           String name = fieldReference.getName();
           String desc = fieldReference.getType();
-          addVarInsn(ALOAD, regToLocal(_22c.getRegisterA()));
-          il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
-          addVarInsn(ASTORE, regToLocal(_22c.getRegisterB()));
+          if (_22c.getOpcode().name.startsWith("iget")) {
+            // B: object reference
+            // A: destination
+            addVarInsn(ALOAD, regToLocal(_22c.getRegisterB()));
+            il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
+            addVarInsn(ASMCommons.getLoadOpForDesc(desc), regToLocal(_22c.getRegisterA()));
+          } else {
+            // B: object reference
+            // A: value
+            addVarInsn(ALOAD, regToLocal(_22c.getRegisterB()));
+            addVarInsn(ASMCommons.getLoadOpForDesc(desc), regToLocal(_22c.getRegisterA()));
+            il.add(new FieldInsnNode(PUTFIELD, owner, name, desc));
+          }
           continue;
         } else {
           TypeReference typeReference = (TypeReference) _22c.getReference();
@@ -353,8 +364,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case USHR_INT_LIT8:
       il.add(new InsnNode(IUSHR));
       break;
+    default:
+      throw new IllegalArgumentException(i.getOpcode().name);
     }
-    addVarInsn(ISTORE, i.getRegisterA());
+    addVarInsn(ISTORE, regToLocal(i.getRegisterA()));
   }
 
   private void visitInt16Math(BuilderInstruction22s i) {
@@ -363,8 +376,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     // A: destination register (4 bits)
     // B: source register (4 bits)
     // C: signed int constant (16 bits)
-    addVarInsn(ILOAD, i.getRegisterB());
-    addVarInsn(ILOAD, i.getRegisterA());
+    addVarInsn(ILOAD, regToLocal(i.getRegisterB()));
+    addVarInsn(ILOAD, regToLocal(i.getRegisterA()));
     switch (i.getOpcode()) {
     case ADD_INT_LIT8:
       il.add(new InsnNode(IADD));
@@ -399,8 +412,10 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case USHR_INT_LIT8:
       il.add(new InsnNode(IUSHR));
       break;
+    default:
+      throw new IllegalArgumentException(i.getOpcode().name);
     }
-    addVarInsn(ISTORE, i.getRegisterA());
+    addVarInsn(ISTORE, regToLocal(i.getRegisterA()));
   }
 
   private void visitSingleRegister(BuilderInstruction11x i) {
@@ -619,27 +634,27 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     // Move a reference to the string specified by the given index into the specified register.
     // A: destination register (8 bits)
     // B: string or type index
-    int register = regToLocal(i.getRegisterA());
+    int local = regToLocal(i.getRegisterA());
     Reference ref = i.getReference();
     switch (i.getOpcode()) {
     case CONST_STRING:
       il.add(new LdcInsnNode(((StringReference) ref).getString()));
-      addVarInsn(ASTORE, register);
+      addVarInsn(ASTORE, local);
       return;
     case CONST_CLASS:
       il.add(new LdcInsnNode(Type.getType(((TypeReference) ref).getType())));
-      addVarInsn(ASTORE, register);
+      addVarInsn(ASTORE, local);
       return;
     case CONST_METHOD_HANDLE:
     case CONST_METHOD_TYPE:
       throw new IllegalArgumentException("unsupported instruction: " + i.getOpcode().name);
     case CHECK_CAST:
-      addVarInsn(ALOAD, register);
+      addVarInsn(ALOAD, local);
       il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
       return;
     case NEW_INSTANCE:
       il.add(new TypeInsnNode(NEW, Type.getType(((TypeReference) ref).getType()).getInternalName()));
-      addVarInsn(ASTORE, register);
+      addVarInsn(ASTORE, local);
       return;
     default:
       break;
@@ -656,17 +671,17 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case SGET_CHAR:
     case SGET_SHORT:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      addVarInsn(ISTORE, register);
+      addVarInsn(ISTORE, local);
       break;
     case SGET_WIDE:
     case SGET_WIDE_VOLATILE:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      addVarInsn(desc.equals("J") ? LSTORE : DSTORE, register);
+      addVarInsn(desc.equals("J") ? LSTORE : DSTORE, local);
       break;
     case SGET_OBJECT:
     case SGET_OBJECT_VOLATILE:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      addVarInsn(ASTORE, register);
+      addVarInsn(ASTORE, local);
       break;
     case SPUT:
     case SPUT_VOLATILE:
@@ -674,17 +689,17 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     case SPUT_BYTE:
     case SPUT_CHAR:
     case SPUT_SHORT:
-      addVarInsn(ILOAD, register);
+      addVarInsn(ILOAD, local);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     case SPUT_WIDE:
     case SPUT_WIDE_VOLATILE:
-      addVarInsn(desc.equals("J") ? LLOAD : DLOAD, register);
+      addVarInsn(desc.equals("J") ? LLOAD : DLOAD, local);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     case SPUT_OBJECT:
     case SPUT_OBJECT_VOLATILE:
-      addVarInsn(ALOAD, register);
+      addVarInsn(ALOAD, local);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     default:
@@ -702,7 +717,8 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     // So we must track variable usage and infer the type. Is it an object or primitive?
     boolean refIsObject = variableIsObject.getOrDefault(source, false);
     Label label = i.getTarget();
-    il.add(new VarInsnNode(refIsObject ? ALOAD : ILOAD /* get type here */, source));
+    // can single jumps in dalvik also take longs, doubles, etc?
+    addVarInsn(refIsObject ? ALOAD : ILOAD, source);
     switch (i.getOpcode()) {
     case IF_EQZ:
       il.add(new JumpInsnNode(refIsObject ? IFNULL : IFEQ, getASMLabel(label)));
