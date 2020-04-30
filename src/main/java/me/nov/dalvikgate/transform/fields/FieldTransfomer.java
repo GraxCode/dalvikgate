@@ -14,17 +14,11 @@ import org.objectweb.asm.tree.FieldNode;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
-public class FieldTransfomer implements ITransformer<FieldNode>, Opcodes {
-
-  private final DexBackedField field;
+public class FieldTransfomer implements ITransformer<DexBackedField, FieldNode>, Opcodes {
   private FieldNode fn;
 
-  public FieldTransfomer(DexBackedField field) {
-    this.field = field;
-  }
-
   @Override
-  public void build() {
+  public void build(DexBackedField field) {
     String name = field.getName();
     int flags = field.getAccessFlags();
     if (name.startsWith("$$") || name.startsWith("_$_") || name.endsWith("$delegate")) {
@@ -55,5 +49,4 @@ public class FieldTransfomer implements ITransformer<FieldNode>, Opcodes {
   public FieldNode getTransformed() {
     return Objects.requireNonNull(fn);
   }
-
 }

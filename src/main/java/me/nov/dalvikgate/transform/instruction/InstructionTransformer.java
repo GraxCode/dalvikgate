@@ -3,7 +3,6 @@ package me.nov.dalvikgate.transform.instruction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import org.jf.dexlib2.Opcode;
@@ -36,7 +35,6 @@ import org.jf.dexlib2.iface.reference.StringReference;
 import org.jf.dexlib2.iface.reference.TypeReference;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -48,22 +46,20 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
-import me.nov.dalvikgate.transform.instruction.treenode.UnresolvedVarInsnNode;
+import me.nov.dalvikgate.transform.instruction.tree.UnresolvedVarInsnNode;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
  */
 @SuppressWarnings("unused")
-public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
+public class InstructionTransformer implements ITransformer<DexBackedMethod, InsnList>, Opcodes {
   private InsnList il;
   private MethodNode mn;
-  private DexBackedMethod method;
   private MutableMethodImplementation builder;
   private HashMap<BuilderInstruction, LabelNode> labels;
   private List<BuilderInstruction> dexInstructions;
@@ -72,12 +68,11 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
 
   public InstructionTransformer(MethodNode mn, DexBackedMethod method, MutableMethodImplementation builder) {
     this.mn = mn;
-    this.method = method;
     this.builder = builder;
     this.dexInstructions = builder.getInstructions();
     this.isStatic = Access.isStatic(method.accessFlags); // dalvik and java bytecode have the same access values
     // "this" reference is passed as argument in dalvik
-    this.argumentRegisterCount = method.getParameters().stream().mapToInt(p -> DexLibCommons.getSize(p)).sum() + (isStatic ? 0 : 1);
+    this.argumentRegisterCount = method.getParameters().stream().mapToInt(DexLibCommons::getSize).sum() + (isStatic ? 0 : 1);
   }
 
   @Override
@@ -121,13 +116,13 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
   }
 
   private void addLocalGetSet(boolean store, int register) {
-    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store, register);
-    var.updateVar(regToLocal(register)); // only for now. this only works when no variables are reused.
+    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store);
+    var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
     il.add(var);
   }
 
   @Override
-  public void build() {
+  public void build(DexBackedMethod method) {
     il = new InsnList();
     this.buildLabels();
     this.transformTryCatchBlocks();
@@ -526,17 +521,7 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
     int destination = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE:
-      if (source == destination)
-        break;
-      addLocalGetSet(false, source);
-      addLocalGetSet(true, destination);
-      break;
     case MOVE_WIDE:
-      if (source == destination)
-        break;
-      addLocalGetSet(false, source);
-      addLocalGetSet(true, destination);
-      break;
     case MOVE_OBJECT:
       if (source == destination)
         break;
@@ -554,14 +539,21 @@ public class InstructionTransformer implements ITransformer<InsnList>, Opcodes {
       addLocalGetSet(true, destination);
       break;
     case NOT_INT:
-      throw new IllegalArgumentException("not-int"); // TODO
+      addLocalGetSet(false, source);
+      il.add(new InsnNode(ICONST_M1));
+      il.add(new InsnNode(IXOR));
+      addLocalGetSet(true, destination);
     case NEG_LONG:
       addLocalGetSet(false, source);
       il.add(new InsnNode(LNEG));
       addLocalGetSet(true, destination);
       break;
     case NOT_LONG:
-      throw new IllegalArgumentException("not-long"); // TODO
+      addLocalGetSet(false, source);
+      il.add(new LdcInsnNode(-1L));
+      il.add(new InsnNode(LXOR));
+      addLocalGetSet(true, destination);
+      break;
     case NEG_FLOAT:
       addLocalGetSet(false, source);
       il.add(new InsnNode(FNEG));

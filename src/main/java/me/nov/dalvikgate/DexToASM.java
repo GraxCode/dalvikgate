@@ -38,9 +38,9 @@ public class DexToASM {
     List<ClassNode> asmClasses = new ArrayList<>();
 
     for (DexBackedClassDef clazz : baseClassDefs) {
-      ClassTransformer transformer = new ClassTransformer(clazz, 52);
-      transformer.build();
-      asmClasses.add(transformer.getTransformed());
+      ClassTransformer ct = new ClassTransformer();
+      ct.visit(clazz);
+      asmClasses.add(ct.getTransformed());
     }
     return asmClasses;
   }
