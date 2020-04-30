@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
+import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 import org.jf.dexlib2.DexFileFactory;
 import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.dexbacked.DexBackedClassDef;
@@ -56,8 +57,11 @@ public class DexToASM {
           out.putNextEntry(new JarEntry(c.name + ".class"));
           out.write(Conversion.toBytecode(c));
           out.closeEntry();
+        } catch (UnresolvedInsnException e) {
+          System.err.println("SKIP: " + c.name + " - " + e.getMessage());
         } catch (Exception e) {
-          // TODO: Log and alert user
+          // TODO: Better Log and alert user
+          System.err.println("FAIL: " + c.name);
           e.printStackTrace();
         }
       }

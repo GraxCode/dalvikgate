@@ -9,13 +9,13 @@ package me.nov.dalvikgate.transform;
 public interface ITransformer<I, T> {
 
   /**
-   * Call {@link #build(Object)} then {@link #buildDone()}.
+   * Call {@link #build(Object)} then {@link #buildDone(Object)}.
    *
    * @param input Value to transform.
    */
   default void visit(I input) {
     build(input);
-    buildDone();
+    buildDone(input);
   }
 
   /**
@@ -27,8 +27,10 @@ public interface ITransformer<I, T> {
 
   /**
    * Called after {@link #build(I)} completes.
+   *
+   * @param input Value that was transformed.
    */
-  default void buildDone() {
+  default void buildDone(I input) {
   }
 
   /**

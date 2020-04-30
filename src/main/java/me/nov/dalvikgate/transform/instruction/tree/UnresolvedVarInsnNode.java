@@ -1,5 +1,6 @@
 package me.nov.dalvikgate.transform.instruction.tree;
 
+import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -47,9 +48,9 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
    */
   private void validate() {
     if (opcode < 0)
-      throw new IllegalArgumentException("Variable opcode has not been resolved!");
+      throw new UnresolvedInsnException("Variable opcode has not been resolved!");
     if (var < 0)
-      throw new IllegalArgumentException("Variable index has not been resolved!");
+      throw new UnresolvedInsnException("Variable index has not been resolved!");
   }
 
   /**

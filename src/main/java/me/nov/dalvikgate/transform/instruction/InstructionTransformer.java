@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.ReferenceType;
@@ -225,7 +226,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         }
       case Format22cs:
         // iput/iget-type-quick ==> Not listed on dalvik bytecode page?
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format22s:
         visitInt16Math((BuilderInstruction22s) i);
         continue;
@@ -235,7 +236,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       case Format22x:
         // move from 16
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format23x:
         // Perform the indicated floating point or long comparison, setting a to 0 if b == c, 1 if b > c, or -1 if b < c.
         // The "bias" listed for the floating point operations indicates how NaN comparisons are treated: "gt bias" instructions return 1 for NaN comparisons,
@@ -248,49 +249,63 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         // A: destination register (8 bits)
         // B: first source register or pair
         // C: second source register or pair
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format31t:
         // fill-array-data and switches
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format32x:
         // more moves
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       ////////////////////////// INVOKE //////////////////////////
       case Format35c:
         visitInvoke((BuilderInstruction35c) i);
         continue;
       case Format35ms:
         // invokeQuick
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format3rc:
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       ////////////////////////// EXECUTE INLINE //////////////////////////
       case Format35mi:
         // execute inline range
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format3rmi:
         // execute inline range
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format3rms:
         // invoke quick range
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       ////////////////////////// INVOKE POLYMORPHIC //////////////////////////
       case Format45cc:
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case Format4rcc:
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       ////////////////////////// SPECIAL INSTRUCTIONS //////////////////////////
       case Format20bc:
         il.add(makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
         continue;
       case PackedSwitchPayload:
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case SparseSwitchPayload:
-        throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
+        throw new UnsupportedInsnException(i);
       case UnresolvedOdexInstruction:
       default:
-        throw new IllegalArgumentException(i.getClass().getName());
+        throw new UnsupportedInsnException(i);
       }
+    }
+  }
+
+  @Override
+  public void buildDone(DexBackedMethod method) {
+    int i = 0;
+    System.err.println(method.getDefiningClass() + " - " + method.getName());
+    for (AbstractInsnNode insn : il) {
+      if (insn instanceof UnresolvedJumpInsnNode) {
+        System.err.println("   - " + i + ": unresolved JUMP");
+      } else if (insn instanceof UnresolvedVarInsnNode) {
+        System.err.println("   - " + i + ": unresolved VARIABLE");
+      }
+      i++;
     }
   }
 
@@ -467,7 +482,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new InsnNode(IUSHR));
       break;
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
     addLocalSet(i.getRegisterA(), INT_TYPE);
   }
@@ -515,7 +530,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new InsnNode(IUSHR));
       break;
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
     addLocalSet(i.getRegisterA(), INT_TYPE);
   }
@@ -565,7 +580,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new InsnNode(ATHROW));
       break;
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
   }
 
@@ -736,7 +751,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       // TODO destination also contains first source register (first two bits destination, second two source). int source = second source register
       // have to do some bit shifting action here
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
   }
 
@@ -757,7 +772,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       return;
     case CONST_METHOD_HANDLE:
     case CONST_METHOD_TYPE:
-      throw new IllegalArgumentException("unsupported instruction: " + i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     case CHECK_CAST:
       addLocalGet(local, OBJECT_TYPE);
       il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
@@ -813,7 +828,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
   }
 
@@ -857,7 +872,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new JumpInsnNode(IF_ICMPLE, getASMLabel(label)));
       break;
     default:
-      throw new IllegalArgumentException("unsupported compare-jump: " +i.getOpcode().name);
+      throw new UnsupportedInsnException("compare-jump", i);
     }
   }
 
@@ -896,7 +911,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new JumpInsnNode(IFLE, getASMLabel(label)));
       break;
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
   }
 
@@ -911,7 +926,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     // B: method reference index (16 bits)
     // C..G: argument registers (4 bits each)
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY) {
-      throw new IllegalArgumentException("filled-new-array");
+      throw new UnsupportedInsnException("filled-new-array", i);
     }
     MethodReference mr = (MethodReference) i.getReference();
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
@@ -981,7 +996,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     case INVOKE_CUSTOM:
       // like invokedynamic
     default:
-      throw new IllegalArgumentException(i.getOpcode().name);
+      throw new UnsupportedInsnException(i);
     }
   }
 }
