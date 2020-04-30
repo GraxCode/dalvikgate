@@ -49,7 +49,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       } else {
         e.printStackTrace();
       }
-      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException",
+      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException",
               "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
       mn.maxStack = 3;
       mn.tryCatchBlocks.clear();
