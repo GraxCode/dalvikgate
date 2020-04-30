@@ -7,6 +7,8 @@ import java.util.Objects;
 
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
+
+import org.jf.dexlib2.Format;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderInstruction;
@@ -25,6 +27,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction22b;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22s;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22t;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction23x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
@@ -237,18 +240,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         // move from 16
         throw new UnsupportedInsnException(i);
       case Format23x:
-        // Perform the indicated floating point or long comparison, setting a to 0 if b == c, 1 if b > c, or -1 if b < c.
-        // The "bias" listed for the floating point operations indicates how NaN comparisons are treated: "gt bias" instructions return 1 for NaN comparisons,
-        // and "lt bias" instructions return -1.
-        //
-        // For example, to check to see if floating point x < y it is advisable to use cmpg-float;
-        // a result of -1 indicates that the test was true, and the other values indicate it was false
-        // either due to a valid comparison or because one of the values was NaN.
-        //
-        // A: destination register (8 bits)
-        // B: first source register or pair
-        // C: second source register or pair
-        throw new UnsupportedInsnException(i);
+        visitTripleRegister((BuilderInstruction23x) i);
+        continue;
       case Format31t:
         // fill-array-data and switches
         throw new UnsupportedInsnException(i);
@@ -932,6 +925,54 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       break;
     default:
       throw new UnsupportedInsnException(i);
+    }
+  }
+
+  private void visitTripleRegister(BuilderInstruction23x i) {
+    // Perform the indicated floating point or long comparison, setting a to 0 if b == c, 1 if b > c, or -1 if b < c.
+    // The "bias" listed for the floating point operations indicates how NaN comparisons are treated: "gt bias" instructions return 1 for NaN comparisons,
+    // and "lt bias" instructions return -1.
+    //
+    // For example, to check to see if floating point x < y it is advisable to use cmpg-float;
+    // a result of -1 indicates that the test was true, and the other values indicate it was false
+    // either due to a valid comparison or because one of the values was NaN.
+    //
+    // A: destination register (8 bits)
+    // B: first source register or pair
+    // C: second source register or pair
+    switch (i.getOpcode()) {
+    case CMPL_FLOAT:
+      addLocalGet(i.getRegisterB(), FLOAT_TYPE);
+      addLocalGet(i.getRegisterC(), FLOAT_TYPE);
+      il.add(new InsnNode(FCMPL));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      return;
+    case CMPG_FLOAT:
+      addLocalGet(i.getRegisterB(), FLOAT_TYPE);
+      addLocalGet(i.getRegisterC(), FLOAT_TYPE);
+      il.add(new InsnNode(FCMPG));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      return;
+    case CMPL_DOUBLE:
+      addLocalGet(i.getRegisterB(), DOUBLE_TYPE);
+      addLocalGet(i.getRegisterC(), DOUBLE_TYPE);
+      il.add(new InsnNode(DCMPL));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      return;
+    case CMPG_DOUBLE:
+      addLocalGet(i.getRegisterB(), DOUBLE_TYPE);
+      addLocalGet(i.getRegisterC(), DOUBLE_TYPE);
+      il.add(new InsnNode(DCMPG));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      return;
+    case CMP_LONG:
+      addLocalGet(i.getRegisterB(), LONG_TYPE);
+      addLocalGet(i.getRegisterC(), LONG_TYPE);
+      il.add(new InsnNode(LCMP));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      return;
+    default:
+      break;
     }
   }
 
