@@ -39,6 +39,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       return;
     }
     MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
+    mn.maxLocals = mn.maxStack = builder.getRegisterCount(); //we need this because some decompilers crash if this is zero
     InstructionTransformer it = new InstructionTransformer(mn, method, builder);
     try {
       it.visit(method);
@@ -49,7 +50,9 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
         e.printStackTrace();
       }
       mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException",
-              "dalvikgate error: " + e.toString() + " / " + TextUtils.exceptionToString(e));
+              "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
+      mn.maxStack = 3;
+      mn.tryCatchBlocks.clear();
       return;
     }
     mn.instructions = it.getTransformed();

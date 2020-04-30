@@ -4,8 +4,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TextUtils {
-  public static String exceptionToString(Throwable t) {
-    return Stream.of(t.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining(";"));
+  public static String stacktraceToString(Throwable t) {
+    return Stream.of(t.getStackTrace()).map(StackTraceElement::toString).limit(3).collect(Collectors.joining("; "));
   }
 
 }
