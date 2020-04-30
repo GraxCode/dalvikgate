@@ -132,6 +132,58 @@ public class ASMCommons implements Opcodes {
     throw new IllegalArgumentException("illegal desc: " + cs);
   }
 
+  public static int getOppositeVarOp(int op) {
+    switch (op) {
+    case ASTORE:
+      return ALOAD;
+    case ISTORE:
+      return ILOAD;
+    case LSTORE:
+      return LLOAD;
+    case DSTORE:
+      return DLOAD;
+    case FSTORE:
+      return FLOAD;
+    case ALOAD:
+      return ASTORE;
+    case ILOAD:
+      return ISTORE;
+    case LLOAD:
+      return LSTORE;
+    case DLOAD:
+      return DSTORE;
+    case FLOAD:
+      return FSTORE;
+    }
+    throw new IllegalArgumentException("illegal op: " + op);
+  }
+
+  public static boolean isVarStore(int op) {
+    switch (op) {
+    case ASTORE:
+      return true;
+    case ISTORE:
+      return true;
+    case LSTORE:
+      return true;
+    case DSTORE:
+      return true;
+    case FSTORE:
+      return true;
+    case ALOAD:
+      return false;
+    case ILOAD:
+      return false;
+    case LLOAD:
+      return false;
+    case DLOAD:
+      return false;
+    case FLOAD:
+      return false;
+    }
+    throw new IllegalArgumentException("illegal op: " + op);
+  }
+
   public static int getPrimitiveIndex(String primitive) {
     if (primitive.length() > 1) {
       throw new IllegalArgumentException("not a primitive: " + primitive);
@@ -200,7 +252,8 @@ public class ASMCommons implements Opcodes {
         return Type.FLOAT_TYPE;
       else if (cst instanceof Integer)
         return Type.INT_TYPE;
-      else return OBJECT_TYPE;
+      else
+        return OBJECT_TYPE;
     }
     return null;
   }

@@ -3,6 +3,7 @@ package me.nov.dalvikgate.transform.methods;
 import java.util.Objects;
 
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.transform.instruction.post.PostDupInserter;
 import me.nov.dalvikgate.utils.TextUtils;
 
 import org.jf.dexlib2.builder.MutableMethodImplementation;
@@ -56,6 +57,8 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       return;
     }
     mn.instructions = it.getTransformed();
+    PostDupInserter dups = new PostDupInserter();
+    dups.visit(mn.instructions);
   }
 
 }

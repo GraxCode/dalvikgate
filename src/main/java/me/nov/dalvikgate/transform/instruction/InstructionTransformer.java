@@ -1426,11 +1426,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
     String name = mr.getName();
     String desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
-    int registers = i.getRegisterCount(); // sum
-                                          // of
-                                          // all
-                                          // local
-                                          // sizes
+    int registers = i.getRegisterCount(); // sum of all local sizes
     int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); // sum of all parameter sizes (parameters + reference = registers)
     int parIdx = 0;
     int regIdx = 0;

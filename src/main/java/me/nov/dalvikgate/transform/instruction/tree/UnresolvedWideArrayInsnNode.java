@@ -14,6 +14,11 @@ import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException
 public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
   private boolean store;
 
+  /**
+   * Create new unresolved wide array store or load instruction.
+   *
+   * @param store {@code true} for storage insns.
+   */
   public UnresolvedWideArrayInsnNode(boolean store) {
     super(-1);
     this.store = store;
