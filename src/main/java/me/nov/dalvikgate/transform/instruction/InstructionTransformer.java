@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderInstruction;
@@ -35,23 +36,15 @@ import org.jf.dexlib2.iface.reference.StringReference;
 import org.jf.dexlib2.iface.reference.TypeReference;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedVarInsnNode;
+
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
@@ -115,9 +108,98 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     return register + argumentRegisterCount;
   }
 
-  private void addLocalGetSet(boolean store, int register) {
-    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store);
+  /**
+   * Add local set for object type.
+   *
+   * @param register Register index.
+   */
+  private void addLocalSetObject(int register) {
+    addLocalGetSet(true, register, OBJECT_TYPE);
+  }
+
+  /**
+   * Add local set for the given type.
+   *
+   * @param register Register index.
+   * @param type     Discovered type to put.
+   */
+  private void addLocalSet(int register, Type type) {
+    if (type != null) {
+      if (type.getSort() == ARRAY)
+        type = ARRAY_TYPE;
+      else if (type.getSort() == OBJECT)
+        type = OBJECT_TYPE;
+      else if (type.getSort() == VOID)
+        throw new IllegalStateException("Illegal type 'void'");
+    }
+    addLocalGetSet(true, register, type);
+  }
+
+  /**
+   * Add local set for potentially int type.
+   *
+   * @param register Register index.
+   * @param value    Int value.
+   */
+  private void addLocalSet(int register, int value) {
+    addLocalGetSet(true, register, value == 0 ? null : INT_TYPE);
+  }
+
+  /**
+   * Add local set for potentially long type.
+   *
+   * @param register Register index.
+   * @param value    Long value.
+   */
+  private void addLocalSet(int register, long value) {
+    addLocalGetSet(true, register, value == 0 ? null : LONG_TYPE);
+  }
+
+  /**
+   * Add local get for object type.
+   *
+   * @param register Register index.
+   */
+  private void addLocalGetObject(int register) {
+    addLocalGetSet(false, register, OBJECT_TYPE);
+  }
+
+  /**
+   * Add local get for the given type.
+   *
+   * @param register Register index.
+   * @param type     Discovered type to get.
+   */
+  private void addLocalGet(int register, Type type) {
+    if (type != null ) {
+      if (type.getSort() == ARRAY)
+        type = ARRAY_TYPE;
+      else if (type.getSort() == OBJECT)
+        type = OBJECT_TYPE;
+      else if (type.getSort() == VOID)
+        throw new IllegalStateException("Illegal type 'void'");
+    }
+    // TODO: Check calls to this method. Is there a case where "0" will be used as a "null"?
+    //  if so, then uncomment the following code:
+    //
+    //else if (type.getSort() == INT)
+    //  type = null;
+    //
+    addLocalGetSet(false, register, type);
+  }
+
+  /**
+   * Add local set for given type.
+   *
+   * @param store    {@code true} when insn is a setter.
+   * @param register Variable index.
+   * @param type     Type of variable. {@code null} if ambiguous.
+   */
+  private void addLocalGetSet(boolean store, int register, Type type) {
+    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store, type);
     var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
+    if (type != null)
+      var.setType(type);
     il.add(var);
   }
 
@@ -156,8 +238,9 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         // B: signed int (4 bits)
         // TODO this can be the same as ACONST_NULL too
         BuilderInstruction11n _11n = (BuilderInstruction11n) i;
-        il.add(ASMCommons.makeIntPush(_11n.getNarrowLiteral()));
-        addLocalGetSet(true, _11n.getRegisterA());
+        int value11n = _11n.getNarrowLiteral();
+        il.add(makeIntPush(value11n));
+        addLocalSet(_11n.getRegisterA(), value11n);
         continue;
       case Format31c:
         // Move a reference to the string specified by the given index into the specified register.
@@ -165,7 +248,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         // B: string index
         BuilderInstruction31c _31c = (BuilderInstruction31c) i;
         il.add(new LdcInsnNode(((StringReference) _31c.getReference()).getString()));
-        addLocalGetSet(true, _31c.getRegisterA());
+        addLocalSetObject(_31c.getRegisterA());
         continue;
       case Format31i:
         // 0x14: Move the given literal value into the specified register.
@@ -176,16 +259,18 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         // B: signed int (32 bits)
         // TODO unsure if const-wide-32 need some bitshifting
         BuilderInstruction31i _31i = (BuilderInstruction31i) i;
-        il.add(ASMCommons.makeIntPush(_31i.getNarrowLiteral()));
-        addLocalGetSet(true, _31i.getRegisterA());
+        int value3li = _31i.getNarrowLiteral();
+        il.add(makeIntPush(value3li));
+        addLocalSet(_31i.getRegisterA(), value3li);
         continue;
       case Format51l:
         // Move the given literal value into the specified register-pair.
         // A: destination register (8 bits)
         // B: arbitrary double-width (64-bit) constant
         BuilderInstruction51l _51l = (BuilderInstruction51l) i;
-        il.add(new LdcInsnNode(_51l.getWideLiteral()));
-        addLocalGetSet(true, _51l.getRegisterA());
+        long value51l = _51l.getWideLiteral();
+        il.add(new LdcInsnNode(value51l));
+        addLocalSet(_51l.getRegisterA(), value51l);
         continue;
       case Format11x:
         visitSingleRegister((BuilderInstruction11x) i);
@@ -198,24 +283,27 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       case Format21ih:
         BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
-        il.add(ASMCommons.makeIntPush(_21ih.getNarrowLiteral()));
-        addLocalGetSet(true, _21ih.getRegisterA());
+        int value21ih = _21ih.getNarrowLiteral();
+        il.add(makeIntPush(value21ih));
+        addLocalSet(_21ih.getRegisterA(), value21ih);
         continue;
       case Format21lh:
         // Move the given literal value (right-zero-extended to 64 bits) into the specified register-pair
         // A: destination register (8 bits)
         // B: signed int (16 bits)
         BuilderInstruction21lh _21lh = (BuilderInstruction21lh) i;
-        il.add(ASMCommons.makeLongPush(_21lh.getWideLiteral()));
-        addLocalGetSet(true, _21lh.getRegisterA());
+        long value23lh = _21lh.getWideLiteral();
+        il.add(makeLongPush(value23lh));
+        addLocalSet(_21lh.getRegisterA(), value23lh);
         continue;
       case Format21s:
         // Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
         // A: destination register (8 bits)
         // B: signed int (16 bits)
         BuilderInstruction21s _21s = (BuilderInstruction21s) i;
-        il.add(ASMCommons.makeIntPush(_21s.getNarrowLiteral()));
-        addLocalGetSet(true, _21s.getRegisterA());
+        int value21s = _21s.getNarrowLiteral();
+        il.add(makeIntPush(value21s));
+        addLocalSet(_21s.getRegisterA(), value21s);
         continue;
       case Format21t:
         visitSingleJump((BuilderInstruction21t) i);
@@ -234,34 +322,34 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
           if (_22c.getOpcode().name.startsWith("iget")) {
             // B: object reference
             // A: destination
-            addLocalGetSet(false, _22c.getRegisterB());
+            addLocalGetObject(_22c.getRegisterB());
             il.add(new FieldInsnNode(GETFIELD, owner, name, desc));
-            addLocalGetSet(true, _22c.getRegisterA());
+            addLocalSet(_22c.getRegisterA(), Type.getType(desc));
           } else {
             // B: object reference
             // A: value
-            addLocalGetSet(false, _22c.getRegisterB());
-            addLocalGetSet(false, _22c.getRegisterA());
+            addLocalGetObject(_22c.getRegisterB());
+            addLocalGet(_22c.getRegisterA(), getTypeForDesc(desc));
             il.add(new FieldInsnNode(PUTFIELD, owner, name, desc));
           }
           continue;
         } else {
           TypeReference typeReference = (TypeReference) _22c.getReference();
           if (i.getOpcode() == Opcode.INSTANCE_OF) {
-            addLocalGetSet(false, _22c.getRegisterB()); // object reference
+            addLocalGetObject(_22c.getRegisterB()); // object reference
             il.add(new TypeInsnNode(INSTANCEOF, Type.getType(typeReference.getType()).getInternalName()));
-            addLocalGetSet(true, _22c.getRegisterA());
+            addLocalSet(_22c.getRegisterA(), INT_TYPE); // boolean
             continue;
           }
           if (i.getOpcode() == Opcode.NEW_ARRAY) {
-            addLocalGetSet(false, _22c.getRegisterB()); // array size
+            addLocalGet(_22c.getRegisterB(), INT_TYPE); // array size
             Type arrayType = Type.getType(typeReference.getType()).getElementType();
             if (arrayType.getSort() == Type.OBJECT) {
               il.add(new TypeInsnNode(ANEWARRAY, arrayType.getInternalName()));
             } else {
-              il.add(new IntInsnNode(NEWARRAY, ASMCommons.getPrimitiveIndex(arrayType.getDescriptor())));
+              il.add(new IntInsnNode(NEWARRAY, getPrimitiveIndex(arrayType.getDescriptor())));
             }
-            addLocalGetSet(true, _22c.getRegisterA());
+            addLocalSet(_22c.getRegisterA(), ARRAY_TYPE);
             continue;
           }
         }
@@ -323,7 +411,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
       ////////////////////////// SPECIAL INSTRUCTIONS //////////////////////////
       case Format20bc:
-        il.add(ASMCommons.makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
+        il.add(makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
         continue;
       case PackedSwitchPayload:
         throw new IllegalArgumentException("unsupported instruction " + i.getOpcode().name);
@@ -336,52 +424,14 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     }
   }
 
-  private void visitCompareJump(BuilderInstruction22t i) {
-    // Branch to the given destination if the given two registers' values compare as specified.
-    // A: first register to test (4 bits)
-    // B: second register to test (4 bits)
-    int first = i.getRegisterA();
-    int second = i.getRegisterB();
-
-    // TODO check if object
-    // Dalvik has no ifnull / ifnonnull
-    // So we must track variable usage and infer the type. Is it an object or primitive?
-    boolean refsAreObjects = false;
-    Label label = i.getTarget();
-    addLocalGetSet(false, first);
-    addLocalGetSet(false, second);
-    switch (i.getOpcode()) {
-    case IF_EQ:
-      il.add(new JumpInsnNode(refsAreObjects ? IF_ACMPEQ : IF_ICMPEQ, getASMLabel(label)));
-      break;
-    case IF_NE:
-      il.add(new JumpInsnNode(refsAreObjects ? IF_ACMPNE : IF_ICMPNE, getASMLabel(label)));
-      break;
-    case IF_LT:
-      il.add(new JumpInsnNode(IF_ICMPLT, getASMLabel(label)));
-      break;
-    case IF_GE:
-      il.add(new JumpInsnNode(IF_ICMPGE, getASMLabel(label)));
-      break;
-    case IF_GT:
-      il.add(new JumpInsnNode(IF_ICMPGT, getASMLabel(label)));
-      break;
-    case IF_LE:
-      il.add(new JumpInsnNode(IF_ICMPLE, getASMLabel(label)));
-      break;
-    default:
-      throw new IllegalArgumentException(i.getOpcode().name);
-    }
-  }
-
   private void visitInt8Math(BuilderInstruction22b i) {
     // Perform the indicated binary op on the indicated register (first argument) and literal value (second argument),
     // storing the result in the destination register.
     // A: destination register (8 bits)
     // B: source register (8 bits)
     // C: signed int constant (8 bits)
-    addLocalGetSet(false, i.getRegisterB());
-    addLocalGetSet(false, i.getRegisterA());
+    addLocalGet(i.getRegisterB(), INT_TYPE);
+    addLocalGet(i.getRegisterA(), INT_TYPE);
     switch (i.getOpcode()) {
     case ADD_INT_LIT8:
       il.add(new InsnNode(IADD));
@@ -419,7 +469,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     default:
       throw new IllegalArgumentException(i.getOpcode().name);
     }
-    addLocalGetSet(true, i.getRegisterA());
+    addLocalSet(i.getRegisterA(), INT_TYPE);
   }
 
   private void visitInt16Math(BuilderInstruction22s i) {
@@ -428,8 +478,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     // A: destination register (4 bits)
     // B: source register (4 bits)
     // C: signed int constant (16 bits)
-    addLocalGetSet(false, i.getRegisterB());
-    addLocalGetSet(false, i.getRegisterA());
+    addLocalGet(i.getRegisterB(), INT_TYPE);
+    addLocalGet(i.getRegisterA(), INT_TYPE);
     switch (i.getOpcode()) {
     case ADD_INT_LIT8:
       il.add(new InsnNode(IADD));
@@ -467,7 +517,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     default:
       throw new IllegalArgumentException(i.getOpcode().name);
     }
-    addLocalGetSet(true, i.getRegisterA());
+    addLocalSet(i.getRegisterA(), INT_TYPE);
   }
 
   private void visitSingleRegister(BuilderInstruction11x i) {
@@ -476,39 +526,42 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     int source = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE_RESULT:
-      addLocalGetSet(true, source);
+      addLocalSet(source, null);
       break;
     case MOVE_EXCEPTION:
     case MOVE_RESULT_OBJECT:
-      addLocalGetSet(true, source);
+      addLocalSetObject(source);
       break;
     case MOVE_RESULT_WIDE:
-      // TODO move result has method as previous, find out if double or long
-      addLocalGetSet(true, source);
+      // Get type from last written instruction
+      addLocalSet(source, getPushedTypeForInsn(il.getLast()));
       break;
     case MONITOR_ENTER:
-      addLocalGetSet(false, source);
+      addLocalGetObject(source);
       il.add(new InsnNode(MONITORENTER));
       break;
     case MONITOR_EXIT:
-      addLocalGetSet(false, source);
+      addLocalGetObject(source);
       il.add(new InsnNode(MONITOREXIT));
       break;
     case RETURN:
-      addLocalGetSet(false, source);
+      // Dalvik has this int-specific return
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(IRETURN));
       break;
     case RETURN_WIDE:
-      // TODO find out if double or long
-      addLocalGetSet(false, source);
+      // Dalvik has this long/double-specific return
+      // Cannot determine if double or long, resolve later
+      addLocalGet(source, null);
       il.add(new InsnNode(LRETURN));
       break;
     case RETURN_OBJECT:
-      addLocalGetSet(false, source);
+      // Dalvik has this object-specific return
+      addLocalGetObject(source);
       il.add(new InsnNode(ARETURN));
       break;
     case THROW:
-      addLocalGetSet(false, source);
+      addLocalGetObject(source);
       il.add(new InsnNode(ATHROW));
       break;
     default:
@@ -521,123 +574,132 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     int destination = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE:
+      if (source == destination)
+        break;
+      addLocalGet(source, INT_TYPE);
+      addLocalSet(destination, INT_TYPE);
     case MOVE_WIDE:
+      if (source == destination)
+        break;
+      // Cannot determine if double or long, resolve later
+      addLocalGet(source, null);
+      addLocalSet(destination, null);
     case MOVE_OBJECT:
       if (source == destination)
         break;
-      addLocalGetSet(false, source);
-      addLocalGetSet(true, destination);
+      addLocalGetObject(source);
+      addLocalSetObject(destination);
       break;
     case ARRAY_LENGTH:
-      addLocalGetSet(false, source);
+      addLocalGet(source, ARRAY_TYPE);
       il.add(new InsnNode(ARRAYLENGTH));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, INT_TYPE);
       break;
     case NEG_INT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(INEG));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, INT_TYPE);
       break;
     case NOT_INT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(ICONST_M1));
       il.add(new InsnNode(IXOR));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, INT_TYPE);
     case NEG_LONG:
-      addLocalGetSet(false, source);
+      addLocalGet(source, LONG_TYPE);
       il.add(new InsnNode(LNEG));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, LONG_TYPE);
       break;
     case NOT_LONG:
-      addLocalGetSet(false, source);
+      addLocalGet(source, LONG_TYPE);
       il.add(new LdcInsnNode(-1L));
       il.add(new InsnNode(LXOR));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, LONG_TYPE);
       break;
     case NEG_FLOAT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, FLOAT_TYPE);
       il.add(new InsnNode(FNEG));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, FLOAT_TYPE);
       break;
     case NEG_DOUBLE:
-      addLocalGetSet(false, source);
+      addLocalGet(source, DOUBLE_TYPE);
       il.add(new InsnNode(DNEG));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, DOUBLE_TYPE);
       break;
     case INT_TO_LONG:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(I2L));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, LONG_TYPE);
       break;
     case INT_TO_FLOAT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(I2F));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, FLOAT_TYPE);
       break;
     case INT_TO_DOUBLE:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(I2D));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, DOUBLE_TYPE);
       break;
     case LONG_TO_INT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, LONG_TYPE);
       il.add(new InsnNode(L2I));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, INT_TYPE);
       break;
     case LONG_TO_FLOAT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, LONG_TYPE);
       il.add(new InsnNode(L2F));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, FLOAT_TYPE);
       break;
     case LONG_TO_DOUBLE:
-      addLocalGetSet(false, source);
+      addLocalGet(source, LONG_TYPE);
       il.add(new InsnNode(L2D));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, DOUBLE_TYPE);
       break;
     case FLOAT_TO_INT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, FLOAT_TYPE);
       il.add(new InsnNode(F2I));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, INT_TYPE);
       break;
     case FLOAT_TO_LONG:
-      addLocalGetSet(false, source);
+      addLocalGet(source, FLOAT_TYPE);
       il.add(new InsnNode(F2L));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, LONG_TYPE);
       break;
     case FLOAT_TO_DOUBLE:
-      addLocalGetSet(false, source);
+      addLocalGet(source, FLOAT_TYPE);
       il.add(new InsnNode(F2D));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, DOUBLE_TYPE);
       break;
     case DOUBLE_TO_INT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, DOUBLE_TYPE);
       il.add(new InsnNode(D2I));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, INT_TYPE);
       break;
     case DOUBLE_TO_LONG:
-      addLocalGetSet(false, source);
+      addLocalGet(source, DOUBLE_TYPE);
       il.add(new InsnNode(D2L));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, LONG_TYPE);
       break;
     case DOUBLE_TO_FLOAT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, DOUBLE_TYPE);
       il.add(new InsnNode(D2F));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, FLOAT_TYPE);
       break;
     case INT_TO_BYTE:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(I2B));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, BYTE_TYPE);
       break;
     case INT_TO_CHAR:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(I2C));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, CHAR_TYPE);
       break;
     case INT_TO_SHORT:
-      addLocalGetSet(false, source);
+      addLocalGet(source, INT_TYPE);
       il.add(new InsnNode(I2S));
-      addLocalGetSet(true, destination);
+      addLocalSet(destination, SHORT_TYPE);
       break;
     case ADD_INT_2ADDR:
     case SUB_INT_2ADDR:
@@ -687,22 +749,22 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     switch (i.getOpcode()) {
     case CONST_STRING:
       il.add(new LdcInsnNode(((StringReference) ref).getString()));
-      addLocalGetSet(true, local);
+      addLocalSet(local, OBJECT_TYPE);
       return;
     case CONST_CLASS:
       il.add(new LdcInsnNode(Type.getType(((TypeReference) ref).getType())));
-      addLocalGetSet(true, local);
+      addLocalSet(local, OBJECT_TYPE);
       return;
     case CONST_METHOD_HANDLE:
     case CONST_METHOD_TYPE:
       throw new IllegalArgumentException("unsupported instruction: " + i.getOpcode().name);
     case CHECK_CAST:
-      addLocalGetSet(false, local);
+      addLocalGet(local, OBJECT_TYPE);
       il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
       return;
     case NEW_INSTANCE:
       il.add(new TypeInsnNode(NEW, Type.getType(((TypeReference) ref).getType()).getInternalName()));
-      addLocalGetSet(true, local);
+      addLocalSet(local, OBJECT_TYPE);
       return;
     default:
       break;
@@ -718,12 +780,18 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     case SGET_BYTE:
     case SGET_CHAR:
     case SGET_SHORT:
+      il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
+      addLocalSet(local, INT_TYPE);
+      break;
     case SGET_WIDE:
     case SGET_WIDE_VOLATILE:
+      il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
+      addLocalSet(local, desc.equals("J") ? LONG_TYPE : DOUBLE_TYPE);
+      break;
     case SGET_OBJECT:
     case SGET_OBJECT_VOLATILE:
       il.add(new FieldInsnNode(GETSTATIC, owner, name, desc));
-      addLocalGetSet(true, local);
+      addLocalSetObject(local);
       break;
     case SPUT:
     case SPUT_VOLATILE:
@@ -731,15 +799,65 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     case SPUT_BYTE:
     case SPUT_CHAR:
     case SPUT_SHORT:
+      addLocalGet(local, INT_TYPE);
+      il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
+      break;
     case SPUT_WIDE:
     case SPUT_WIDE_VOLATILE:
+      addLocalGet(local, desc.equals("J") ? LONG_TYPE : DOUBLE_TYPE);
+      il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
+      break;
     case SPUT_OBJECT:
     case SPUT_OBJECT_VOLATILE:
-      addLocalGetSet(false, local);
+      addLocalGetObject(local);
       il.add(new FieldInsnNode(PUTSTATIC, owner, name, desc));
       break;
     default:
       throw new IllegalArgumentException(i.getOpcode().name);
+    }
+  }
+
+  private void visitCompareJump(BuilderInstruction22t i) {
+    // Branch to the given destination if the given two registers' values compare as specified.
+    // A: first register to test (4 bits)
+    // B: second register to test (4 bits)
+    int first = i.getRegisterA();
+    int second = i.getRegisterB();
+    // Check if it we can safely assume the values are numeric.
+    //  - Any compare op except <IF_EQ> and <IF_NE> is safely numeric
+    Opcode opcode = i.getOpcode();
+    boolean refsMustBeNumeric = !(opcode == Opcode.IF_EQ || opcode == Opcode.IF_NE);
+    if (refsMustBeNumeric) {
+      // TODO: can comparison jumps in dalvik also take longs, doubles, etc?
+      //  - Or are all comparison-jumps based on integers?
+      addLocalGet(first, INT_TYPE);
+      addLocalGet(second, INT_TYPE);
+    } else {
+      addLocalGet(first, null);
+      addLocalGet(second, null);
+    }
+    Label label = i.getTarget();
+    switch (opcode) {
+    case IF_EQ:
+    case IF_NE:
+      // Dalvik has no "null", instead used "0" which means we can't immediately tell if we should use object comparison, or integer comparison.
+      // So we will resolve the opcode later when we can perform type analysis.
+      il.add(new UnresolvedJumpInsnNode(opcode, getASMLabel(label)));
+      break;
+    case IF_LT:
+      il.add(new JumpInsnNode(IF_ICMPLT, getASMLabel(label)));
+      break;
+    case IF_GE:
+      il.add(new JumpInsnNode(IF_ICMPGE, getASMLabel(label)));
+      break;
+    case IF_GT:
+      il.add(new JumpInsnNode(IF_ICMPGT, getASMLabel(label)));
+      break;
+    case IF_LE:
+      il.add(new JumpInsnNode(IF_ICMPLE, getASMLabel(label)));
+      break;
+    default:
+      throw new IllegalArgumentException("unsupported compare-jump: " +i.getOpcode().name);
     }
   }
 
@@ -748,19 +866,22 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     // A: register to test (8 bits)
     // B: signed branch offset (16 bits)
     int source = i.getRegisterA();
-    // TODO check if object
-    // Dalvik has no ifnull / ifnonnull
-    // So we must track variable usage and infer the type. Is it an object or primitive?
-    boolean refIsObject = false;
+    Opcode opcode = i.getOpcode();
+    boolean refsMustBeNumeric = !(opcode == Opcode.IF_EQZ || opcode == Opcode.IF_NEZ);
+    if (refsMustBeNumeric) {
+      // TODO: can single jumps in dalvik also take longs, doubles, etc?
+      //  - Or are all single jumps based on integers?
+      addLocalGet(source, INT_TYPE);
+    } else {
+      addLocalGet(source, null);
+    }
     Label label = i.getTarget();
-    // can single jumps in dalvik also take longs, doubles, etc?
-    addLocalGetSet(false, source);
-    switch (i.getOpcode()) {
+    switch (opcode) {
     case IF_EQZ:
-      il.add(new JumpInsnNode(refIsObject ? IFNULL : IFEQ, getASMLabel(label)));
-      break;
     case IF_NEZ:
-      il.add(new JumpInsnNode(refIsObject ? IFNONNULL : IFNE, getASMLabel(label)));
+      // Dalvik has no "null", instead used "0" which means we can't immediately tell if we should use object comparison, or integer comparison.
+      // So we will resolve the opcode later when we can perform type analysis.
+      il.add(new UnresolvedJumpInsnNode(opcode, getASMLabel(label)));
       break;
     case IF_LTZ:
       il.add(new JumpInsnNode(IFLT, getASMLabel(label)));
@@ -795,7 +916,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     MethodReference mr = (MethodReference) i.getReference();
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
     String name = mr.getName();
-    String desc = ASMCommons.buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
+    String desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
     int registers = i.getRegisterCount(); // sum of all local sizes
     int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); // sum of all parameter sizes (parameters + reference = registers)
     int parIdx = 0;
@@ -804,7 +925,9 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       if (registers > parameters + 1) {
         throw new IllegalArgumentException("too many registers: " + registers + " for method with desc " + desc);
       }
-      addLocalGetSet(false, i.getRegisterC());
+      // TODO: Check parameter type?
+      //  - then use addLocalGet(register, <<TYPE>>) instead of null
+      addLocalGet(i.getRegisterC(), null);
       registers--; // reference can only be size 1
       regIdx++;
     }
@@ -833,7 +956,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       }
       regIdx++;
       String pDesc = parameterTypes.get(parIdx);
-      addLocalGetSet(false, register);
+      addLocalGet(register, Type.getType(pDesc));
       registers -= Type.getType(pDesc).getSize();
       parIdx++;
     }
