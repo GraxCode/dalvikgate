@@ -46,6 +46,7 @@ import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedVarInsnNode;
+import me.nov.dalvikgate.transform.instruction.tree.UnresolvedWideArrayInsnNode;
 
 import static me.nov.dalvikgate.asm.ASMCommons.*;
 import static org.objectweb.asm.Type.*;
@@ -929,6 +930,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   }
 
   private void visitTripleRegister(BuilderInstruction23x i) {
+    switch (i.getOpcode()) {
     // Perform the indicated floating point or long comparison, setting a to 0 if b == c, 1 if b > c, or -1 if b < c.
     // The "bias" listed for the floating point operations indicates how NaN comparisons are treated: "gt bias" instructions return 1 for NaN comparisons,
     // and "lt bias" instructions return -1.
@@ -940,7 +942,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     // A: destination register (8 bits)
     // B: first source register or pair
     // C: second source register or pair
-    switch (i.getOpcode()) {
     case CMPL_FLOAT:
       addLocalGet(i.getRegisterB(), FLOAT_TYPE);
       addLocalGet(i.getRegisterC(), FLOAT_TYPE);
@@ -971,9 +972,89 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new InsnNode(LCMP));
       addLocalSet(i.getRegisterA(), INT_TYPE);
       return;
+
+    // array loads and sets
+    // A: value register or pair; may be source or dest (8 bits)
+    // B: array register (8 bits)
+    // C: index register (8 bits)
+    case AGET:
+    case AGET_BOOLEAN:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      il.add(new InsnNode(IALOAD));
+      addLocalSet(i.getRegisterA(), i.getOpcode() == Opcode.AGET_BOOLEAN ? BOOLEAN_TYPE : INT_TYPE);
+      return;
+    case AGET_WIDE:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      il.add(new UnresolvedWideArrayInsnNode(false));
+      addLocalSet(i.getRegisterA(), null); // unsure if long or double
+      return;
+    case AGET_OBJECT:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      il.add(new InsnNode(AALOAD));
+      addLocalSet(i.getRegisterA(), OBJECT_TYPE);
+      return;
+    case AGET_BYTE:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      il.add(new InsnNode(BALOAD));
+      addLocalSet(i.getRegisterA(), BYTE_TYPE);
+      return;
+    case AGET_CHAR:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      il.add(new InsnNode(CALOAD));
+      addLocalSet(i.getRegisterA(), CHAR_TYPE);
+      return;
+    case AGET_SHORT:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      il.add(new InsnNode(SALOAD));
+      addLocalSet(i.getRegisterA(), SHORT_TYPE);
+      return;
+    case APUT:
+    case APUT_BOOLEAN:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), i.getOpcode() == Opcode.APUT_BOOLEAN ? BOOLEAN_TYPE : INT_TYPE);
+      il.add(new InsnNode(IASTORE));
+      return;
+    case APUT_WIDE:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), null); // unsure if long or double
+      il.add(new UnresolvedWideArrayInsnNode(true));
+      return;
+    case APUT_OBJECT:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), OBJECT_TYPE);
+      il.add(new InsnNode(AASTORE));
+      return;
+    case APUT_BYTE:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), BYTE_TYPE);
+      il.add(new InsnNode(BASTORE));
+      return;
+    case APUT_CHAR:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), CHAR_TYPE);
+      il.add(new InsnNode(CASTORE));
+      return;
+    case APUT_SHORT:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), SHORT_TYPE);
+      il.add(new InsnNode(SASTORE));
+      return;
     default:
       break;
     }
+    throw new UnsupportedInsnException(i);
   }
 
   /**
@@ -993,7 +1074,11 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     String owner = Type.getType(mr.getDefiningClass()).getInternalName();
     String name = mr.getName();
     String desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
-    int registers = i.getRegisterCount(); // sum of all local sizes
+    int registers = i.getRegisterCount(); // sum
+                                          // of
+                                          // all
+                                          // local
+                                          // sizes
     int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); // sum of all parameter sizes (parameters + reference = registers)
     int parIdx = 0;
     int regIdx = 0;

@@ -1,6 +1,7 @@
 package me.nov.dalvikgate.transform.instruction.tree;
 
-import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
+import java.util.Map;
+
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -8,7 +9,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import java.util.Map;
+import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 /**
  * A node that represents a local variable instruction that has not been fully resolved.
