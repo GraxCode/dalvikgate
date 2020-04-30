@@ -542,7 +542,9 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     int source = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE_RESULT:
-      addLocalSet(source, null);
+      // "Move the single-word non-object result of..."
+      // - So this should be a primitive
+      addLocalSet(source, getPushedTypeForInsn(il.getLast()));
       break;
     case MOVE_EXCEPTION:
     case MOVE_RESULT_OBJECT:
@@ -943,7 +945,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       }
       // TODO: Check parameter type?
       //  - then use addLocalGet(register, <<TYPE>>) instead of null
-      addLocalGet(i.getRegisterC(), null);
+      addLocalGetObject(i.getRegisterC());
       registers--; // reference can only be size 1
       regIdx++;
     }
