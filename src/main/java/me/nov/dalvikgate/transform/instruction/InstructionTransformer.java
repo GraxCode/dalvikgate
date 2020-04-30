@@ -1,14 +1,31 @@
 package me.nov.dalvikgate.transform.instruction;
 
+import static me.nov.dalvikgate.asm.ASMCommons.ARRAY_TYPE;
+import static me.nov.dalvikgate.asm.ASMCommons.OBJECT_TYPE;
+import static me.nov.dalvikgate.asm.ASMCommons.buildMethodDesc;
+import static me.nov.dalvikgate.asm.ASMCommons.getPrimitiveIndex;
+import static me.nov.dalvikgate.asm.ASMCommons.getPushedTypeForInsn;
+import static me.nov.dalvikgate.asm.ASMCommons.getTypeForDesc;
+import static me.nov.dalvikgate.asm.ASMCommons.makeExceptionThrow;
+import static me.nov.dalvikgate.asm.ASMCommons.makeIntPush;
+import static me.nov.dalvikgate.asm.ASMCommons.makeLongPush;
+import static org.objectweb.asm.Type.ARRAY;
+import static org.objectweb.asm.Type.BOOLEAN_TYPE;
+import static org.objectweb.asm.Type.BYTE_TYPE;
+import static org.objectweb.asm.Type.CHAR_TYPE;
+import static org.objectweb.asm.Type.DOUBLE_TYPE;
+import static org.objectweb.asm.Type.FLOAT_TYPE;
+import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.LONG_TYPE;
+import static org.objectweb.asm.Type.OBJECT;
+import static org.objectweb.asm.Type.SHORT_TYPE;
+import static org.objectweb.asm.Type.VOID;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
-
-import org.jf.dexlib2.Format;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderInstruction;
@@ -40,16 +57,26 @@ import org.jf.dexlib2.iface.reference.StringReference;
 import org.jf.dexlib2.iface.reference.TypeReference;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
+import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedVarInsnNode;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedWideArrayInsnNode;
-
-import static me.nov.dalvikgate.asm.ASMCommons.*;
-import static org.objectweb.asm.Type.*;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
@@ -1051,10 +1078,196 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       addLocalSet(i.getRegisterA(), SHORT_TYPE);
       il.add(new InsnNode(SASTORE));
       return;
+    case ADD_INT:
+      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      addLocalSet(i.getRegisterA(), SHORT_TYPE);
+      il.add(new InsnNode(SASTORE));
+      return;
     default:
+      // has to be binary op
       break;
     }
-    throw new UnsupportedInsnException(i);
+    // Perform the identified binary operation on the two source registers, storing the result in the destination register.
+    // A: destination register or pair (8 bits)
+    // B: first source register or pair (8 bits)
+    // C: second source register or pair (8 bits)
+    switch (i.getOpcode()) {
+    case SUB_INT:
+    case MUL_INT:
+    case DIV_INT:
+    case REM_INT:
+    case AND_INT:
+    case OR_INT:
+    case XOR_INT:
+    case SHL_INT:
+    case SHR_INT:
+    case USHR_INT:
+      addLocalGet(i.getRegisterB(), INT_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE);
+      break;
+    case ADD_LONG:
+    case SUB_LONG:
+    case MUL_LONG:
+    case DIV_LONG:
+    case REM_LONG:
+    case AND_LONG:
+    case OR_LONG:
+    case XOR_LONG:
+    case SHL_LONG:
+    case SHR_LONG:
+    case USHR_LONG:
+      addLocalGet(i.getRegisterB(), LONG_TYPE);
+      addLocalGet(i.getRegisterC(), LONG_TYPE);
+      break;
+    case ADD_FLOAT:
+    case SUB_FLOAT:
+    case MUL_FLOAT:
+    case DIV_FLOAT:
+    case REM_FLOAT:
+      addLocalGet(i.getRegisterB(), FLOAT_TYPE);
+      addLocalGet(i.getRegisterC(), FLOAT_TYPE);
+      break;
+    case ADD_DOUBLE:
+    case SUB_DOUBLE:
+    case MUL_DOUBLE:
+    case DIV_DOUBLE:
+    case REM_DOUBLE:
+      addLocalGet(i.getRegisterB(), DOUBLE_TYPE);
+      addLocalGet(i.getRegisterC(), DOUBLE_TYPE);
+      break;
+    default:
+      throw new UnsupportedInsnException(i);
+    }
+    switch (i.getOpcode()) {
+    case SUB_INT:
+      il.add(new InsnNode(ISUB));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case MUL_INT:
+      il.add(new InsnNode(IMUL));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case DIV_INT:
+      il.add(new InsnNode(IDIV));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case REM_INT:
+      il.add(new InsnNode(IREM));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case AND_INT:
+      il.add(new InsnNode(IAND));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case OR_INT:
+      il.add(new InsnNode(IOR));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case XOR_INT:
+      il.add(new InsnNode(IXOR));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case SHL_INT:
+      il.add(new InsnNode(ISHL));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case SHR_INT:
+      il.add(new InsnNode(ISHR));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case USHR_INT:
+      il.add(new InsnNode(IUSHR));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
+    case ADD_LONG:
+      il.add(new InsnNode(LADD));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case SUB_LONG:
+      il.add(new InsnNode(LSUB));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case MUL_LONG:
+      il.add(new InsnNode(LMUL));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case DIV_LONG:
+      il.add(new InsnNode(LDIV));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case REM_LONG:
+      il.add(new InsnNode(LREM));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case AND_LONG:
+      il.add(new InsnNode(LAND));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case OR_LONG:
+      il.add(new InsnNode(LOR));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case XOR_LONG:
+      il.add(new InsnNode(LXOR));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case SHL_LONG:
+      il.add(new InsnNode(LSHL));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case SHR_LONG:
+      il.add(new InsnNode(LSHR));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case USHR_LONG:
+      il.add(new InsnNode(LUSHR));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case ADD_FLOAT:
+      il.add(new InsnNode(FADD));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case SUB_FLOAT:
+      il.add(new InsnNode(FSUB));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case MUL_FLOAT:
+      il.add(new InsnNode(FMUL));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case DIV_FLOAT:
+      il.add(new InsnNode(FDIV));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case REM_FLOAT:
+      il.add(new InsnNode(FREM));
+      addLocalSet(i.getRegisterA(), LONG_TYPE);
+      break;
+    case ADD_DOUBLE:
+      il.add(new InsnNode(FADD));
+      addLocalSet(i.getRegisterA(), DOUBLE_TYPE);
+      break;
+    case SUB_DOUBLE:
+      il.add(new InsnNode(DSUB));
+      addLocalSet(i.getRegisterA(), DOUBLE_TYPE);
+      break;
+    case MUL_DOUBLE:
+      il.add(new InsnNode(DMUL));
+      addLocalSet(i.getRegisterA(), DOUBLE_TYPE);
+      break;
+    case DIV_DOUBLE:
+      il.add(new InsnNode(DDIV));
+      addLocalSet(i.getRegisterA(), DOUBLE_TYPE);
+      break;
+    case REM_DOUBLE:
+      il.add(new InsnNode(DREM));
+      addLocalSet(i.getRegisterA(), DOUBLE_TYPE);
+      break;
+    default:
+      //this should only be reached if i missed out a case
+      throw new UnsupportedInsnException(i);
+    }
   }
 
   /**
