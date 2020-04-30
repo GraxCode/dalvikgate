@@ -325,6 +325,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         System.err.println("   - " + i + ": unresolved JUMP");
       } else if (insn instanceof UnresolvedVarInsnNode) {
         System.err.println("   - " + i + ": unresolved VARIABLE");
+      } else if(insn instanceof UnresolvedWideArrayInsnNode) {
+        System.err.println("   - " + i + ": unresolved WIDE ARRAY");
       }
       i++;
     }
