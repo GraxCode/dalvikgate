@@ -611,6 +611,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         break;
       addLocalGet(source, INT_TYPE);
       addLocalSet(destination, INT_TYPE);
+      break;
     case MOVE_WIDE:
       if (source == destination)
         break;
