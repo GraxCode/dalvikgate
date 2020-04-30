@@ -73,136 +73,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     return Objects.requireNonNull(il);
   }
 
-  private void buildLabels() {
-    labels = new HashMap<>();
-    // build labels first so we can reference them while rewriting
-    for (BuilderInstruction i : dexInstructions) {
-      if (!i.getLocation().getLabels().isEmpty()) {
-        labels.put(i, new LabelNode());
-      }
-    }
-  }
-
-  private void transformTryCatchBlocks() {
-    if (builder.getTryBlocks() != null) {
-      mn.tryCatchBlocks = new ArrayList<>();
-      builder.getTryBlocks().forEach(tb -> {
-        String handlerType = tb.exceptionHandler.getExceptionType();
-        String handler = handlerType == null ? null : Type.getType(handlerType).getInternalName();
-        mn.tryCatchBlocks.add(new TryCatchBlockNode(getASMLabel(tb.start), getASMLabel(tb.end), getASMLabel(tb.exceptionHandler.getHandler()), handler));
-      });
-    }
-  }
-
-  public LabelNode getASMLabel(Label label) {
-    return labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst().get());
-  }
-
-  @Deprecated
-  private int regToLocal(int register) {
-    // The N arguments to a method land in the last N registers of the method's invocation frame, in order
-    int startingArgs = builder.getRegisterCount() - argumentRegisterCount;
-    if (register >= startingArgs) {
-      return register - startingArgs; // 0 is reserved for "this"
-    }
-    return register + argumentRegisterCount;
-  }
-
-  /**
-   * Add local set for object type.
-   *
-   * @param register Register index.
-   */
-  private void addLocalSetObject(int register) {
-    addLocalGetSet(true, register, OBJECT_TYPE);
-  }
-
-  /**
-   * Add local set for the given type.
-   *
-   * @param register Register index.
-   * @param type     Discovered type to put.
-   */
-  private void addLocalSet(int register, Type type) {
-    if (type != null) {
-      if (type.getSort() == ARRAY)
-        type = ARRAY_TYPE;
-      else if (type.getSort() == OBJECT)
-        type = OBJECT_TYPE;
-      else if (type.getSort() == VOID)
-        throw new IllegalStateException("Illegal type 'void'");
-    }
-    addLocalGetSet(true, register, type);
-  }
-
-  /**
-   * Add local set for potentially int type.
-   *
-   * @param register Register index.
-   * @param value    Int value.
-   */
-  private void addLocalSet(int register, int value) {
-    addLocalGetSet(true, register, value == 0 ? null : INT_TYPE);
-  }
-
-  /**
-   * Add local set for potentially long type.
-   *
-   * @param register Register index.
-   * @param value    Long value.
-   */
-  private void addLocalSet(int register, long value) {
-    addLocalGetSet(true, register, value == 0 ? null : LONG_TYPE);
-  }
-
-  /**
-   * Add local get for object type.
-   *
-   * @param register Register index.
-   */
-  private void addLocalGetObject(int register) {
-    addLocalGetSet(false, register, OBJECT_TYPE);
-  }
-
-  /**
-   * Add local get for the given type.
-   *
-   * @param register Register index.
-   * @param type     Discovered type to get.
-   */
-  private void addLocalGet(int register, Type type) {
-    if (type != null ) {
-      if (type.getSort() == ARRAY)
-        type = ARRAY_TYPE;
-      else if (type.getSort() == OBJECT)
-        type = OBJECT_TYPE;
-      else if (type.getSort() == VOID)
-        throw new IllegalStateException("Illegal type 'void'");
-    }
-    // TODO: Check calls to this method. Is there a case where "0" will be used as a "null"?
-    //  if so, then uncomment the following code:
-    //
-    //else if (type.getSort() == INT)
-    //  type = null;
-    //
-    addLocalGetSet(false, register, type);
-  }
-
-  /**
-   * Add local set for given type.
-   *
-   * @param store    {@code true} when insn is a setter.
-   * @param register Variable index.
-   * @param type     Type of variable. {@code null} if ambiguous.
-   */
-  private void addLocalGetSet(boolean store, int register, Type type) {
-    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store, type);
-    var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
-    if (type != null)
-      var.setType(type);
-    il.add(var);
-  }
-
   @Override
   public void build(DexBackedMethod method) {
     il = new InsnList();
@@ -422,6 +292,136 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         throw new IllegalArgumentException(i.getClass().getName());
       }
     }
+  }
+
+  private void buildLabels() {
+    labels = new HashMap<>();
+    // build labels first so we can reference them while rewriting
+    for (BuilderInstruction i : dexInstructions) {
+      if (!i.getLocation().getLabels().isEmpty()) {
+        labels.put(i, new LabelNode());
+      }
+    }
+  }
+
+  private void transformTryCatchBlocks() {
+    if (builder.getTryBlocks() != null) {
+      mn.tryCatchBlocks = new ArrayList<>();
+      builder.getTryBlocks().forEach(tb -> {
+        String handlerType = tb.exceptionHandler.getExceptionType();
+        String handler = handlerType == null ? null : Type.getType(handlerType).getInternalName();
+        mn.tryCatchBlocks.add(new TryCatchBlockNode(getASMLabel(tb.start), getASMLabel(tb.end), getASMLabel(tb.exceptionHandler.getHandler()), handler));
+      });
+    }
+  }
+
+  public LabelNode getASMLabel(Label label) {
+    return labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst().get());
+  }
+
+  @Deprecated
+  private int regToLocal(int register) {
+    // The N arguments to a method land in the last N registers of the method's invocation frame, in order
+    int startingArgs = builder.getRegisterCount() - argumentRegisterCount;
+    if (register >= startingArgs) {
+      return register - startingArgs; // 0 is reserved for "this"
+    }
+    return register + argumentRegisterCount;
+  }
+
+  /**
+   * Add local set for object type.
+   *
+   * @param register Register index.
+   */
+  private void addLocalSetObject(int register) {
+    addLocalGetSet(true, register, OBJECT_TYPE);
+  }
+
+  /**
+   * Add local set for the given type.
+   *
+   * @param register Register index.
+   * @param type     Discovered type to put.
+   */
+  private void addLocalSet(int register, Type type) {
+    if (type != null) {
+      if (type.getSort() == ARRAY)
+        type = ARRAY_TYPE;
+      else if (type.getSort() == OBJECT)
+        type = OBJECT_TYPE;
+      else if (type.getSort() == VOID)
+        throw new IllegalStateException("Illegal type 'void'");
+    }
+    addLocalGetSet(true, register, type);
+  }
+
+  /**
+   * Add local set for potentially int type.
+   *
+   * @param register Register index.
+   * @param value    Int value.
+   */
+  private void addLocalSet(int register, int value) {
+    addLocalGetSet(true, register, value == 0 ? null : INT_TYPE);
+  }
+
+  /**
+   * Add local set for potentially long type.
+   *
+   * @param register Register index.
+   * @param value    Long value.
+   */
+  private void addLocalSet(int register, long value) {
+    addLocalGetSet(true, register, value == 0 ? null : LONG_TYPE);
+  }
+
+  /**
+   * Add local get for object type.
+   *
+   * @param register Register index.
+   */
+  private void addLocalGetObject(int register) {
+    addLocalGetSet(false, register, OBJECT_TYPE);
+  }
+
+  /**
+   * Add local get for the given type.
+   *
+   * @param register Register index.
+   * @param type     Discovered type to get.
+   */
+  private void addLocalGet(int register, Type type) {
+    if (type != null ) {
+      if (type.getSort() == ARRAY)
+        type = ARRAY_TYPE;
+      else if (type.getSort() == OBJECT)
+        type = OBJECT_TYPE;
+      else if (type.getSort() == VOID)
+        throw new IllegalStateException("Illegal type 'void'");
+    }
+    // TODO: Check calls to this method. Is there a case where "0" will be used as a "null"?
+    //  if so, then uncomment the following code:
+    //
+    //else if (type.getSort() == INT)
+    //  type = null;
+    //
+    addLocalGetSet(false, register, type);
+  }
+
+  /**
+   * Add local set for given type.
+   *
+   * @param store    {@code true} when insn is a setter.
+   * @param register Variable index.
+   * @param type     Type of variable. {@code null} if ambiguous.
+   */
+  private void addLocalGetSet(boolean store, int register, Type type) {
+    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store, type);
+    var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
+    if (type != null)
+      var.setType(type);
+    il.add(var);
   }
 
   private void visitInt8Math(BuilderInstruction22b i) {
