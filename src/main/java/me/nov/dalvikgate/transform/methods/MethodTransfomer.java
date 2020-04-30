@@ -3,6 +3,8 @@ package me.nov.dalvikgate.transform.methods;
 import java.util.Objects;
 
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.utils.TextUtils;
+
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
@@ -47,7 +49,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
         e.printStackTrace();
       }
       mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException",
-              "dalvikgate error: " + e.toString() + " / " + (e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : " no stack trace"));
+              "dalvikgate error: " + e.toString() + " / " + TextUtils.exceptionToString(e));
       return;
     }
     mn.instructions = it.getTransformed();
