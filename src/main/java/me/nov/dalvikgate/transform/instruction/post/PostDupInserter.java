@@ -10,6 +10,9 @@ import org.objectweb.asm.tree.VarInsnNode;
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
+/**
+ * Transformer that converts successive local store and load instructions with the same local var to {@code dup}; {@code store}.
+ */
 public class PostDupInserter implements ITransformer<MethodNode, MethodNode>, Opcodes {
 
   @Override
