@@ -15,7 +15,7 @@ import me.nov.dalvikgate.transform.ITransformer;
  * Transformer that adds {@code POP} instructions after every stack-pushing method without a bound variable store. This has to be run <i>BEFORE</i> other transformes that change
  * variables.
  */
-public class DanglingMethodResultTransformer implements ITransformer<MethodNode, MethodNode>, Opcodes {
+public class PostDanglingMethodReturn implements ITransformer<MethodNode, MethodNode>, Opcodes {
 
   @Override
   public void build(MethodNode mn) {

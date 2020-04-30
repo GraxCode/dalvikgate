@@ -3,7 +3,7 @@ package me.nov.dalvikgate.transform.methods;
 import java.util.Objects;
 
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.post.DanglingMethodResultTransformer;
+import me.nov.dalvikgate.transform.instruction.post.PostDanglingMethodReturn;
 import me.nov.dalvikgate.transform.instruction.post.PostDupInserter;
 import me.nov.dalvikgate.utils.TextUtils;
 
@@ -58,7 +58,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       return;
     }
     mn.instructions = it.getTransformed();
-    DanglingMethodResultTransformer pops = new DanglingMethodResultTransformer();
+    PostDanglingMethodReturn pops = new PostDanglingMethodReturn();
     pops.visit(mn);
     PostDupInserter dups = new PostDupInserter();
     dups.visit(mn);
