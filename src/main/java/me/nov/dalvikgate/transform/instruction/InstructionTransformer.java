@@ -298,6 +298,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   @Override
   public void buildDone(DexBackedMethod method) {
     int i = 0;
+    // TODO: Type analysis and fill in missing data for resolvable instructions
     System.err.println(method.getDefiningClass() + " - " + method.getName());
     for (AbstractInsnNode insn : il) {
       if (insn instanceof UnresolvedJumpInsnNode) {
