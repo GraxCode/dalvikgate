@@ -50,7 +50,6 @@ import static org.objectweb.asm.Type.*;
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
  */
-@SuppressWarnings("unused")
 public class InstructionTransformer implements ITransformer<DexBackedMethod, InsnList>, Opcodes {
   private InsnList il;
   private MethodNode mn;
