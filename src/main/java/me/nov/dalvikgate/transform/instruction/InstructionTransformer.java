@@ -638,6 +638,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       il.add(new InsnNode(ICONST_M1));
       il.add(new InsnNode(IXOR));
       addLocalSet(destination, INT_TYPE);
+      break;
     case NEG_LONG:
       addLocalGet(source, LONG_TYPE);
       il.add(new InsnNode(LNEG));
