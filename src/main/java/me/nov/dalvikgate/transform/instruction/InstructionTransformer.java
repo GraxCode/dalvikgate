@@ -1229,15 +1229,10 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       addLocalSet(i.getRegisterA(), SHORT_TYPE);
       il.add(new InsnNode(SASTORE));
       return;
-    default:
-      // has to be binary op
-      break;
-    }
     // Perform the identified binary operation on the two source registers, storing the result in the destination register.
     // A: destination register or pair (8 bits)
     // B: first source register or pair (8 bits)
     // C: second source register or pair (8 bits)
-    switch (i.getOpcode()) {
     case SUB_INT:
     case MUL_INT:
     case DIV_INT:
@@ -1410,8 +1405,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       addLocalSet(i.getRegisterA(), DOUBLE_TYPE);
       break;
     default:
-      // this should only be reached if i missed out a case
-      throw new UnsupportedInsnException(i);
+      throw new IllegalStateException();
     }
   }
 
