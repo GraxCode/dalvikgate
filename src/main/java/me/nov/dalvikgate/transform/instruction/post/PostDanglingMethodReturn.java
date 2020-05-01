@@ -32,7 +32,7 @@ public class PostDanglingMethodReturn implements ITransformer<MethodNode, Method
         }
       }
     }
-    mn.maxStack = Math.max(mn.maxStack, 1);
+    mn.maxStack = Math.max(mn.maxStack, 2);
   }
 
   @Override

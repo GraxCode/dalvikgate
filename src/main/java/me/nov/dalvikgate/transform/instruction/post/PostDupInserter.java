@@ -32,7 +32,7 @@ public class PostDupInserter implements ITransformer<MethodNode, MethodNode>, Op
         }
       }
     }
-    mn.maxStack = Math.max(mn.maxStack, 1);
+    mn.maxStack = Math.max(mn.maxStack, 2);
   }
 
   @Override

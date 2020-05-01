@@ -257,4 +257,22 @@ public class ASMCommons implements Opcodes {
     }
     return null;
   }
+
+  public static boolean isBlockEnd(AbstractInsnNode ain) {
+    return isReturn(ain) || ain.getType() == AbstractInsnNode.JUMP_INSN || ain.getOpcode() == ATHROW;
+  }
+
+  public static boolean isReturn(AbstractInsnNode ain) {
+    switch (ain.getOpcode()) {
+    case RETURN:
+    case ARETURN:
+    case DRETURN:
+    case FRETURN:
+    case IRETURN:
+    case LRETURN:
+      return true;
+    default:
+      return false;
+    }
+  }
 }

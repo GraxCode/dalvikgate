@@ -5,6 +5,7 @@ import java.util.Objects;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.post.PostDanglingMethodReturn;
 import me.nov.dalvikgate.transform.instruction.post.PostDupInserter;
+import me.nov.dalvikgate.transform.instruction.post.PostLocalRemover;
 import me.nov.dalvikgate.utils.TextUtils;
 
 import org.jf.dexlib2.builder.MutableMethodImplementation;
@@ -60,6 +61,8 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
     mn.instructions = it.getTransformed();
     PostDanglingMethodReturn pops = new PostDanglingMethodReturn();
     pops.visit(mn);
+    PostLocalRemover locRem = new PostLocalRemover();
+    locRem.visit(mn);
     PostDupInserter dups = new PostDupInserter();
     dups.visit(mn);
   }
