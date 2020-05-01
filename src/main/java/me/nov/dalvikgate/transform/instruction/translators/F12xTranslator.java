@@ -1,20 +1,12 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
-import static me.nov.dalvikgate.asm.ASMCommons.ARRAY_TYPE;
-import static org.objectweb.asm.Type.BYTE_TYPE;
-import static org.objectweb.asm.Type.CHAR_TYPE;
-import static org.objectweb.asm.Type.DOUBLE_TYPE;
-import static org.objectweb.asm.Type.FLOAT_TYPE;
-import static org.objectweb.asm.Type.INT_TYPE;
-import static org.objectweb.asm.Type.LONG_TYPE;
-import static org.objectweb.asm.Type.SHORT_TYPE;
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+import static org.objectweb.asm.Type.*;
 
 import org.jf.dexlib2.builder.instruction.BuilderInstruction12x;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
 public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x> {

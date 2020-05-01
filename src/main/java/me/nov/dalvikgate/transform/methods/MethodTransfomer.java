@@ -2,12 +2,6 @@ package me.nov.dalvikgate.transform.methods;
 
 import java.util.Objects;
 
-import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.post.PostDanglingMethodReturn;
-import me.nov.dalvikgate.transform.instruction.post.PostDupInserter;
-import me.nov.dalvikgate.transform.instruction.post.PostLocalRemover;
-import me.nov.dalvikgate.utils.TextUtils;
-
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
@@ -16,6 +10,9 @@ import org.objectweb.asm.tree.MethodNode;
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.transform.instruction.post.*;
+import me.nov.dalvikgate.utils.TextUtils;
 
 public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNode>, Opcodes {
   private MethodNode mn;
@@ -42,7 +39,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       return;
     }
     MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
-    mn.maxLocals = mn.maxStack = builder.getRegisterCount(); //we need this because some decompilers crash if this is zero
+    mn.maxLocals = mn.maxStack = builder.getRegisterCount(); // we need this because some decompilers crash if this is zero
     InstructionTransformer it = new InstructionTransformer(mn, method, builder);
     try {
       it.visit(method);
@@ -52,8 +49,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       } else {
         e.printStackTrace();
       }
-      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException",
-              "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
+      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException", "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
       mn.maxStack = 3;
       mn.tryCatchBlocks.clear();
       return;

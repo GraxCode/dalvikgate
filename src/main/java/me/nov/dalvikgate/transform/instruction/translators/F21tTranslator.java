@@ -1,14 +1,13 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
-import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.*;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
 import org.objectweb.asm.tree.JumpInsnNode;
 
-import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
 
@@ -19,7 +18,7 @@ public class F21tTranslator extends AbstractInsnTranslator<BuilderInstruction21t
   }
 
   @Override
-  public void translate(BuilderInstruction21t i) { 
+  public void translate(BuilderInstruction21t i) {
     // Branch to the given destination if the given register's value compares with 0 as specified.
     // A: register to test (8 bits)
     // B: signed branch offset (16 bits)

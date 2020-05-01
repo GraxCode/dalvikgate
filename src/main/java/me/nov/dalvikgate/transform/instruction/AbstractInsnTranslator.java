@@ -4,10 +4,8 @@ import java.util.HashMap;
 
 import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
 
 public abstract class AbstractInsnTranslator<T extends BuilderInstruction> implements Opcodes {
 

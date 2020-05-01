@@ -2,18 +2,14 @@ package me.nov.dalvikgate.transform.instruction.tree;
 
 import java.util.Map;
 
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 /**
- * A node that represents a local variable instruction that has not been fully resolved.
- * Due to the ambiguity of android bytecode certain actions are not immediately clear in the same way they would be in plain Java bytecode.
+ * A node that represents a local variable instruction that has not been fully resolved. Due to the ambiguity of android bytecode certain actions are not immediately clear in the
+ * same way they would be in plain Java bytecode.
  */
 public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
   private final boolean store;
@@ -36,7 +32,6 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
     validate();
     super.accept(methodVisitor);
   }
-
 
   @Override
   public AbstractInsnNode clone(final Map<LabelNode, LabelNode> clonedLabels) {

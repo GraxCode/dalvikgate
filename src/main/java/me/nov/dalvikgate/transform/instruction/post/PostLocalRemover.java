@@ -1,10 +1,7 @@
 package me.nov.dalvikgate.transform.instruction.post;
 
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;

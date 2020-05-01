@@ -1,22 +1,15 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
-import static me.nov.dalvikgate.asm.ASMCommons.ARRAY_TYPE;
-import static me.nov.dalvikgate.asm.ASMCommons.getPrimitiveIndex;
-import static me.nov.dalvikgate.asm.ASMCommons.getTypeForDesc;
-import static org.objectweb.asm.Type.INT_TYPE;
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+import static org.objectweb.asm.Type.*;
 
-import org.jf.dexlib2.Opcode;
-import org.jf.dexlib2.ReferenceType;
+import org.jf.dexlib2.*;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22c;
-import org.jf.dexlib2.iface.reference.FieldReference;
-import org.jf.dexlib2.iface.reference.TypeReference;
+import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
 public class F22cTranslator extends AbstractInsnTranslator<BuilderInstruction22c> {

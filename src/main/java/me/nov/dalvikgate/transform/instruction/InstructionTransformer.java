@@ -1,73 +1,25 @@
 package me.nov.dalvikgate.transform.instruction;
 
-import static me.nov.dalvikgate.asm.ASMCommons.ARRAY_TYPE;
-import static me.nov.dalvikgate.asm.ASMCommons.OBJECT_TYPE;
-import static me.nov.dalvikgate.asm.ASMCommons.makeExceptionThrow;
-import static me.nov.dalvikgate.asm.ASMCommons.makeIntPush;
-import static me.nov.dalvikgate.asm.ASMCommons.makeLongPush;
-import static org.objectweb.asm.Type.ARRAY;
-import static org.objectweb.asm.Type.INT_TYPE;
-import static org.objectweb.asm.Type.LONG_TYPE;
-import static org.objectweb.asm.Type.OBJECT;
-import static org.objectweb.asm.Type.VOID;
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+import static org.objectweb.asm.Type.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import org.jf.dexlib2.Opcode;
-import org.jf.dexlib2.builder.BuilderInstruction;
-import org.jf.dexlib2.builder.BuilderOffsetInstruction;
+import org.jf.dexlib2.builder.*;
 import org.jf.dexlib2.builder.Label;
-import org.jf.dexlib2.builder.MutableMethodImplementation;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction12x;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21ih;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21lh;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21s;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction22b;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction22c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction22s;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction22t;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction23x;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction31c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction31i;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction51l;
+import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.jf.dexlib2.iface.reference.StringReference;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.translators.F11xTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F12xTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F21cTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F21tTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F22bTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F22cTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F22sTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F22tTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F23xTranslator;
-import me.nov.dalvikgate.transform.instruction.translators.F35cTranslator;
-import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
-import me.nov.dalvikgate.transform.instruction.tree.UnresolvedVarInsnNode;
-import me.nov.dalvikgate.transform.instruction.tree.UnresolvedWideArrayInsnNode;
+import me.nov.dalvikgate.transform.instruction.translators.*;
+import me.nov.dalvikgate.transform.instruction.tree.*;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.

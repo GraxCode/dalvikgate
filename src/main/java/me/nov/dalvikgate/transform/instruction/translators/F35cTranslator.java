@@ -1,6 +1,6 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
-import static me.nov.dalvikgate.asm.ASMCommons.buildMethodDesc;
+import static me.nov.dalvikgate.asm.ASMCommons.*;
 
 import java.util.List;
 
@@ -10,8 +10,7 @@ import org.jf.dexlib2.iface.reference.MethodReference;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
 public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c> {

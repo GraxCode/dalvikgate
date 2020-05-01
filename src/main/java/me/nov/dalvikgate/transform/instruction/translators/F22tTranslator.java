@@ -1,14 +1,13 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
-import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.*;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22t;
 import org.objectweb.asm.tree.JumpInsnNode;
 
-import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
 

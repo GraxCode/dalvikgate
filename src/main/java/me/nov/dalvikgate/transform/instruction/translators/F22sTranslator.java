@@ -1,12 +1,11 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
-import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.*;
 
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22s;
 import org.objectweb.asm.tree.InsnNode;
 
-import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
 public class F22sTranslator extends AbstractInsnTranslator<BuilderInstruction22s> {

@@ -2,8 +2,7 @@ package me.nov.dalvikgate.asm;
 
 import java.util.List;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 public class ASMCommons implements Opcodes {

@@ -1,13 +1,9 @@
 package me.nov.dalvikgate.asm;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.nio.file.Files;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -30,8 +26,7 @@ public class Conversion {
    * Configurable node-to-bytecode conversion. Output depends on flags.
    *
    * @param cn    Node to convert.
-   * @param flags Writer flags, see {@link ClassWriter#COMPUTE_MAXS} + {@link ClassWriter#COMPUTE_FRAMES}.
-   *              Using {@code 0} will skip these attributes.
+   * @param flags Writer flags, see {@link ClassWriter#COMPUTE_MAXS} + {@link ClassWriter#COMPUTE_FRAMES}. Using {@code 0} will skip these attributes.
    * @return Bytecode of class.
    */
   public static byte[] toBytecode(ClassNode cn, int flags) {
@@ -45,8 +40,8 @@ public class Conversion {
    * Configurable bytecode-to-node conversion. Output depends on flags.
    *
    * @param bytez Bytecode of class.
-   * @param flags Reader flags, see {@link ClassReader#SKIP_FRAMES} + {@link ClassReader#SKIP_DEBUG} + {@link ClassReader#SKIP_CODE} for skippable content.<br?
-   *              See {@link ClassReader#EXPAND_FRAMES}. <br>
+   * @param flags Reader flags, see {@link ClassReader#SKIP_FRAMES} + {@link ClassReader#SKIP_DEBUG} + {@link ClassReader#SKIP_CODE} for skippable content.<br? See
+   *              {@link ClassReader#EXPAND_FRAMES}. <br>
    *              Depending on the use case, certain attributes may want to be skipped or expanded.
    * @return Node of class.
    */

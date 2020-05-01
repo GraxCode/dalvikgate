@@ -1,15 +1,11 @@
 package me.nov.dalvikgate.transform.fields;
 
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-import org.jf.dexlib2.dexbacked.DexBackedAnnotation;
-import org.jf.dexlib2.dexbacked.DexBackedField;
+import org.jf.dexlib2.dexbacked.*;
 import org.jf.dexlib2.dexbacked.value.DexBackedArrayEncodedValue;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;

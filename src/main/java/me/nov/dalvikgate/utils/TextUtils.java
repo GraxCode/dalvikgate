@@ -1,7 +1,6 @@
 package me.nov.dalvikgate.utils;
 
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.*;
 
 public class TextUtils {
   public static String stacktraceToString(Throwable t) {

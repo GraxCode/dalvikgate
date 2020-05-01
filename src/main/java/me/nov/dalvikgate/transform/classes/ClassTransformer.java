@@ -1,23 +1,13 @@
 package me.nov.dalvikgate.transform.classes;
 
-import java.util.ArrayList;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.jf.dexlib2.dexbacked.DexBackedAnnotation;
-import org.jf.dexlib2.dexbacked.DexBackedAnnotationElement;
-import org.jf.dexlib2.dexbacked.DexBackedClassDef;
-import org.jf.dexlib2.dexbacked.DexBackedField;
-import org.jf.dexlib2.dexbacked.DexBackedMethod;
-import org.jf.dexlib2.dexbacked.value.DexBackedArrayEncodedValue;
-import org.jf.dexlib2.dexbacked.value.DexBackedMethodEncodedValue;
-import org.jf.dexlib2.dexbacked.value.DexBackedStringEncodedValue;
-import org.jf.dexlib2.dexbacked.value.DexBackedTypeEncodedValue;
+import org.jf.dexlib2.dexbacked.*;
+import org.jf.dexlib2.dexbacked.value.*;
 import org.jf.dexlib2.iface.reference.MethodReference;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InnerClassNode;
+import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
@@ -34,9 +24,7 @@ public class ClassTransformer implements ITransformer<DexBackedClassDef, ClassNo
     cn.name = Type.getType(clazz.getType()).getInternalName();
     cn.version = CLASS_V8;
     cn.access = clazz.getAccessFlags(); // dex uses the same access codes
-    cn.interfaces = clazz.getInterfaces().stream()
-            .map(itr -> Type.getType(itr).getInternalName())
-            .collect(Collectors.toList());
+    cn.interfaces = clazz.getInterfaces().stream().map(itr -> Type.getType(itr).getInternalName()).collect(Collectors.toList());
     String superClass = clazz.getSuperclass();
     if (superClass != null)
       cn.superName = Type.getType(superClass).getInternalName();
