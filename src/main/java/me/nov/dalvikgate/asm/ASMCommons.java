@@ -2,17 +2,12 @@ package me.nov.dalvikgate.asm;
 
 import java.util.List;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
 
 public class ASMCommons implements Opcodes {
+  public static final Type OBJECT_TYPE = Type.getType("Ljava/lang/Object;");
+  public static final Type ARRAY_TYPE = Type.getType("[Ljava/lang/Object;");
 
   public static AbstractInsnNode makeNullPush(Type type) {
     switch (type.getSort()) {
@@ -113,6 +108,81 @@ public class ASMCommons implements Opcodes {
     throw new IllegalArgumentException("illegal desc: " + cs);
   }
 
+  public static Type getTypeForDesc(CharSequence cs) {
+    String desc = (String) cs;
+    switch (desc.charAt(0)) {
+    case 'L':
+      return OBJECT_TYPE;
+    case '[':
+      return ARRAY_TYPE;
+    case 'I':
+    case 'S':
+    case 'Z':
+    case 'C':
+    case 'B':
+      return Type.INT_TYPE;
+    case 'J':
+      return Type.LONG_TYPE;
+    case 'D':
+      return Type.DOUBLE_TYPE;
+    case 'F':
+      return Type.FLOAT_TYPE;
+    }
+    throw new IllegalArgumentException("illegal desc: " + cs);
+  }
+
+  public static int getOppositeVarOp(int op) {
+    switch (op) {
+    case ASTORE:
+      return ALOAD;
+    case ISTORE:
+      return ILOAD;
+    case LSTORE:
+      return LLOAD;
+    case DSTORE:
+      return DLOAD;
+    case FSTORE:
+      return FLOAD;
+    case ALOAD:
+      return ASTORE;
+    case ILOAD:
+      return ISTORE;
+    case LLOAD:
+      return LSTORE;
+    case DLOAD:
+      return DSTORE;
+    case FLOAD:
+      return FSTORE;
+    }
+    throw new IllegalArgumentException("illegal op: " + op);
+  }
+
+  public static boolean isVarStore(int op) {
+    switch (op) {
+    case ASTORE:
+      return true;
+    case ISTORE:
+      return true;
+    case LSTORE:
+      return true;
+    case DSTORE:
+      return true;
+    case FSTORE:
+      return true;
+    case ALOAD:
+      return false;
+    case ILOAD:
+      return false;
+    case LLOAD:
+      return false;
+    case DLOAD:
+      return false;
+    case FLOAD:
+      return false;
+    }
+    throw new IllegalArgumentException("illegal op: " + op);
+  }
+
   public static int getPrimitiveIndex(String primitive) {
     if (primitive.length() > 1) {
       throw new IllegalArgumentException("not a primitive: " + primitive);
@@ -136,5 +206,72 @@ public class ASMCommons implements Opcodes {
       return 11;
     }
     throw new IllegalArgumentException("not a primitive: " + primitive);
+  }
+
+  public static Type getPushedTypeForInsn(AbstractInsnNode insn) {
+    switch (insn.getType()) {
+    case AbstractInsnNode.FIELD_INSN:
+      return Type.getType(((FieldInsnNode) insn).desc);
+    case AbstractInsnNode.METHOD_INSN:
+      return Type.getType(((MethodInsnNode) insn).desc).getReturnType();
+    case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
+      return Type.getType(((InvokeDynamicInsnNode) insn).desc).getReturnType();
+    case AbstractInsnNode.INT_INSN:
+      return Type.INT_TYPE;
+    case AbstractInsnNode.MULTIANEWARRAY_INSN:
+      return ARRAY_TYPE;
+    case AbstractInsnNode.INSN:
+      int op = insn.getOpcode();
+      // TODO: Validate that we do not write "ICONST_0" in cases where we meant to make a "null" constant
+      // TODO: Validate that we do not write "ACONST_NULL" in cases where we meant to make a "0" constant
+      if (op == ICONST_M1 || (op >= ICONST_0 && op <= ICONST_5))
+        return Type.INT_TYPE;
+      else if (op == LCONST_0 || op == LCONST_1)
+        return Type.LONG_TYPE;
+      else if (op == FCONST_0 || op == FCONST_1 || op == FCONST_2)
+        return Type.FLOAT_TYPE;
+      else if (op == DCONST_0 || op == DCONST_1)
+        return Type.DOUBLE_TYPE;
+      else if (op == ACONST_NULL)
+        return OBJECT_TYPE;
+      break;
+    case AbstractInsnNode.TYPE_INSN:
+      String typeInternal = ((TypeInsnNode) insn).desc;
+      if (typeInternal.startsWith("["))
+        return ARRAY_TYPE;
+      else
+        return OBJECT_TYPE;
+    case AbstractInsnNode.LDC_INSN:
+      Object cst = ((LdcInsnNode) insn).cst;
+      if (cst instanceof Long)
+        return Type.LONG_TYPE;
+      else if (cst instanceof Double)
+        return Type.DOUBLE_TYPE;
+      else if (cst instanceof Float)
+        return Type.FLOAT_TYPE;
+      else if (cst instanceof Integer)
+        return Type.INT_TYPE;
+      else
+        return OBJECT_TYPE;
+    }
+    return null;
+  }
+
+  public static boolean isBlockEnd(AbstractInsnNode ain) {
+    return isReturn(ain) || ain.getType() == AbstractInsnNode.JUMP_INSN || ain.getOpcode() == ATHROW;
+  }
+
+  public static boolean isReturn(AbstractInsnNode ain) {
+    switch (ain.getOpcode()) {
+    case RETURN:
+    case ARETURN:
+    case DRETURN:
+    case FRETURN:
+    case IRETURN:
+    case LRETURN:
+      return true;
+    default:
+      return false;
+    }
   }
 }

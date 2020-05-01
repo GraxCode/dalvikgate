@@ -1,24 +1,16 @@
 package me.nov.dalvikgate;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
+import java.io.*;
+import java.util.*;
+import java.util.jar.*;
 
-import org.jf.dexlib2.DexFileFactory;
-import org.jf.dexlib2.Opcodes;
-import org.jf.dexlib2.dexbacked.DexBackedClassDef;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.objectweb.asm.ClassWriter;
+import org.jf.dexlib2.*;
+import org.jf.dexlib2.dexbacked.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
+import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 public class DexToASM {
   public static void main(String[] args) throws IOException {
@@ -38,9 +30,9 @@ public class DexToASM {
     List<ClassNode> asmClasses = new ArrayList<>();
 
     for (DexBackedClassDef clazz : baseClassDefs) {
-      ClassTransformer transformer = new ClassTransformer(clazz, 52);
-      transformer.build();
-      asmClasses.add(transformer.get());
+      ClassTransformer ct = new ClassTransformer();
+      ct.visit(clazz);
+      asmClasses.add(ct.getTransformed());
     }
     return asmClasses;
   }
@@ -49,21 +41,43 @@ public class DexToASM {
     try {
       JarOutputStream out = new JarOutputStream(new FileOutputStream(output));
       out.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"));
-      out.write("Manifest-Version: 1.0\r\nTransformed-By: dalvikgate\r\n".getBytes());
+      out.write(makeManifest().getBytes());
       out.closeEntry();
       for (ClassNode c : classes) {
         try {
           out.putNextEntry(new JarEntry(c.name + ".class"));
           out.write(Conversion.toBytecode(c));
           out.closeEntry();
+        } catch (UnresolvedInsnException e) {
+          System.err.println("SKIP: " + c.name + " - " + e.getMessage());
         } catch (Exception e) {
-          // TODO: Log and alert user
+          // TODO: Better Log and alert user
+          System.err.println("FAIL: " + c.name);
           e.printStackTrace();
         }
       }
       out.close();
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+
+  private static String makeManifest() {
+    String lineSeparator = "\r\n";
+    StringBuilder manifest = new StringBuilder();
+    manifest.append("Manifest-Version: 1.0");
+    manifest.append(lineSeparator);
+    manifest.append("Transformed-By: dalvikgate ");
+    manifest.append(getVersion());
+    manifest.append(lineSeparator);
+    return manifest.toString();
+  }
+
+  public static String getVersion() {
+    try {
+      return Objects.requireNonNull(DexToASM.class.getPackage().getImplementationVersion());
+    } catch (NullPointerException e) {
+      return "(dev)";
     }
   }
 }

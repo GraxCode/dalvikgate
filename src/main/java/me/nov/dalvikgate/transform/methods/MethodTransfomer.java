@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.transform.methods;
 
+import java.util.Objects;
+
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
@@ -7,47 +9,58 @@ import org.objectweb.asm.tree.MethodNode;
 
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
+import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.transform.instruction.post.*;
+import me.nov.dalvikgate.utils.TextUtils;
 
-public class MethodTransfomer implements ITransformer<MethodNode>, Opcodes {
-
-  private final DexBackedMethod method;
+public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNode>, Opcodes {
   private MethodNode mn;
 
-  public MethodTransfomer(DexBackedMethod method) {
-    this.method = method;
-  }
-
   @Override
-  public void build() {
+  public void build(DexBackedMethod method) {
     String name = method.getName();
     int flags = method.getAccessFlags();
     if (name.startsWith("$$") || name.startsWith("_$_") || name.startsWith("access$")) {
       flags |= ACC_BRIDGE | ACC_SYNTHETIC;
     }
     mn = new MethodNode(flags, name, ASMCommons.buildMethodDesc(method.getParameterTypes(), method.getReturnType()), null, null);
-    if (method.getImplementation() != null) {
-      rewriteImplementation();
-    }
+    rewriteImplementation(method);
   }
 
   @Override
-  public MethodNode get() {
-    return mn;
+  public MethodNode getTransformed() {
+    return Objects.requireNonNull(mn);
   }
 
-  private void rewriteImplementation() {
-    MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
-    InstructionTransformer it = new InstructionTransformer(mn, method, builder);
-    try {
-      it.build();
-    } catch (Exception e) {
-//      if (!e.toString().contains("unsupported instruction"))
-//        e.printStackTrace();
-      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalArgumentException",
-          "dalvikgate error: " + e.toString() + " / " + (e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : " no stack trace"));
+  private void rewriteImplementation(DexBackedMethod method) {
+    // If no implementation, do nothing
+    if (method.getImplementation() == null) {
       return;
     }
-    mn.instructions = it.get();
+    MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
+    mn.maxLocals = mn.maxStack = builder.getRegisterCount(); // we need this because some decompilers crash if this is zero
+    InstructionTransformer it = new InstructionTransformer(mn, method, builder);
+    try {
+      it.visit(method);
+    } catch (Exception e) {
+      if (e instanceof UnsupportedInsnException) {
+        System.err.println(e.getStackTrace()[0] + " ::: " + e.getMessage());
+      } else {
+        e.printStackTrace();
+      }
+      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException", "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
+      mn.maxStack = 3;
+      mn.tryCatchBlocks.clear();
+      return;
+    }
+    mn.instructions = it.getTransformed();
+    PostDanglingMethodReturn pops = new PostDanglingMethodReturn();
+    pops.visit(mn);
+    PostLocalRemover locRem = new PostLocalRemover();
+    locRem.visit(mn);
+    PostDupInserter dups = new PostDupInserter();
+    dups.visit(mn);
   }
 
 }
