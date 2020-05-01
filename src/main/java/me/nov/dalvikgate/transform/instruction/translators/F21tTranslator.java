@@ -7,12 +7,12 @@ import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
 import org.objectweb.asm.tree.JumpInsnNode;
 
-import me.nov.dalvikgate.transform.instruction.IInsnTranslator;
+import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
 
-public class F21tTranslator extends IInsnTranslator<BuilderInstruction21t> {
+public class F21tTranslator extends AbstractInsnTranslator<BuilderInstruction21t> {
 
   public F21tTranslator(InstructionTransformer it) {
     super(it);

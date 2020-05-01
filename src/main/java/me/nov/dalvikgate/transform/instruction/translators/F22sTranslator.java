@@ -5,11 +5,11 @@ import static org.objectweb.asm.Type.INT_TYPE;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22s;
 import org.objectweb.asm.tree.InsnNode;
 
-import me.nov.dalvikgate.transform.instruction.IInsnTranslator;
+import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
-public class F22sTranslator extends IInsnTranslator<BuilderInstruction22s> {
+public class F22sTranslator extends AbstractInsnTranslator<BuilderInstruction22s> {
 
   public F22sTranslator(InstructionTransformer it) {
     super(it);

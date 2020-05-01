@@ -10,11 +10,11 @@ import org.jf.dexlib2.iface.reference.MethodReference;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import me.nov.dalvikgate.transform.instruction.IInsnTranslator;
+import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
-public class F35cTranslator extends IInsnTranslator<BuilderInstruction35c> {
+public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c> {
 
   public F35cTranslator(InstructionTransformer it) {
     super(it);

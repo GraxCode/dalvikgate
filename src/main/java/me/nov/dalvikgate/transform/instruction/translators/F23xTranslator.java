@@ -14,12 +14,12 @@ import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction23x;
 import org.objectweb.asm.tree.InsnNode;
 
-import me.nov.dalvikgate.transform.instruction.IInsnTranslator;
+import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instruction.tree.UnresolvedWideArrayInsnNode;
 
-public class F23xTranslator extends IInsnTranslator<BuilderInstruction23x> {
+public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x> {
 
   public F23xTranslator(InstructionTransformer it) {
     super(it);

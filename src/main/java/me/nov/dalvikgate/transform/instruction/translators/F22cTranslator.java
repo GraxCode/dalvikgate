@@ -15,11 +15,11 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
-import me.nov.dalvikgate.transform.instruction.IInsnTranslator;
+import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
-public class F22cTranslator extends IInsnTranslator<BuilderInstruction22c> {
+public class F22cTranslator extends AbstractInsnTranslator<BuilderInstruction22c> {
 
   public F22cTranslator(InstructionTransformer it) {
     super(it);

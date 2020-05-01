@@ -9,13 +9,13 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 
-public abstract class IInsnTranslator<T extends BuilderInstruction> implements Opcodes {
+public abstract class AbstractInsnTranslator<T extends BuilderInstruction> implements Opcodes {
 
   protected InstructionTransformer it;
   protected InsnList il;
   protected HashMap<BuilderInstruction, LabelNode> labels;
 
-  public IInsnTranslator(InstructionTransformer it) {
+  public AbstractInsnTranslator(InstructionTransformer it) {
     this.it = it;
     this.il = it.il;
     this.labels = it.labels;

@@ -6,11 +6,11 @@ import static org.objectweb.asm.Type.INT_TYPE;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
 import org.objectweb.asm.tree.InsnNode;
 
-import me.nov.dalvikgate.transform.instruction.IInsnTranslator;
+import me.nov.dalvikgate.transform.instruction.AbstractInsnTranslator;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
-public class F11xTranslator extends IInsnTranslator<BuilderInstruction11x> {
+public class F11xTranslator extends AbstractInsnTranslator<BuilderInstruction11x> {
 
   public F11xTranslator(InstructionTransformer it) {
     super(it);
