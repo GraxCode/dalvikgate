@@ -1190,43 +1190,43 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     case APUT_BOOLEAN:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), i.getOpcode() == Opcode.APUT_BOOLEAN ? BOOLEAN_TYPE : INT_TYPE);
+      addLocalGet(i.getRegisterA(), i.getOpcode() == Opcode.APUT_BOOLEAN ? BOOLEAN_TYPE : INT_TYPE);
       il.add(new InsnNode(IASTORE));
       return;
     case APUT_WIDE:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), null); // unsure if long or double
+      addLocalGet(i.getRegisterA(), null); // unsure if long or double
       il.add(new UnresolvedWideArrayInsnNode(true));
       return;
     case APUT_OBJECT:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), OBJECT_TYPE);
+      addLocalGet(i.getRegisterA(), OBJECT_TYPE);
       il.add(new InsnNode(AASTORE));
       return;
     case APUT_BYTE:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), BYTE_TYPE);
+      addLocalGet(i.getRegisterA(), BYTE_TYPE);
       il.add(new InsnNode(BASTORE));
       return;
     case APUT_CHAR:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), CHAR_TYPE);
+      addLocalGet(i.getRegisterA(), CHAR_TYPE);
       il.add(new InsnNode(CASTORE));
       return;
     case APUT_SHORT:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), SHORT_TYPE);
+      addLocalGet(i.getRegisterA(), SHORT_TYPE);
       il.add(new InsnNode(SASTORE));
       return;
     case ADD_INT:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalSet(i.getRegisterA(), SHORT_TYPE);
+      addLocalGet(i.getRegisterA(), SHORT_TYPE);
       il.add(new InsnNode(SASTORE));
       return;
     // Perform the identified binary operation on the two source registers, storing the result in the destination register.
