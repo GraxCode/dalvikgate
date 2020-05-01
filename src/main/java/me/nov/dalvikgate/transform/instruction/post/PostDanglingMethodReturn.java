@@ -12,7 +12,7 @@ import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 
 /**
- * Transformer that adds {@code POP} instructions after every stack-pushing method without a bound variable store. This has to be run <i>BEFORE</i> other transformes that change
+ * Transformer that adds {@code POP} instructions after every stack-pushing method without a bound variable store. This has to be run <i>BEFORE</i> other transformers that change
  * variables.
  */
 public class PostDanglingMethodReturn implements ITransformer<MethodNode, MethodNode>, Opcodes {
