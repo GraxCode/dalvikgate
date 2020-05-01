@@ -172,7 +172,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       case Format22x:
         // move from 16
-        throw new UnsupportedInsnException(i);
+        new F22xTranslator(this).translate((BuilderInstruction22x) i);
+        continue;
       case Format23x:
         new F23xTranslator(this).translate((BuilderInstruction23x) i);
         continue;

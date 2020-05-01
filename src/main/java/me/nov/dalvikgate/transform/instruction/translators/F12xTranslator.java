@@ -32,6 +32,7 @@ public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x
       // Cannot determine if double or long, resolve later
       addLocalGet(source, null);
       addLocalSet(destination, null);
+      return;
     case MOVE_OBJECT:
       if (source == destination)
         return;
