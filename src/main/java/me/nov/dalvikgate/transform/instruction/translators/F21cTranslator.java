@@ -23,6 +23,7 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
     // A: destination register (8 bits)
     // B: string or type index
     int local = i.getRegisterA();
+
     Reference ref = i.getReference();
     switch (i.getOpcode()) {
     case CONST_STRING:
@@ -39,6 +40,8 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
     case CHECK_CAST:
       addLocalGet(local, OBJECT_TYPE);
       il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
+      il.add(new InsnNode(POP));
+      // this is a very ugly way to check cast in java bytecode. TODO add post transformer to make it look more java-like
       return;
     case NEW_INSTANCE:
       il.add(new TypeInsnNode(NEW, Type.getType(((TypeReference) ref).getType()).getInternalName()));
