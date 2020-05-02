@@ -268,6 +268,10 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         LabelNode startLabel = getASMLabel(tb.start);
         LabelNode endLabel = getASMLabel(tb.end);
         LabelNode handlerLabel = getASMLabel(tb.exceptionHandler.getHandler());
+        if (handler == null && isSpecialMonitorHandler(firstHandlerOp)) {
+          //ignore
+          return;
+        }
         if (firstHandlerOp.getOpcode() != Opcode.MOVE_EXCEPTION) {
           // no move-exception opcode, we need to make a "bridge" to match java stack sizes, as in java bytecode an exception object would be on the stack, while in dalvik there isn't.
           // offset can be reached by multiple routines
@@ -296,6 +300,25 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         mn.tryCatchBlocks.add(new TryCatchBlockNode(startLabel, endLabel, handlerLabel, handler));
       });
     }
+  }
+
+  /**
+   * Dalvik adds special try catch blocks for synchronized blocks. We do not need to translate them to java.
+   * 
+   * @param firstHandlerOp first instruction in catch block
+   */
+  private boolean isSpecialMonitorHandler(BuilderInstruction firstHandlerOp) {
+    // we do not need to check if they exist as code would be invalid either way
+    if (firstHandlerOp.getOpcode() == Opcode.MOVE_EXCEPTION) {
+      BuilderInstruction next = getNextOf(firstHandlerOp);
+      if (next.getOpcode() == Opcode.MONITOR_EXIT) {
+        BuilderInstruction athrow = getNextOf(next);
+        if (athrow.getOpcode() == Opcode.THROW) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -429,8 +452,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
     if (type != null)
       var.setType(type);
-    // else
-    // var.setOpcode(store ? ASTORE : ALOAD); for debugging purposes
+    else
+      var.setOpcode(store ? ASTORE : ALOAD);// for debugging purposes
     il.add(var);
   }
 }
