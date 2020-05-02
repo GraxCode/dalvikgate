@@ -315,7 +315,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     try {
       do {
         i = builder.getInstructions().get(i.getLocation().getIndex() + 1);
-      } while (i.getFormat().isPayloadFormat);
+      } while (i.getFormat().isPayloadFormat || i.getOpcode() == Opcode.NOP);
       return i;
     } catch (ArrayIndexOutOfBoundsException | NullPointerException e) {
       throw new TranslationException("could not find next of " + i.getOpcode() + " at index " + i.getLocation().getIndex());
