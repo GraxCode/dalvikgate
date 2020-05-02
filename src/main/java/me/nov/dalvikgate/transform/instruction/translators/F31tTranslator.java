@@ -2,6 +2,7 @@ package me.nov.dalvikgate.transform.instruction.translators;
 
 import java.util.List;
 
+import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.iface.instruction.Instruction;
 import org.objectweb.asm.Type;
@@ -9,8 +10,11 @@ import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.instruction.*;
-import me.nov.dalvikgate.transform.instruction.exception.*;
+import me.nov.dalvikgate.transform.instruction.exception.TranslationException;
 
+/**
+ * Payload instructions
+ */
 public class F31tTranslator extends AbstractInsnTranslator<BuilderInstruction31t> {
 
   public F31tTranslator(InstructionTransformer it) {
@@ -21,24 +25,7 @@ public class F31tTranslator extends AbstractInsnTranslator<BuilderInstruction31t
   public void translate(BuilderInstruction31t i) {
     int register = i.getRegisterA();
     Instruction payload = i.getTarget().getLocation().getInstruction();
-    switch (i.getOpcode()) {
-    case PACKED_SWITCH:
-      addLocalGet(register, Type.INT_TYPE); // switch takes int type
-      BuilderPackedSwitchPayload packedPayload = (BuilderPackedSwitchPayload) payload;
-      List<BuilderSwitchElement> pse = packedPayload.getSwitchElements();
-      LabelNode nextLabel = getASMLabel(getNextOf(i).getLocation().getLabels().iterator().next());
-      il.add(new TableSwitchInsnNode(pse.get(0).getKey(), pse.get(pse.size() - 1).getKey(), nextLabel, pse.stream().map(caze -> getASMLabel(caze.getTarget())).toArray(LabelNode[]::new)));
-      break;
-    case SPARSE_SWITCH:
-      addLocalGet(register, Type.INT_TYPE); // switch takes int type
-      BuilderSparseSwitchPayload sparsePayload = (BuilderSparseSwitchPayload) payload;
-      List<BuilderSwitchElement> sse = sparsePayload.getSwitchElements();
-      sparsePayload.getReferrer();
-      LabelNode nextLabel1 = getASMLabel(getNextOf(i).getLocation().getLabels().iterator().next());
-      il.add(new LookupSwitchInsnNode(nextLabel1, sse.stream().map(caze -> caze.getKey()).mapToInt(key -> key).toArray(),
-          sse.stream().map(caze -> getASMLabel(caze.getTarget())).toArray(LabelNode[]::new)));
-      break;
-    case FILL_ARRAY_DATA:
+    if (i.getOpcode() == Opcode.FILL_ARRAY_DATA) {
       // no floating point or boolean arrays allowed
       BuilderArrayPayload arrayPayload = (BuilderArrayPayload) payload;
       int width = arrayPayload.getElementWidth();
@@ -53,12 +40,33 @@ public class F31tTranslator extends AbstractInsnTranslator<BuilderInstruction31t
         il.add(ASMCommons.makeIntPush(f)); // array index
         il.add(width > 4 ? ASMCommons.makeLongPush(elements.get(f).longValue()) : ASMCommons.makeIntPush(elements.get(f).intValue()));
         il.add(arrayStoreInstruction(width));
-        elements.get(f);
       }
-      break;
-    default:
-      throw new UnsupportedInsnException(i);
+      return;
     }
+    addLocalGet(register, Type.INT_TYPE); // switch takes int type
+    boolean needsNewDfltLabel = needsNewDefaultLabel(i);
+    LabelNode dflt = needsNewDfltLabel ? new LabelNode() : getNextLabel(i);
+    if (i.getOpcode() == Opcode.PACKED_SWITCH) {
+      BuilderPackedSwitchPayload packedPayload = (BuilderPackedSwitchPayload) payload;
+      List<BuilderSwitchElement> pse = packedPayload.getSwitchElements();
+      il.add(new TableSwitchInsnNode(pse.get(0).getKey(), pse.get(pse.size() - 1).getKey(), dflt, pse.stream().map(caze -> getASMLabel(caze.getTarget())).toArray(LabelNode[]::new)));
+    } else {
+      BuilderSparseSwitchPayload sparsePayload = (BuilderSparseSwitchPayload) payload;
+      List<BuilderSwitchElement> sse = sparsePayload.getSwitchElements();
+      il.add(new LookupSwitchInsnNode(dflt, sse.stream().map(caze -> caze.getKey()).mapToInt(key -> key).toArray(), sse.stream().map(caze -> getASMLabel(caze.getTarget())).toArray(LabelNode[]::new)));
+    }
+
+    if (needsNewDfltLabel) {
+      il.add(dflt); // add newly created label for default case
+    }
+  }
+
+  private boolean needsNewDefaultLabel(BuilderInstruction31t i) {
+    return getNextOf(i).getLocation().getLabels().isEmpty();
+  }
+
+  private LabelNode getNextLabel(BuilderInstruction31t i) {
+    return getASMLabel(getNextOf(i).getLocation().getLabels().iterator().next());
   }
 
   private AbstractInsnNode arrayStoreInstruction(int elementWidth) {
