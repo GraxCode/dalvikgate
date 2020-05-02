@@ -7,6 +7,8 @@ import org.jf.dexlib2.builder.Label;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.transform.instruction.exception.TranslationException;
+
 public abstract class AbstractInsnTranslator<T extends BuilderInstruction> implements Opcodes {
 
   protected InstructionTransformer it;
@@ -26,7 +28,7 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param input The dex instruction
    */
   public void translate(T input) {
-    throw new IllegalStateException();
+    throw new TranslationException("unimplemented: " + input.getOpcode());
   }
 
   /**
@@ -46,6 +48,13 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
   @Deprecated
   protected int regToLocal(int register) {
     return it.regToLocal(register);
+  }
+
+  /**
+   * Gets the next instruction, ignoring payloads
+   */
+  protected BuilderInstruction getNextOf(BuilderInstruction i) {
+    return it.getNextOf(i);
   }
 
   /**

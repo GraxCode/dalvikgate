@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
-import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.transform.instruction.exception.*;
 import me.nov.dalvikgate.transform.instruction.translators.*;
 import me.nov.dalvikgate.transform.instruction.tree.*;
 
@@ -58,9 +58,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         il.add(labels.get(i));
       }
       switch (i.getFormat()) {
-      case ArrayPayload:
-        continue;
-
       ////////////////////////// GOTOS //////////////////////////
       case Format10t:
       case Format20t:
@@ -179,7 +176,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       case Format31t:
         // fill-array-data and switches
-        throw new UnsupportedInsnException(i);
+        new F31tTranslator(this).translate((BuilderInstruction31t) i);
+        continue;
       case Format32x:
         // move 16
         new F32xTranslator(this).translate((BuilderInstruction32x) i);
@@ -212,10 +210,12 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       case Format20bc:
         il.add(makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
         continue;
+      ////////////////////////// PAYLOADS //////////////////////////
+      // we can ignore payloads, as they are no real instructions
       case PackedSwitchPayload:
-        throw new UnsupportedInsnException(i);
       case SparseSwitchPayload:
-        throw new UnsupportedInsnException(i);
+      case ArrayPayload:
+        continue;
       case UnresolvedOdexInstruction:
       default:
         throw new UnsupportedInsnException(i);
@@ -273,7 +273,22 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
    * @param label The label
    */
   public LabelNode getASMLabel(Label label) {
-    return labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst().get());
+    return Objects.requireNonNull(labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst()
+        .orElseThrow(() -> new TranslationException("dex label has no equivalent LabelNode " + label.getLocation().getInstruction().getOpcode()))));
+  }
+
+  /**
+   * Gets the next instruction, ignoring payloads
+   */
+  public BuilderInstruction getNextOf(BuilderInstruction i) {
+    try {
+      do {
+        i = builder.getInstructions().get(i.getLocation().getIndex() + 1);
+      } while (i.getFormat().isPayloadFormat);
+      return i;
+    } catch (ArrayIndexOutOfBoundsException | NullPointerException e) {
+      throw new TranslationException("could not find next of " + i.getOpcode() + " at index " + i.getLocation().getIndex());
+    }
   }
 
   /**
@@ -313,7 +328,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       else if (type.getSort() == OBJECT)
         type = OBJECT_TYPE;
       else if (type.getSort() == VOID)
-        throw new IllegalStateException("Illegal type 'void'");
+        throw new TranslationException("Illegal type 'void'");
     }
     addLocalGetSet(true, register, type);
   }
@@ -360,7 +375,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       else if (type.getSort() == OBJECT)
         type = OBJECT_TYPE;
       else if (type.getSort() == VOID)
-        throw new IllegalStateException("Illegal type 'void'");
+        throw new TranslationException("Illegal type 'void'");
     }
     // TODO: Check calls to this method. Is there a case where "0" will be used as a "null"?
     // if so, then uncomment the following code:
@@ -383,6 +398,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
     if (type != null)
       var.setType(type);
+    // else
+    // var.setOpcode(store ? ASTORE : ALOAD); for debugging purposes
     il.add(var);
   }
 }
