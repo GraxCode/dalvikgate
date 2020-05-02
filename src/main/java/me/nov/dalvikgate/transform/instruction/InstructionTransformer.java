@@ -51,7 +51,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   public void build(DexBackedMethod method) {
     il = new InsnList();
     this.buildLabels();
-    this.transformTryCatchBlocks();
     for (BuilderInstruction i : dexInstructions) {
       if (labels.containsKey(i)) {
         // add labels to the code
@@ -191,10 +190,11 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         // invokeQuick
         throw new UnsupportedInsnException(i);
       case Format3rc:
-        throw new UnsupportedInsnException(i);
+        new F3rcTranslator(this).translate((BuilderInstruction3rc) i);
+        continue;
       ////////////////////////// EXECUTE INLINE //////////////////////////
       case Format35mi:
-        // execute inline range
+        // execute inline
         throw new UnsupportedInsnException(i);
       case Format3rmi:
         // execute inline range
@@ -222,6 +222,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         throw new UnsupportedInsnException(i);
       }
     }
+    this.transformTryCatchBlocks();
   }
 
   @Override
@@ -263,7 +264,19 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       builder.getTryBlocks().forEach(tb -> {
         String handlerType = tb.exceptionHandler.getExceptionType();
         String handler = handlerType == null ? null : Type.getType(handlerType).getInternalName();
-        mn.tryCatchBlocks.add(new TryCatchBlockNode(getASMLabel(tb.start), getASMLabel(tb.end), getASMLabel(tb.exceptionHandler.getHandler()), handler));
+        BuilderInstruction firstHandlerOp = (BuilderInstruction) tb.exceptionHandler.getHandler().getLocation().getInstruction();
+        LabelNode startLabel = getASMLabel(tb.start);
+        LabelNode endLabel = getASMLabel(tb.end);
+        LabelNode handlerLabel = getASMLabel(tb.exceptionHandler.getHandler());
+        if (firstHandlerOp.getOpcode() != Opcode.MOVE_EXCEPTION) {
+          // no move-exception opcode, we need to make a "bridge" to match java stack sizes, as in java bytecode an exception object would be on the stack, while in dalvik there isn't.
+          LabelNode newHandler = new LabelNode();
+          il.add(newHandler);
+          il.add(new InsnNode(POP)); // pop ignored exception
+          il.add(new JumpInsnNode(GOTO, handlerLabel)); // go to old offset
+          handlerLabel = newHandler; // change tcb handler to new one
+        }
+        mn.tryCatchBlocks.add(new TryCatchBlockNode(startLabel, endLabel, handlerLabel, handler));
       });
     }
   }
