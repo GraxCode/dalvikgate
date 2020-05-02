@@ -269,7 +269,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         LabelNode endLabel = getASMLabel(tb.end);
         LabelNode handlerLabel = getASMLabel(tb.exceptionHandler.getHandler());
         if (handler == null && isSpecialMonitorHandler(firstHandlerOp)) {
-          //ignore
+          // ignore
           return;
         }
         if (firstHandlerOp.getOpcode() != Opcode.MOVE_EXCEPTION) {
@@ -452,8 +452,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
     if (type != null)
       var.setType(type);
-    else
-      var.setOpcode(store ? ASTORE : ALOAD);// for debugging purposes
+    // else
+    // var.setOpcode(store ? ASTORE : ALOAD);// for debugging purposes
     il.add(var);
   }
 }
