@@ -131,6 +131,13 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         il.add(new LdcInsnNode(value51l));
         addLocalSet(_51l.getRegisterA(), value51l);
         continue;
+      case Format21ih:
+        // const high 16
+        BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
+        int value21ih = _21ih.getNarrowLiteral();
+        il.add(makeIntPush(value21ih));
+        addLocalSet(_21ih.getRegisterA(), value21ih);
+        continue;
       ////////////////////////// OTHER //////////////////////////
       case Format11x:
         new F11xTranslator(this).translate((BuilderInstruction11x) i);
@@ -140,12 +147,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       case Format21c:
         new F21cTranslator(this).translate((BuilderInstruction21c) i);
-        continue;
-      case Format21ih:
-        BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
-        int value21ih = _21ih.getNarrowLiteral();
-        il.add(makeIntPush(value21ih));
-        addLocalSet(_21ih.getRegisterA(), value21ih);
         continue;
       case Format21t:
         new F21tTranslator(this).translate((BuilderInstruction21t) i);
