@@ -270,11 +270,28 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         LabelNode handlerLabel = getASMLabel(tb.exceptionHandler.getHandler());
         if (firstHandlerOp.getOpcode() != Opcode.MOVE_EXCEPTION) {
           // no move-exception opcode, we need to make a "bridge" to match java stack sizes, as in java bytecode an exception object would be on the stack, while in dalvik there isn't.
-          LabelNode newHandler = new LabelNode();
-          il.add(newHandler);
-          il.add(new InsnNode(POP)); // pop ignored exception
-          il.add(new JumpInsnNode(GOTO, handlerLabel)); // go to old offset
-          handlerLabel = newHandler; // change tcb handler to new one
+          // offset can be reached by multiple routines
+          if (startLabel == handlerLabel) {
+            System.err.println("unexpected case: tcb start is handler - this should not happen!");
+            // unexpected case, use old handler creation
+            LabelNode newHandler = new LabelNode();
+            il.add(newHandler);
+            il.add(new InsnNode(POP)); // pop ignored exception
+            il.add(new JumpInsnNode(GOTO, handlerLabel)); // go to old offset
+            handlerLabel = newHandler; // change tcb handler to new one
+          } else {
+            // try to get it back to java structure
+            LabelNode newHandler = new LabelNode();
+            LabelNode beforeJumpLabel = new LabelNode();
+            il.insertBefore(handlerLabel, beforeJumpLabel);
+            il.insertBefore(handlerLabel, new JumpInsnNode(GOTO, handlerLabel)); // jump over the new handler
+            il.insertBefore(handlerLabel, newHandler);
+            il.insertBefore(handlerLabel, new InsnNode(POP)); // pop ignored exception and continue where the real handler should be
+            if (endLabel == handlerLabel) {
+              endLabel = beforeJumpLabel; // make sure to not encapsulate the handler
+            }
+            handlerLabel = newHandler; // change tcb handler to new one
+          }
         }
         mn.tryCatchBlocks.add(new TryCatchBlockNode(startLabel, endLabel, handlerLabel, handler));
       });
