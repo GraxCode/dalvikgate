@@ -5,6 +5,7 @@ import java.util.Map;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 /**
@@ -43,6 +44,8 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
    * Validate the opcode and variable index are set.
    */
   private void validate() {
+    if (InstructionTransformer.DEBUG_NO_RESOLVE)
+      setType(initialType == null ? Type.INT_TYPE : initialType);
     if (opcode < 0)
       throw new UnresolvedInsnException("Variable opcode has not been resolved!");
     if (var < 0)

@@ -6,6 +6,7 @@ import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 public class UnresolvedJumpInsnNode extends JumpInsnNode implements Opcodes {
@@ -37,6 +38,8 @@ public class UnresolvedJumpInsnNode extends JumpInsnNode implements Opcodes {
    * Validate the opcode is set.
    */
   private void validate() {
+    if (InstructionTransformer.DEBUG_NO_RESOLVE)
+      setIsObject(true);
     if (opcode < 0)
       throw new UnresolvedInsnException("Variable opcode has not been resolved!");
   }
