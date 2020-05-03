@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.transform.instruction.translators.jump;
 
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+
 import java.util.List;
 
 import org.jf.dexlib2.Opcode;
@@ -8,7 +10,6 @@ import org.jf.dexlib2.iface.instruction.Instruction;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.TranslationException;
 
@@ -37,8 +38,8 @@ public class F31tTranslator extends AbstractInsnTranslator<BuilderInstruction31t
         if (f < elements.size() - 1) { // use remaining array on stack and don't dup
           il.add(new InsnNode(DUP)); // dup array
         }
-        il.add(ASMCommons.makeIntPush(f)); // array index
-        il.add(width > 4 ? ASMCommons.makeLongPush(elements.get(f).longValue()) : ASMCommons.makeIntPush(elements.get(f).intValue()));
+        il.add(makeIntPush(f)); // array index
+        il.add(width > 4 ? makeLongPush(elements.get(f).longValue()) : makeIntPush(elements.get(f).intValue()));
         il.add(arrayStoreInstruction(width));
       }
       return;

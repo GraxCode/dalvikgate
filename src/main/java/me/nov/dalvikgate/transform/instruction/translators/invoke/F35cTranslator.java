@@ -11,7 +11,6 @@ import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
@@ -150,7 +149,7 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
     int registers = i.getRegisterCount();
     int regIdx = 0;
 
-    il.add(ASMCommons.makeIntPush(registers)); // array size
+    il.add(makeIntPush(registers)); // array size
     if (elementType.getSort() == Type.OBJECT) {
       il.add(new TypeInsnNode(ANEWARRAY, elementType.getInternalName()));
     } else {
@@ -178,7 +177,7 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
         throw new IllegalArgumentException("more than 5 registers");
       }
       il.add(new InsnNode(DUP)); // dup array and leave it on stack after loop
-      il.add(ASMCommons.makeIntPush(regIdx)); // array index
+      il.add(makeIntPush(regIdx)); // array index
       addLocalGet(register, elementType);
       il.add(new InsnNode(elementType.getOpcode(IASTORE))); // get store instruction for type
       regIdx++; // register can only be 1

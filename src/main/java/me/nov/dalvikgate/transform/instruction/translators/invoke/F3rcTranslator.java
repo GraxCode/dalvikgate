@@ -6,12 +6,11 @@ import java.util.List;
 
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.builder.BuilderInstruction;
-import org.jf.dexlib2.builder.instruction.*;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
 import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
@@ -129,7 +128,7 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     int registers = i.getRegisterCount();
     int regIdx = 0;
 
-    il.add(ASMCommons.makeIntPush(registers)); // array size
+    il.add(makeIntPush(registers)); // array size
     if (elementType.getSort() == Type.OBJECT) {
       il.add(new TypeInsnNode(ANEWARRAY, elementType.getInternalName()));
     } else {
@@ -138,7 +137,7 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     while (regIdx < registers) {
       int register = i.getStartRegister() + regIdx;
       il.add(new InsnNode(DUP)); // dup array and leave it on stack after loop
-      il.add(ASMCommons.makeIntPush(regIdx)); // array index
+      il.add(makeIntPush(regIdx)); // array index
       addLocalGet(register, elementType);
       il.add(new InsnNode(elementType.getOpcode(IASTORE))); // get store instruction for type
       regIdx++; // register can only be 1
