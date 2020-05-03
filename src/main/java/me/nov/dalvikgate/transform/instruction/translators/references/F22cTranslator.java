@@ -26,7 +26,7 @@ public class F22cTranslator extends AbstractInsnTranslator<BuilderInstruction22c
       String owner = Type.getType(fieldReference.getDefiningClass()).getInternalName();
       String name = fieldReference.getName();
       String desc = fieldReference.getType();
-      if (i.getOpcode().name.startsWith("iget")) {
+      if (i.getOpcode().name.startsWith("iget")) { // ugly, i know
         // B: object reference
         // A: destination
         addLocalGetObject(i.getRegisterB());

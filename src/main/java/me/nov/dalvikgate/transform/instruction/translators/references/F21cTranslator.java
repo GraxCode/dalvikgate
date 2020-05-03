@@ -38,7 +38,7 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
     case CONST_METHOD_TYPE:
       throw new UnsupportedInsnException(i);
     case CHECK_CAST:
-      addLocalGet(local, OBJECT_TYPE);
+      addLocalGet(local, OBJECT_TYPE); // can be array type too, careful!
       il.add(new TypeInsnNode(CHECKCAST, Type.getType(((TypeReference) ref).getType()).getInternalName()));
       il.add(new InsnNode(POP));
       // this is a very ugly way to check cast in java bytecode. TODO add post transformer to make it look more java-like
@@ -50,6 +50,7 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
     default:
       break;
     }
+    // only static field action ops remaining
     FieldReference fr = (FieldReference) ref;
     String owner = Type.getType(fr.getDefiningClass()).getInternalName();
     String name = fr.getName();

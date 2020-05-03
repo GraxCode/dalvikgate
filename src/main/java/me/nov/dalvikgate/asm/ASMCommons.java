@@ -254,7 +254,7 @@ public class ASMCommons implements Opcodes {
       else
         return OBJECT_TYPE;
     }
-    return null;
+    throw new IllegalArgumentException(insn.getClass() + " " + insn.getOpcode());
   }
 
   public static boolean isBlockEnd(AbstractInsnNode ain) {

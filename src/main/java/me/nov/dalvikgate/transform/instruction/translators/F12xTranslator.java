@@ -21,7 +21,7 @@ public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x
     int destination = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE:
-      if (source == destination)
+      if (source == destination) // ignore unnecessary loads and puts
         return;
       addLocalGet(source, INT_TYPE);
       addLocalSet(destination, INT_TYPE);
