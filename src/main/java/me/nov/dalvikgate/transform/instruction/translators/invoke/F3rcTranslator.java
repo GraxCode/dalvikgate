@@ -6,11 +6,12 @@ import java.util.List;
 
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.builder.BuilderInstruction;
-import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
+import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
@@ -26,6 +27,9 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     this.translate(i, getNextOf(i));
   }
 
+  /**
+   * Special method for instructions that are not in the code
+   */
   @SuppressWarnings("unchecked")
   public void translate(BuilderInstruction3rc i, BuilderInstruction next) {
     // Call the indicated method. The result (if any) may be stored with an appropriate move-result* variant as the immediately subsequent instruction.
@@ -33,7 +37,8 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     // B: method reference index (16 bits)
     // C+: argument registers (4 bits each)
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY_RANGE) {
-      throw new UnsupportedInsnException("filled-new-array-range", i);
+      translateFilledNewArrayRange(i);
+      return;
     }
     String owner;
     String name;
@@ -115,6 +120,28 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
         il.add(new InsnNode(returnSize > 1 ? POP2 : POP));
         return;
       }
+    }
+  }
+
+  private void translateFilledNewArrayRange(BuilderInstruction3rc i) {
+    TypeReference tr = (TypeReference) i.getReference();
+    Type elementType = Type.getType(tr.getType()).getElementType(); // only non-wide elementType allowed for filled-new-array
+    int registers = i.getRegisterCount();
+    int regIdx = 0;
+
+    il.add(ASMCommons.makeIntPush(registers)); // array size
+    if (elementType.getSort() == Type.OBJECT) {
+      il.add(new TypeInsnNode(ANEWARRAY, elementType.getInternalName()));
+    } else {
+      il.add(new IntInsnNode(NEWARRAY, getPrimitiveIndex(elementType.getDescriptor())));
+    }
+    while (regIdx < registers) {
+      int register = i.getStartRegister() + regIdx;
+      il.add(new InsnNode(DUP)); // dup array and leave it on stack after loop
+      il.add(ASMCommons.makeIntPush(regIdx)); // array index
+      addLocalGet(register, elementType);
+      il.add(new InsnNode(elementType.getOpcode(IASTORE))); // get store instruction for type
+      regIdx++; // register can only be 1
     }
   }
 }

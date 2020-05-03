@@ -6,11 +6,12 @@ import java.util.List;
 
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.builder.BuilderInstruction;
-import org.jf.dexlib2.builder.instruction.*;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
 import org.jf.dexlib2.iface.reference.*;
-import org.objectweb.asm.*;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
@@ -26,6 +27,9 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
     this.translate(i, getNextOf(i));
   }
 
+  /**
+   * Special method for instructions that are not in the code
+   */
   @SuppressWarnings("unchecked")
   public void translate(BuilderInstruction35c i, BuilderInstruction next) {
     // Call the indicated method. The result (if any) may be stored with an appropriate move-result* variant as the immediately subsequent instruction.
@@ -33,7 +37,8 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
     // B: method reference index (16 bits)
     // C..G: argument registers (4 bits each)
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY) {
-      throw new UnsupportedInsnException("filled-new-array", i);
+      translateFilledNewArray(i);
+      return;
     }
     String owner;
     String name;
@@ -65,8 +70,6 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
       if (registers > parameters + 1) {
         throw new IllegalArgumentException("too many registers: " + registers + " for method with desc " + desc);
       }
-      // TODO: Check parameter type?
-      // - then use addLocalGet(register, <<TYPE>>) instead of null
       addLocalGetObject(i.getRegisterC());
       registers--; // reference can only be size 1
       regIdx++;
@@ -138,6 +141,47 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
         il.add(new InsnNode(returnSize > 1 ? POP2 : POP));
         return;
       }
+    }
+  }
+
+  private void translateFilledNewArray(BuilderInstruction35c i) {
+    TypeReference tr = (TypeReference) i.getReference();
+    Type elementType = Type.getType(tr.getType()).getElementType(); // only non-wide elementType allowed for filled-new-array
+    int registers = i.getRegisterCount();
+    int regIdx = 0;
+
+    il.add(ASMCommons.makeIntPush(registers)); // array size
+    if (elementType.getSort() == Type.OBJECT) {
+      il.add(new TypeInsnNode(ANEWARRAY, elementType.getInternalName()));
+    } else {
+      il.add(new IntInsnNode(NEWARRAY, getPrimitiveIndex(elementType.getDescriptor())));
+    }
+    while (regIdx < registers) {
+      int register;
+      switch (regIdx) {
+      case 0:
+        register = i.getRegisterC();
+        break;
+      case 1:
+        register = i.getRegisterD();
+        break;
+      case 2:
+        register = i.getRegisterE();
+        break;
+      case 3:
+        register = i.getRegisterF();
+        break;
+      case 4:
+        register = i.getRegisterG();
+        break;
+      default:
+        throw new IllegalArgumentException("more than 5 registers");
+      }
+      il.add(new InsnNode(DUP)); // dup array and leave it on stack after loop
+      il.add(ASMCommons.makeIntPush(regIdx)); // array index
+      addLocalGet(register, elementType);
+      il.add(new InsnNode(elementType.getOpcode(IASTORE))); // get store instruction for type
+      regIdx++; // register can only be 1
     }
   }
 }
