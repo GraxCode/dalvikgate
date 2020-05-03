@@ -11,4 +11,5 @@ in/*
 # Other
 .*
 *.dex
+*.odex
 *.jar
