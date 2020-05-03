@@ -213,12 +213,14 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       case Format3rmi:
         // execute inline range
-        throw new TranslationException("execute-inline-range is unexpected! are there any predefined native methods with more than 5 registers?");
+        throw new TranslationException("execute-inline-range is unexpected! are there any predefined native methods with more than 5 registers? " + ((BuilderInstruction3rmi) i).getRegisterCount());
       ////////////////////////// INVOKE POLYMORPHIC //////////////////////////
       case Format45cc:
-        throw new UnsupportedInsnException(i);
+        // would actually be easy to handle (just like execute-inline, see https://stackoverflow.com/questions/49027506/how-to-generate-invoke-polymorphic-opcodes-in-dalvik)
+        throw new TranslationException("invoke-polymorphic not supported by dexlib2");
       case Format4rcc:
-        throw new UnsupportedInsnException(i);
+        throw new TranslationException(
+            "invoke-polymorphic-range is unexpected! are there any MethodHandle / VarArgs methods with more than 5 registers? " + ((BuilderInstruction4rcc) i).getRegisterCount());
       ////////////////////////// SPECIAL INSTRUCTIONS //////////////////////////
       case Format20bc:
         il.add(makeExceptionThrow("java/lang/VerifyError", "throw-verification-error instruction"));
@@ -241,6 +243,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
 
   @Override
   public void buildDone(DexBackedMethod method) {
+    if (DEBUG_NO_RESOLVE)
+      return;
     int i = 0;
     // TODO: Type analysis and fill in missing data for resolvable instructions
     System.err.println(method.getDefiningClass() + " - " + method.getName());
