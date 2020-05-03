@@ -1,4 +1,4 @@
-package me.nov.dalvikgate.transform.instruction.translators;
+package me.nov.dalvikgate.transform.instruction.translators.references;
 
 import static me.nov.dalvikgate.asm.ASMCommons.*;
 import static org.objectweb.asm.Type.*;

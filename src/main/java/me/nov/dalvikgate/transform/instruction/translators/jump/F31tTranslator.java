@@ -1,4 +1,4 @@
-package me.nov.dalvikgate.transform.instruction.translators;
+package me.nov.dalvikgate.transform.instruction.translators.jump;
 
 import java.util.List;
 

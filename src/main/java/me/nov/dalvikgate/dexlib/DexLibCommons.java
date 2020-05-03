@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.dexlib;
 
+import org.jf.dexlib2.builder.BuilderInstruction;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction3rms;
 import org.jf.dexlib2.dexbacked.value.*;
 import org.jf.dexlib2.iface.MethodParameter;
 import org.jf.dexlib2.iface.reference.MethodReference;
@@ -38,5 +40,32 @@ public class DexLibCommons {
       }
     }
     throw new IllegalArgumentException(ev.getClass().getName());
+  }
+
+  /**
+   * Generates a possible desc for a quick invoke
+   */
+  public static String generateFakeQuickDesc(int regCount, BuilderInstruction next) {
+    StringBuilder sb = new StringBuilder("(");
+    //skip object reference
+    for (int j = 1; j < regCount; j++) {
+      sb.append("Ljava/lang/Object;"); // no way to tell if there is a long in the desc, could produce invalid code
+    }
+    sb.append(")");
+    switch (next.getOpcode()) {
+    case MOVE_RESULT:
+      sb.append("I");
+      break;
+    case MOVE_RESULT_OBJECT:
+      sb.append("Ljava/lang/Object;");
+      break;
+    case MOVE_RESULT_WIDE:
+      sb.append("J"); // could be D too
+      break;
+    default:
+      sb.append("V");
+      break;
+    }
+    return sb.toString();
   }
 }
