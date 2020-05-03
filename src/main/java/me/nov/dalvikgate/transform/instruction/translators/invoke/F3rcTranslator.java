@@ -5,6 +5,7 @@ import static me.nov.dalvikgate.asm.ASMCommons.*;
 import java.util.List;
 
 import org.jf.dexlib2.*;
+import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
 import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
@@ -20,9 +21,13 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     super(it);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void translate(BuilderInstruction3rc i) {
+    this.translate(i, getNextOf(i));
+  }
+
+  @SuppressWarnings("unchecked")
+  public void translate(BuilderInstruction3rc i, BuilderInstruction next) {
     // Call the indicated method. The result (if any) may be stored with an appropriate move-result* variant as the immediately subsequent instruction.
     // A: argument word count (4 bits)
     // B: method reference index (16 bits)
@@ -30,24 +35,28 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY_RANGE) {
       throw new UnsupportedInsnException("filled-new-array-range", i);
     }
-    int registers = i.getRegisterCount(); // sum of all local sizes
     String owner;
     String name;
     String desc;
     List<String> paramTypes;
+    String returnType;
     if (i.getReferenceType() == ReferenceType.METHOD) {
       MethodReference mr = (MethodReference) i.getReference();
       owner = Type.getType(mr.getDefiningClass()).getInternalName();
       name = mr.getName();
-      desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
       paramTypes = (List<String>) mr.getParameterTypes();
+      returnType = mr.getReturnType();
+      desc = buildMethodDesc(paramTypes, returnType);
     } else {
       CallSiteReference cs = (CallSiteReference) i.getReference();
       owner = null;
       name = cs.getMethodName();
       paramTypes = (List<String>) cs.getMethodProto().getParameterTypes();
-      desc = buildMethodDesc(paramTypes, cs.getMethodProto().getReturnType());
+      returnType = cs.getMethodProto().getReturnType();
+      desc = buildMethodDesc(paramTypes, returnType);
     }
+
+    int registers = i.getRegisterCount(); // sum of all local sizes
     int parameters = paramTypes.stream().mapToInt(p -> Math.max(1, Type.getType((String) p).getSize())).sum(); // sum of all parameter sizes (parameters + reference = registers)
 
     boolean hasReference = false;
@@ -58,6 +67,7 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
       addLocalGetObject(i.getStartRegister()); // object reference
       hasReference = true;
     }
+
     int regIdx = (hasReference ? 1 : 0);
     int parIdx = 0;
     while (regIdx < registers) {
@@ -91,6 +101,20 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
       break;
     default:
       throw new UnsupportedInsnException(i);
+    }
+    int returnSize = Type.getType(returnType).getSize();
+    if (returnSize > 0) {
+      switch (next.getOpcode()) {
+      case MOVE_RESULT:
+      case MOVE_RESULT_OBJECT:
+      case MOVE_RESULT_WIDE:
+        // result is stored
+        return;
+      default:
+        // result is lost, pop off stack
+        il.add(new InsnNode(returnSize > 1 ? POP2 : POP));
+        return;
+      }
     }
   }
 }

@@ -19,8 +19,10 @@ public class F35msTranslator extends AbstractInsnTranslator<BuilderInstruction35
     // TODO this could be translated to reflection
     Opcode real = i.getOpcode() == Opcode.INVOKE_VIRTUAL_QUICK ? Opcode.INVOKE_VIRTUAL : Opcode.INVOKE_SUPER;
     BuilderInstruction next = getNextOf(i);
-    new F35cTranslator(it).translate(
-        new BuilderInstruction35c(real, i.getRegisterCount(), i.getRegisterC(), i.getRegisterD(), i.getRegisterE(), i.getRegisterF(), i.getRegisterG(), new CustomMethodReference("Ljava/lang/Object;",
-            "$invoke_index_" + i.getVtableIndex() + "_desc_size_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))));
+    new F35cTranslator(it)
+        .translate(
+            new BuilderInstruction35c(real, i.getRegisterCount(), i.getRegisterC(), i.getRegisterD(), i.getRegisterE(), i.getRegisterF(), i.getRegisterG(), new CustomMethodReference(
+                "Ljava/lang/Object;", "$invoke_index_" + i.getVtableIndex() + "_desc_size_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))),
+            getNextOf(i));
   }
 }

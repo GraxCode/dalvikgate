@@ -30,6 +30,6 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
     String desc = method[2];
     // use normal method translator with fake 35c instruction
     new F35cTranslator(it).translate(new BuilderInstruction35c(Opcode.INVOKE_VIRTUAL, i.getRegisterCount(), i.getRegisterC(), i.getRegisterD(), i.getRegisterE(), i.getRegisterF(), i.getRegisterG(),
-        new CustomMethodReference(method[0], method[1], desc)));
+        new CustomMethodReference(method[0], method[1], desc)), getNextOf(i));
   }
 }

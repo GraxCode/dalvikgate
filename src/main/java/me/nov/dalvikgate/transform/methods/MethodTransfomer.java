@@ -38,11 +38,16 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
     if (method.getImplementation() == null) {
       return;
     }
-    MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
-    mn.maxLocals = mn.maxStack = builder.getRegisterCount(); // we need this because some decompilers crash if this is zero
-    InstructionTransformer it = new InstructionTransformer(mn, method, builder);
     try {
+      MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
+      mn.maxLocals = mn.maxStack = builder.getRegisterCount(); // we need this because some decompilers crash if this is zero
+      InstructionTransformer it = new InstructionTransformer(mn, method, builder);
       it.visit(method);
+      mn.instructions = it.getTransformed();
+      PostLocalRemover locRem = new PostLocalRemover();
+      locRem.visit(mn);
+      PostDupInserter dups = new PostDupInserter();
+      dups.visit(mn);
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {
         System.err.println(e.getStackTrace()[0] + " ::: " + e.getMessage());
@@ -52,15 +57,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException", "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
       mn.maxStack = 3;
       mn.tryCatchBlocks.clear();
-      return;
     }
-    mn.instructions = it.getTransformed();
-    PostDanglingMethodReturn pops = new PostDanglingMethodReturn();
-    pops.visit(mn);
-    PostLocalRemover locRem = new PostLocalRemover();
-    locRem.visit(mn);
-    PostDupInserter dups = new PostDupInserter();
-    dups.visit(mn);
   }
 
 }
