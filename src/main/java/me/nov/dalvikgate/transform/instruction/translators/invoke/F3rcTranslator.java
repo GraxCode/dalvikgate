@@ -4,12 +4,13 @@ import static me.nov.dalvikgate.asm.ASMCommons.*;
 
 import java.util.List;
 
-import org.jf.dexlib2.Opcode;
+import org.jf.dexlib2.*;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
-import org.jf.dexlib2.iface.reference.MethodReference;
+import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
@@ -19,6 +20,7 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     super(it);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void translate(BuilderInstruction3rc i) {
     // Call the indicated method. The result (if any) may be stored with an appropriate move-result* variant as the immediately subsequent instruction.
@@ -28,12 +30,26 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY_RANGE) {
       throw new UnsupportedInsnException("filled-new-array-range", i);
     }
-    MethodReference mr = (MethodReference) i.getReference();
-    String owner = Type.getType(mr.getDefiningClass()).getInternalName();
-    String name = mr.getName();
-    String desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
     int registers = i.getRegisterCount(); // sum of all local sizes
-    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Math.max(1, Type.getType((String) p).getSize())).sum(); // sum of all parameter sizes (parameters + reference = registers)
+    String owner;
+    String name;
+    String desc;
+    List<String> paramTypes;
+    if (i.getReferenceType() == ReferenceType.METHOD) {
+      MethodReference mr = (MethodReference) i.getReference();
+      owner = Type.getType(mr.getDefiningClass()).getInternalName();
+      name = mr.getName();
+      desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
+      paramTypes = (List<String>) mr.getParameterTypes();
+    } else {
+      CallSiteReference cs = (CallSiteReference) i.getReference();
+      owner = null;
+      name = cs.getMethodName();
+      paramTypes = (List<String>) cs.getMethodProto().getParameterTypes();
+      desc = buildMethodDesc(paramTypes, cs.getMethodProto().getReturnType());
+    }
+    int parameters = paramTypes.stream().mapToInt(p -> Math.max(1, Type.getType((String) p).getSize())).sum(); // sum of all parameter sizes (parameters + reference = registers)
+
     boolean hasReference = false;
     if (registers > parameters) {
       if (registers > parameters + 1) {
@@ -42,13 +58,11 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
       addLocalGetObject(i.getStartRegister()); // object reference
       hasReference = true;
     }
-    @SuppressWarnings("unchecked")
-    List<String> parameterTypes = (List<String>) mr.getParameterTypes();
     int regIdx = (hasReference ? 1 : 0);
     int parIdx = 0;
     while (regIdx < registers) {
       int register = i.getStartRegister() + regIdx;
-      String pDesc = parameterTypes.get(parIdx);
+      String pDesc = paramTypes.get(parIdx);
       addLocalGet(register, Type.getType(pDesc));
       regIdx += Math.max(1, Type.getType(pDesc).getSize()); // we do not want an infinite loop because of a void argument
       parIdx++;
@@ -71,7 +85,10 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
       il.add(new MethodInsnNode(INVOKEINTERFACE, owner, name, desc));
       break;
     case INVOKE_CUSTOM_RANGE:
-      // like invokedynamic
+      CallSiteReference cs = (CallSiteReference) i.getReference();
+      Object[] args = cs.getExtraArguments().stream().map(v -> DexLibCommons.toObject(v)).toArray();
+      il.add(new InvokeDynamicInsnNode(name, desc, DexLibCommons.referenceToASMHandle(cs.getMethodHandle()), args));
+      break;
     default:
       throw new UnsupportedInsnException(i);
     }
