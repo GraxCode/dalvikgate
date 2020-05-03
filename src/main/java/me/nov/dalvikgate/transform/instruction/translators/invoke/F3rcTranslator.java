@@ -5,7 +5,7 @@ import static me.nov.dalvikgate.asm.ASMCommons.*;
 import java.util.List;
 
 import org.jf.dexlib2.Opcode;
-import org.jf.dexlib2.builder.instruction.*;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
 import org.jf.dexlib2.iface.reference.MethodReference;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -46,7 +46,7 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     List<String> parameterTypes = (List<String>) mr.getParameterTypes();
     int regIdx = (hasReference ? 1 : 0);
     int parIdx = 0;
-    while (regIdx < parameters) {
+    while (regIdx < registers) {
       int register = i.getStartRegister() + regIdx;
       String pDesc = parameterTypes.get(parIdx);
       addLocalGet(register, Type.getType(pDesc));
