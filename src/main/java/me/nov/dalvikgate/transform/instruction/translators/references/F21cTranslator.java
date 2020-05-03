@@ -8,6 +8,7 @@ import org.jf.dexlib2.iface.reference.*;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 
@@ -35,6 +36,9 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
       addLocalSet(local, OBJECT_TYPE);
       return;
     case CONST_METHOD_HANDLE:
+      il.add(new LdcInsnNode(DexLibCommons.referenceToASMHandle(((MethodHandleReference) ref))));
+      addLocalSet(local, OBJECT_TYPE);
+      return;
     case CONST_METHOD_TYPE:
       throw new UnsupportedInsnException(i);
     case CHECK_CAST:
