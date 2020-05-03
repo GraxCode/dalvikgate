@@ -290,7 +290,15 @@ public class ASMCommons implements Opcodes {
     } while (ain != null && isIdle(ain));
     return ain;
   }
-
+  public static AbstractInsnNode getRealLast(InsnList il) {
+    AbstractInsnNode ain = il.getLast();
+    while (ain != null && isIdle(ain)) {
+      // skip labels, frames and line numbers
+      ain = ain.getPrevious();
+    }
+    return ain;
+  }
+  
   public static boolean isIdle(AbstractInsnNode ain) {
     return ain.getType() == AbstractInsnNode.FRAME || ain.getType() == AbstractInsnNode.LABEL || ain.getType() == AbstractInsnNode.LINE || ain.getOpcode() == NOP;
   }
