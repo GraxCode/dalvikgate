@@ -36,7 +36,7 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
     // B: method reference index (16 bits)
     // C..G: argument registers (4 bits each)
     if (i.getOpcode() == Opcode.FILLED_NEW_ARRAY) {
-      translateFilledNewArray(i);
+      translateFilledNewArray(i, next);
       return;
     }
     String owner;
@@ -143,7 +143,7 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
     }
   }
 
-  private void translateFilledNewArray(BuilderInstruction35c i) {
+  private void translateFilledNewArray(BuilderInstruction35c i, BuilderInstruction next) {
     TypeReference tr = (TypeReference) i.getReference();
     Type elementType = Type.getType(tr.getType()).getElementType(); // only non-wide elementType allowed for filled-new-array
     int registers = i.getRegisterCount();
@@ -181,6 +181,9 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
       addLocalGet(register, elementType);
       il.add(new InsnNode(elementType.getOpcode(IASTORE))); // get store instruction for type
       regIdx++; // register can only be 1
+    }
+    if (next.getOpcode() != Opcode.MOVE_RESULT_OBJECT) {
+      il.add(new InsnNode(POP)); // array isn't used, pop
     }
   }
 }

@@ -28,7 +28,7 @@ import me.nov.dalvikgate.transform.instruction.tree.*;
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
  */
 public class InstructionTransformer implements ITransformer<DexBackedMethod, InsnList>, Opcodes {
-  public static final boolean DEBUG_NO_RESOLVE = true;
+  public static final boolean DEBUG_NO_RESOLVE = false;
 
   protected InsnList il;
   public MethodNode mn;

@@ -2,10 +2,12 @@ package me.nov.dalvikgate.transform.instruction.translators.references;
 
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.instruction.*;
+import org.objectweb.asm.Type;
 
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.utils.CustomFieldReference;
+import static me.nov.dalvikgate.asm.ASMCommons.*;
 
 public class F22csTranslator extends AbstractInsnTranslator<BuilderInstruction22cs> {
 
@@ -24,26 +26,26 @@ public class F22csTranslator extends AbstractInsnTranslator<BuilderInstruction22
     switch (opcode) {
     case IPUT_QUICK:
     case IGET_QUICK:
-      return "I";
+      return Type.INT_TYPE.getDescriptor();
     case IPUT_WIDE_QUICK:
     case IGET_WIDE_QUICK:
-      return "J"; // can be D too
+      return Type.LONG_TYPE.getDescriptor(); // can be D too
     default:
     case IPUT_OBJECT_QUICK:
     case IGET_OBJECT_QUICK:
-      return "Ljava/lang/Object";
+      return OBJECT_TYPE.getDescriptor();
     case IPUT_BOOLEAN_QUICK:
     case IGET_BOOLEAN_QUICK:
-      return "Z";
+      return Type.BOOLEAN_TYPE.getDescriptor();
     case IPUT_BYTE_QUICK:
     case IGET_BYTE_QUICK:
-      return "B";
+      return Type.BYTE_TYPE.getDescriptor();
     case IPUT_CHAR_QUICK:
     case IGET_CHAR_QUICK:
-      return "C";
+      return Type.CHAR_TYPE.getDescriptor();
     case IPUT_SHORT_QUICK:
     case IGET_SHORT_QUICK:
-      return "S";
+      return Type.SHORT_TYPE.getDescriptor();
     }
   }
 
