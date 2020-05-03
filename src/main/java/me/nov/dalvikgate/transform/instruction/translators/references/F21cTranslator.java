@@ -40,6 +40,7 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
       addLocalSet(local, OBJECT_TYPE);
       return;
     case CONST_METHOD_TYPE:
+      // TODO
       throw new UnsupportedInsnException(i);
     case CHECK_CAST:
       addLocalGet(local, OBJECT_TYPE); // can be array type too, careful!
