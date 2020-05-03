@@ -33,7 +33,7 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
     String name = mr.getName();
     String desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
     int registers = i.getRegisterCount(); // sum of all local sizes
-    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); // sum of all parameter sizes (parameters + reference = registers)
+    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Math.max(1, Type.getType((String) p).getSize())).sum(); // sum of all parameter sizes (parameters + reference = registers)
     int parIdx = 0;
     int regIdx = 0;
     if (registers > parameters) {
@@ -72,7 +72,7 @@ public class F35cTranslator extends AbstractInsnTranslator<BuilderInstruction35c
       regIdx++;
       String pDesc = parameterTypes.get(parIdx);
       addLocalGet(register, Type.getType(pDesc));
-      registers -= Type.getType(pDesc).getSize();
+      registers -= Math.max(1, Type.getType(pDesc).getSize()); // we do not want an infinite loop because of a void argument
       parIdx++;
     }
     switch (i.getOpcode()) {

@@ -33,7 +33,7 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     String name = mr.getName();
     String desc = buildMethodDesc(mr.getParameterTypes(), mr.getReturnType());
     int registers = i.getRegisterCount(); // sum of all local sizes
-    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Type.getType((String) p).getSize()).sum(); // sum of all parameter sizes (parameters + reference = registers)
+    int parameters = mr.getParameterTypes().stream().mapToInt(p -> Math.max(1, Type.getType((String) p).getSize())).sum(); // sum of all parameter sizes (parameters + reference = registers)
     boolean hasReference = false;
     if (registers > parameters) {
       if (registers > parameters + 1) {
@@ -44,11 +44,14 @@ public class F3rcTranslator extends AbstractInsnTranslator<BuilderInstruction3rc
     }
     @SuppressWarnings("unchecked")
     List<String> parameterTypes = (List<String>) mr.getParameterTypes();
-    for (int j = 0; j < parameters; j++) {
-      int register = i.getStartRegister() + j + (hasReference ? 1 : 0);
-
-      String pDesc = parameterTypes.get(j);
+    int regIdx = (hasReference ? 1 : 0);
+    int parIdx = 0;
+    while (regIdx < parameters) {
+      int register = i.getStartRegister() + regIdx;
+      String pDesc = parameterTypes.get(parIdx);
       addLocalGet(register, Type.getType(pDesc));
+      regIdx += Math.max(1, Type.getType(pDesc).getSize()); // we do not want an infinite loop because of a void argument
+      parIdx++;
     }
     switch (i.getOpcode()) {
     case INVOKE_SUPER_RANGE:
