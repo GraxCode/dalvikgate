@@ -16,13 +16,15 @@ public class PostDanglingMethodReturn implements ITransformer<MethodNode, Method
   public void build(MethodNode mn) {
     InsnList il = mn.instructions;
     for (AbstractInsnNode ain : il.toArray()) {
-      AbstractInsnNode prev = ain.getPrevious();
+      if (ASMCommons.isIdle(ain))
+        continue;
+      AbstractInsnNode prev = ASMCommons.getRealPrevious(ain);
       if (prev != null && prev.getType() == AbstractInsnNode.METHOD_INSN) {
         MethodInsnNode min = (MethodInsnNode) prev;
         if (ain.getType() != AbstractInsnNode.VAR_INSN || (ain.getOpcode() != -1 && !ASMCommons.isVarStore(ain.getOpcode()))) {
           int descSize = Type.getReturnType(min.desc).getSize();
           if (descSize > 0) {
-            il.insertBefore(ain, new InsnNode(descSize > 1 ? POP2 : POP));
+            il.insert(prev, new InsnNode(descSize > 1 ? POP2 : POP));
           }
         }
       }

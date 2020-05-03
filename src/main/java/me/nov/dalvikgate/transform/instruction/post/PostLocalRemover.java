@@ -15,7 +15,7 @@ public class PostLocalRemover implements ITransformer<MethodNode, MethodNode>, O
   public void build(MethodNode mn) {
     InsnList il = mn.instructions;
     for (AbstractInsnNode ain : il.toArray()) {
-      AbstractInsnNode prev = ain.getPrevious();
+      AbstractInsnNode prev = ain.getPrevious(); // no label skip as it could be a jump target
       if (prev != null && ain.getType() == AbstractInsnNode.VAR_INSN && prev.getType() == AbstractInsnNode.VAR_INSN) {
         VarInsnNode store = (VarInsnNode) prev;
         VarInsnNode load = (VarInsnNode) ain;

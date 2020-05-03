@@ -274,4 +274,24 @@ public class ASMCommons implements Opcodes {
       return false;
     }
   }
+
+  public static AbstractInsnNode getRealNext(AbstractInsnNode ain) {
+    do {
+      // skip labels, frames and line numbers
+      ain = ain.getNext();
+    } while (ain != null && isIdle(ain));
+    return ain;
+  }
+
+  public static AbstractInsnNode getRealPrevious(AbstractInsnNode ain) {
+    do {
+      // skip labels, frames and line numbers
+      ain = ain.getPrevious();
+    } while (ain != null && isIdle(ain));
+    return ain;
+  }
+
+  public static boolean isIdle(AbstractInsnNode ain) {
+    return ain.getType() == AbstractInsnNode.FRAME || ain.getType() == AbstractInsnNode.LABEL || ain.getType() == AbstractInsnNode.LINE || ain.getOpcode() == NOP;
+  }
 }
