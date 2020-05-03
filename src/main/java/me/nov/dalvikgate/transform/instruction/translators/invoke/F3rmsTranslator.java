@@ -20,6 +20,6 @@ public class F3rmsTranslator extends AbstractInsnTranslator<BuilderInstruction3r
     Opcode real = i.getOpcode() == Opcode.INVOKE_VIRTUAL_QUICK_RANGE ? Opcode.INVOKE_VIRTUAL : Opcode.INVOKE_SUPER;
     BuilderInstruction next = getNextOf(i);
     new F3rcTranslator(it).translate(new BuilderInstruction3rc(real, i.getRegisterCount(), i.getStartRegister(), new CustomMethodReference("Ljava/lang/Object;",
-        "$invoke_range_index_" + i.getVtableIndex() + "_registers_" + i.getRegisterCount(), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))));
+        "$invoke_range_index_" + i.getVtableIndex() + "_desc_size_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))));
   }
 }
