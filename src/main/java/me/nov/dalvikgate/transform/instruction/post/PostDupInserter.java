@@ -20,10 +20,10 @@ public class PostDupInserter implements ITransformer<MethodNode, MethodNode>, Op
         VarInsnNode store = (VarInsnNode) prev;
         VarInsnNode load = (VarInsnNode) ain;
         if (store.var != -1 && store.var == load.var && store.getOpcode() >= 0 && load.getOpcode() >= 0) {
-          if (ASMCommons.isVarStore(prev.getOpcode()) && !ASMCommons.isVarStore(ain.getOpcode())) {
+          if (ASMCommons.isVarStore(store.getOpcode()) && ASMCommons.getOppositeVarOp(store.getOpcode()) == load.getOpcode()) {
             boolean wide = prev.getOpcode() == LSTORE || prev.getOpcode() == DSTORE;
             il.set(store, new InsnNode(wide ? DUP2 : DUP));
-            il.set(load, new VarInsnNode(ASMCommons.getOppositeVarOp(load.getOpcode()), load.var));
+            il.set(load, new VarInsnNode(store.getOpcode(), load.var));
           }
         }
       }

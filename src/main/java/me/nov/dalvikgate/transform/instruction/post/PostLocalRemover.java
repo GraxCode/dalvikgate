@@ -20,7 +20,7 @@ public class PostLocalRemover implements ITransformer<MethodNode, MethodNode>, O
         VarInsnNode store = (VarInsnNode) prev;
         VarInsnNode load = (VarInsnNode) ain;
         if (store.var != -1 && store.var == load.var && store.getOpcode() >= 0 && load.getOpcode() >= 0) {
-          if (ASMCommons.isVarStore(prev.getOpcode()) && !ASMCommons.isVarStore(ain.getOpcode())) {
+          if (ASMCommons.isVarStore(store.getOpcode()) && ASMCommons.getOppositeVarOp(store.getOpcode()) == load.getOpcode()) {
             if (canRemove(prev, ain.getNext())) {
               il.remove(store);
               il.remove(load);
@@ -32,7 +32,7 @@ public class PostLocalRemover implements ITransformer<MethodNode, MethodNode>, O
     mn.maxStack = Math.max(mn.maxStack, 2);
   }
 
-  private boolean canRemove(AbstractInsnNode prev, AbstractInsnNode ain) {
+  private boolean canRemove(AbstractInsnNode store, AbstractInsnNode ain) {
     if (ain == null || ASMCommons.isReturn(ain)) {
       // reached end of code, nothing is executed anymore
       return true;
@@ -42,20 +42,20 @@ public class PostLocalRemover implements ITransformer<MethodNode, MethodNode>, O
       return false;
     }
     if (ain.getType() == AbstractInsnNode.VAR_INSN && ain.getOpcode() >= 0) {
-      if (ain.getOpcode() == prev.getOpcode()) {
-        if (((VarInsnNode) ain).var == ((VarInsnNode) prev).var) {
+      if (ain.getOpcode() == store.getOpcode()) {
+        if (((VarInsnNode) ain).var == ((VarInsnNode) store).var) {
           // variable is stored somewhere else and not loaded before
           return true;
         }
       }
-      if (ain.getOpcode() == ASMCommons.getOppositeVarOp(prev.getOpcode())) {
-        if (((VarInsnNode) ain).var == ((VarInsnNode) prev).var) {
+      if (ain.getOpcode() == ASMCommons.getOppositeVarOp(store.getOpcode())) {
+        if (((VarInsnNode) ain).var == ((VarInsnNode) store).var) {
           // variable is reused
           return false;
         }
       }
     }
-    return canRemove(prev, ain.getNext());
+    return canRemove(store, ain.getNext());
   }
 
   @Override
