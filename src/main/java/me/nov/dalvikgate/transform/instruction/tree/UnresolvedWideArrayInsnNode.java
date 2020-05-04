@@ -5,7 +5,7 @@ import java.util.Map;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
+import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
@@ -37,7 +37,7 @@ public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
    * Validate the opcode is set.
    */
   private void validate() {
-    if (InstructionTransformer.DEBUG_NO_RESOLVE)
+    if (DexToASM.noResolve)
       setType(Type.LONG_TYPE);
     if (opcode < 0)
       throw new UnresolvedInsnException("Array store / load opcode has not been resolved!");

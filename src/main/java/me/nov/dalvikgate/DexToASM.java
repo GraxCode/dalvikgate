@@ -2,6 +2,7 @@ package me.nov.dalvikgate;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.jar.*;
 import java.util.logging.Logger;
 
@@ -12,19 +13,36 @@ import org.objectweb.asm.tree.ClassNode;
 import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
-public class DexToASM {
+public class DexToASM implements Callable<Integer> {
   public static final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-  
+
   public static void main(String[] args) throws IOException {
-    if (args.length == 2) {
-      saveAsJar(new File(args[1]), convertToASMTree(new File(args[0])));
-    } else {
-      System.out.println("java -jar dalvikgate.jar <input.dex> <output.jar>");
-    }
+    int exitCode = new CommandLine(new DexToASM()).execute(args);
+    System.exit(exitCode);
   }
 
-  private static List<ClassNode> convertToASMTree(File file) throws IOException {
+  @Option(names = { "-i", "--in" }, paramLabel = "input", description = "the dalvik file to convert (dex/odex/apk)")
+  public static File input;
+
+  @Option(names = { "-o", "--out" }, paramLabel = "output", description = "the output jar archive")
+  public static File output;
+
+  @Option(names = { "-nr", "--noresolve" }, description = "do not resolve variable types")
+  public static boolean noResolve;
+
+  @Option(names = { "-no", "--nooptimize" }, description = "do not optimize produced code")
+  public static boolean noOptimize;
+
+  @Override
+  public Integer call() throws Exception {
+    saveAsJar(output, convertToASMTree(input));
+    return 0;
+  }
+
+  public static List<ClassNode> convertToASMTree(File file) throws IOException {
     if (!file.exists()) {
       throw new FileNotFoundException();
     }

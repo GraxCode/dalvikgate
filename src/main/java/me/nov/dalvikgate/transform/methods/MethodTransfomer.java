@@ -45,10 +45,12 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       InstructionTransformer it = new InstructionTransformer(mn, method, builder);
       it.visit(method);
       mn.instructions = it.getTransformed();
-      PostLocalRemover locRem = new PostLocalRemover();
-      locRem.visit(mn);
-      PostDupInserter dups = new PostDupInserter();
-      dups.visit(mn);
+      if (!DexToASM.noOptimize) {
+        PostLocalRemover locRem = new PostLocalRemover();
+        locRem.visit(mn);
+        PostDupInserter dups = new PostDupInserter();
+        dups.visit(mn);
+      }
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {
         DexToASM.logger.severe(e.getStackTrace()[0] + " ::: " + e.getMessage());

@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.transform.instruction.translators.references;
 
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.instruction.*;
 import org.objectweb.asm.Type;
@@ -7,7 +9,6 @@ import org.objectweb.asm.Type;
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.utils.CustomFieldReference;
-import static me.nov.dalvikgate.asm.ASMCommons.*;
 
 public class F22csTranslator extends AbstractInsnTranslator<BuilderInstruction22cs> {
 

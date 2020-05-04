@@ -30,6 +30,7 @@ dependencies {
     compile 'commons-io:commons-io:2.6'
 
     compile 'org.smali:dexlib2:2.4.0'
+    compile 'info.picocli:picocli:4.2.0'
 }
 
 task fatJar(type: Jar) {

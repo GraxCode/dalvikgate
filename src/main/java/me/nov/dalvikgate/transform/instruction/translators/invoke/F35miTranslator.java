@@ -13,6 +13,7 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
     super(it);
   }
 
+  /* @formatter:off */
   /**
    * Table of methods.
    *
@@ -56,7 +57,8 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
     { "Ljava/lang/StrictMath;", "min", "(II)I" },
     { "Ljava/lang/StrictMath;", "max", "(II)I" },
     { "Ljava/lang/StrictMath;", "sqrt", "(D)D" },
-};
+  };
+  /* @formatter:on */
 
   @Override
   public void translate(BuilderInstruction35mi i) {
@@ -66,7 +68,7 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
       // ignore emptyInline test
       return;
     }
-    if(index >= gDvmInlineOpsTable.length) {
+    if (index >= gDvmInlineOpsTable.length) {
       throw new TranslationException("This ODEX contains execute-inline instructions later than android kit-kat. gDvmInlineOpsTable does not contain index " + index);
     }
     String[] method = gDvmInlineOpsTable[index];
