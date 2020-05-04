@@ -15,13 +15,13 @@ public class F35msTranslator extends AbstractInsnTranslator<BuilderInstruction35
   }
 
   public void translate(BuilderInstruction35ms i) {
-    // we can't really translate this to java, as it uses the current object on stack as class, and invokes the method at vtable index
-    // TODO this could be translated to reflection
+    // optimized invoke instruction that uses indexes instead of method names and descs. This cannot be disassembled at all, only sort of
     Opcode real = i.getOpcode() == Opcode.INVOKE_VIRTUAL_QUICK ? Opcode.INVOKE_VIRTUAL : Opcode.INVOKE_SUPER;
     BuilderInstruction next = getNextOf(i);
-    new F35cTranslator(it).translate(
-        new BuilderInstruction35c(real, i.getRegisterCount(), i.getRegisterC(), i.getRegisterD(), i.getRegisterE(), i.getRegisterF(), i.getRegisterG(), new CustomMethodReference("Ljava/lang/Object;",
-            "$$$method_vtable_" + i.getVtableIndex() + "_argsize_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))),
-        getNextOf(i));
+    new F35cTranslator(it)
+        .translate(
+            new BuilderInstruction35c(real, i.getRegisterCount(), i.getRegisterC(), i.getRegisterD(), i.getRegisterE(), i.getRegisterF(), i.getRegisterG(), new CustomMethodReference(
+                "Ljava/lang/Object;", "$$$method_vtable_" + i.getVtableIndex() + "_argsize_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))),
+            getNextOf(i));
   }
 }

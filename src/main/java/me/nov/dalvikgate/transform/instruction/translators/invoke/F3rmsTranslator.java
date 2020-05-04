@@ -15,8 +15,7 @@ public class F3rmsTranslator extends AbstractInsnTranslator<BuilderInstruction3r
   }
 
   public void translate(BuilderInstruction3rms i) {
-    // we can't really translate this to java, as it uses the current object on stack as class, and invokes the method at vtable index
-    // TODO this could be translated to reflection, but would be a lot of work
+    // optimized invoke instruction that uses indexes instead of method names and descs. This cannot be disassembled at all, only sort of
     Opcode real = i.getOpcode() == Opcode.INVOKE_VIRTUAL_QUICK_RANGE ? Opcode.INVOKE_VIRTUAL : Opcode.INVOKE_SUPER;
     BuilderInstruction next = getNextOf(i);
     new F3rcTranslator(it).translate(new BuilderInstruction3rc(real, i.getRegisterCount(), i.getStartRegister(), new CustomMethodReference("Ljava/lang/Object;",
