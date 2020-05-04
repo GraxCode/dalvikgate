@@ -28,6 +28,8 @@ public class F22bTranslator extends AbstractInsnTranslator<BuilderInstruction22b
       il.add(new InsnNode(IADD));
       break;
     case RSUB_INT_LIT8:
+      //reverse subtraction
+      il.add(new InsnNode(SWAP));
       il.add(new InsnNode(ISUB));
       break;
     case MUL_INT_LIT8:

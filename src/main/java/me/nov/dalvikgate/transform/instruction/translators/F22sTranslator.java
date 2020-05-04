@@ -27,6 +27,11 @@ public class F22sTranslator extends AbstractInsnTranslator<BuilderInstruction22s
     case ADD_INT_LIT16:
       il.add(new InsnNode(IADD));
       break;
+    case RSUB_INT:
+      //reverse subtraction
+      il.add(new InsnNode(SWAP));
+      il.add(new InsnNode(ISUB));
+      break;
     case MUL_INT_LIT16:
       il.add(new InsnNode(IMUL));
       break;
