@@ -345,8 +345,11 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
    * @param label The label
    */
   public LabelNode getASMLabel(Label label) {
+    if (label.getLocation().getInstruction() == null) {
+      throw new TranslationException("dalvik label has no assigned instruction: at index " + label.getLocation().getIndex());
+    }
     return Objects.requireNonNull(labels.get(labels.keySet().stream().filter(i -> i.getLocation().getLabels().contains(label)).findFirst()
-        .orElseThrow(() -> new TranslationException("dex label has no equivalent LabelNode " + label.getLocation().getInstruction().getOpcode()))));
+        .orElseThrow(() -> new TranslationException("dalvik label has no equivalent LabelNode" + label.getLocation().getInstruction().getOpcode()))));
   }
 
   /**
@@ -359,7 +362,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       } while (i.getFormat().isPayloadFormat || i.getOpcode() == Opcode.NOP);
       return i;
     } catch (ArrayIndexOutOfBoundsException | NullPointerException e) {
-      throw new TranslationException("could not find next of " + i.getOpcode() + " at index " + i.getLocation().getIndex());
+      throw new TranslationException("could not find succeeding instruction of " + i.getOpcode() + " at index " + i.getLocation().getIndex());
     }
   }
 
