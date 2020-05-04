@@ -290,8 +290,9 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         LabelNode handlerLabel = getASMLabel(tb.exceptionHandler.getHandler());
         if (endLabel == null) {
           // try catch block reaches over the whole code
-          // has to be some special try catch block type, ignore
-          return;
+          // has to be some special try catch block type
+          // (either obfuscation or special monitor handler)
+          il.add(endLabel = new LabelNode());
         }
         if (handler == null && isSpecialMonitorHandler(firstHandlerOp)) {
           // ignore
