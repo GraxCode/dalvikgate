@@ -210,6 +210,7 @@ public class ASMCommons implements Opcodes {
   }
 
   public static Type getPushedTypeForInsn(AbstractInsnNode insn) {
+    int op = insn.getOpcode();
     switch (insn.getType()) {
     case AbstractInsnNode.FIELD_INSN:
       return Type.getType(((FieldInsnNode) insn).desc);
@@ -218,11 +219,12 @@ public class ASMCommons implements Opcodes {
     case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
       return Type.getType(((InvokeDynamicInsnNode) insn).desc).getReturnType();
     case AbstractInsnNode.INT_INSN:
+      if (op == NEWARRAY)
+        return ARRAY_TYPE;
       return Type.INT_TYPE;
     case AbstractInsnNode.MULTIANEWARRAY_INSN:
       return ARRAY_TYPE;
     case AbstractInsnNode.INSN:
-      int op = insn.getOpcode();
       // TODO: Validate that we do not write "ICONST_0" in cases where we meant to make a "null" constant
       // TODO: Validate that we do not write "ACONST_NULL" in cases where we meant to make a "0" constant
       if (op == ICONST_M1 || (op >= ICONST_0 && op <= ICONST_5))
@@ -238,7 +240,7 @@ public class ASMCommons implements Opcodes {
       break;
     case AbstractInsnNode.TYPE_INSN:
       String typeInternal = ((TypeInsnNode) insn).desc;
-      if (typeInternal.startsWith("["))
+      if (typeInternal.startsWith("[") || op == ANEWARRAY)
         return ARRAY_TYPE;
       else
         return OBJECT_TYPE;
@@ -291,6 +293,7 @@ public class ASMCommons implements Opcodes {
     } while (ain != null && isIdle(ain));
     return ain;
   }
+
   public static AbstractInsnNode getRealLast(InsnList il) {
     AbstractInsnNode ain = il.getLast();
     while (ain != null && isIdle(ain)) {
@@ -299,7 +302,7 @@ public class ASMCommons implements Opcodes {
     }
     return ain;
   }
-  
+
   public static boolean isIdle(AbstractInsnNode ain) {
     return ain.getType() == AbstractInsnNode.FRAME || ain.getType() == AbstractInsnNode.LABEL || ain.getType() == AbstractInsnNode.LINE || ain.getOpcode() == NOP;
   }
