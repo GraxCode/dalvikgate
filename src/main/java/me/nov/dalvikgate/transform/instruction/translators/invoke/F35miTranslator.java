@@ -20,7 +20,10 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
    * From: https://android.googlesource.com/platform/dalvik/+/donut-release/vm/InlineNative.c
    **/
   public static final String gDvmInlineOpsTable[][] = { { "Lorg/apache/harmony/dalvik/NativeTestTarget;", "emptyInlineMethod", "()V" }, { "Ljava/lang/String;", "charAt", "(I)C" },
-      { "Ljava/lang/String;", "compareTo", "(Ljava/lang/String;)I" }, { "Ljava/lang/String;", "equals", "(Ljava/lang/Object;)Z" }, { "Ljava/lang/String;", "length", "()I" } };
+      { "Ljava/lang/String;", "compareTo", "(Ljava/lang/String;)I" }, { "Ljava/lang/String;", "equals", "(Ljava/lang/Object;)Z" }, { "Ljava/lang/String;", "length", "()I" },
+      { "Ljava/lang/Math;", "abs", "(I)I" }, { "Ljava/lang/Math;", "abs", "(J)J" }, { "Ljava/lang/Math;", "abs", "(F)F" }, { "Ljava/lang/Math;", "abs", "(D)D" },
+      { "Ljava/lang/Math;", "min", "(II)I" }, { "Ljava/lang/Math;", "max", "(II)I" }, { "Ljava/lang/Math;", "sqrt", "(D)D" }, { "Ljava/lang/Math;", "cos", "(D)D" },
+      { "Ljava/lang/Math;", "sin", "(D)D" }, };
 
   @Override
   public void translate(BuilderInstruction35mi i) {
