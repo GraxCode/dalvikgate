@@ -26,6 +26,10 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
   public void translate(BuilderInstruction35mi i) {
     // TODO UNTESTED, don't know how to generate samples.
     int index = i.getInlineIndex();
+    if (index == 0) {
+      // ignore emptyInline test
+      return;
+    }
     String[] method = gDvmInlineOpsTable[index];
     String desc = method[2];
     // use normal method translator with fake 35c instruction
