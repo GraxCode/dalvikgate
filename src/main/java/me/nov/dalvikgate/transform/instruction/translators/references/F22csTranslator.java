@@ -19,7 +19,7 @@ public class F22csTranslator extends AbstractInsnTranslator<BuilderInstruction22
     // we can't really translate this to java, as it uses the current object on stack as class, and performs field action at index
     // TODO this could be translated to reflection, but would be a lot of work
     new F22cTranslator(it).translate(new BuilderInstruction22c(convertOpcode(i), i.getRegisterA(), i.getRegisterB(),
-        new CustomFieldReference("Ljava/lang/Object;", "$field_with_offset_" + i.getFieldOffset(), getSampleTypeForOp(i.getOpcode()))));
+        new CustomFieldReference("Ljava/lang/Object;", "$$$field_offset_" + i.getFieldOffset(), getSampleTypeForOp(i.getOpcode()))));
   }
 
   private String getSampleTypeForOp(Opcode opcode) {
