@@ -16,6 +16,7 @@ import org.jf.dexlib2.iface.reference.StringReference;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.ITransformer;
@@ -249,14 +250,14 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       return;
     int i = 0;
     // TODO: Type analysis and fill in missing data for resolvable instructions
-    System.err.println(method.getDefiningClass() + " - " + method.getName());
+    DexToASM.logger.severe(method.getDefiningClass() + " - " + method.getName());
     for (AbstractInsnNode insn : il) {
       if (insn instanceof UnresolvedJumpInsnNode) {
-        System.err.println("   - " + i + ": unresolved JUMP");
+        DexToASM.logger.severe("   - " + i + ": unresolved JUMP");
       } else if (insn instanceof UnresolvedVarInsnNode) {
-        System.err.println("   - " + i + ": unresolved VARIABLE");
+        DexToASM.logger.severe("   - " + i + ": unresolved VARIABLE");
       } else if (insn instanceof UnresolvedWideArrayInsnNode) {
-        System.err.println("   - " + i + ": unresolved WIDE ARRAY");
+        DexToASM.logger.severe("   - " + i + ": unresolved WIDE ARRAY");
       }
       i++;
     }
@@ -302,7 +303,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
           // no move-exception opcode, we need to make a "bridge" to match java stack sizes, as in java bytecode an exception object would be on the stack, while in dalvik there isn't.
           // offset can be reached by multiple routines
           if (startLabel == handlerLabel) {
-            System.err.println("unexpected case: tcb start is handler - this should not happen!");
+            DexToASM.logger.severe("unexpected case: tcb start is also handler");
             // unexpected case, use old handler creation
             LabelNode newHandler = new LabelNode();
             il.add(newHandler);
@@ -358,13 +359,12 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       if (index >= dexInstructions.size()) {
         // we could throw an exception here
         // throw new TranslationException("dalvik label points to the end of the method");
-        System.err.println("dalvik label points to the end of the method, creating throw block");
-        new Throwable().printStackTrace();
+        DexToASM.logger.severe("dalvik label points to the end of the method, creating throw block");
         LabelNode newBlock = new LabelNode();
         LabelNode afterBlock = new LabelNode();
         il.add(new JumpInsnNode(GOTO, afterBlock));
         il.add(newBlock);
-        il.add(makeExceptionThrow("java/lang/VerifyError", "dalvikgate: bad EOC label"));
+        il.add(makeExceptionThrow("java/lang/VerifyError", "bad EOC label"));
         il.add(afterBlock);
         return newBlock;
       }

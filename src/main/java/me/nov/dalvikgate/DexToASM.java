@@ -3,6 +3,7 @@ package me.nov.dalvikgate;
 import java.io.*;
 import java.util.*;
 import java.util.jar.*;
+import java.util.logging.Logger;
 
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.dexbacked.*;
@@ -13,6 +14,8 @@ import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
 
 public class DexToASM {
+  public static final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+  
   public static void main(String[] args) throws IOException {
     if (args.length == 2) {
       saveAsJar(new File(args[1]), convertToASMTree(new File(args[0])));
@@ -49,10 +52,9 @@ public class DexToASM {
           out.write(Conversion.toBytecode(c));
           out.closeEntry();
         } catch (UnresolvedInsnException e) {
-          System.err.println("SKIP: " + c.name + " - " + e.getMessage());
+          DexToASM.logger.severe("SKIP: " + c.name + " - " + e.getMessage());
         } catch (Exception e) {
-          // TODO: Better Log and alert user
-          System.err.println("FAIL: " + c.name);
+          DexToASM.logger.severe("FAIL: " + c.name);
           e.printStackTrace();
         }
       }

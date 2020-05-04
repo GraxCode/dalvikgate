@@ -7,6 +7,7 @@ import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
 
+import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
@@ -50,11 +51,11 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       dups.visit(mn);
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {
-        System.err.println(e.getStackTrace()[0] + " ::: " + e.getMessage());
+        DexToASM.logger.severe(e.getStackTrace()[0] + " ::: " + e.getMessage());
       } else {
         e.printStackTrace();
       }
-      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException", "dalvikgate error: " + e.toString() + " / " + TextUtils.stacktraceToString(e));
+      mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException", e.toString() + " / " + TextUtils.stacktraceToString(e));
       mn.maxStack = 3;
       mn.tryCatchBlocks.clear();
     }

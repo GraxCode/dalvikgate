@@ -51,6 +51,7 @@ public class ASMCommons implements Opcodes {
   }
 
   public static InsnList makeExceptionThrow(String name, String text) {
+    text = "dalvikgate: " + text;
     InsnList il = new InsnList();
     il.add(new TypeInsnNode(NEW, name));
     il.add(new InsnNode(DUP));
@@ -254,7 +255,7 @@ public class ASMCommons implements Opcodes {
       else
         return OBJECT_TYPE;
     }
-    throw new IllegalArgumentException(insn.getClass() + " " + insn.getOpcode());
+    throw new IllegalArgumentException(insn.getClass().getSimpleName() + " - OP: " + insn.getOpcode());
   }
 
   public static boolean isBlockEnd(AbstractInsnNode ain) {
