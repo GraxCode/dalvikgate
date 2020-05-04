@@ -23,7 +23,8 @@ public class F35miTranslator extends AbstractInsnTranslator<BuilderInstruction35
       { "Ljava/lang/String;", "compareTo", "(Ljava/lang/String;)I" }, { "Ljava/lang/String;", "equals", "(Ljava/lang/Object;)Z" }, { "Ljava/lang/String;", "length", "()I" },
       { "Ljava/lang/Math;", "abs", "(I)I" }, { "Ljava/lang/Math;", "abs", "(J)J" }, { "Ljava/lang/Math;", "abs", "(F)F" }, { "Ljava/lang/Math;", "abs", "(D)D" },
       { "Ljava/lang/Math;", "min", "(II)I" }, { "Ljava/lang/Math;", "max", "(II)I" }, { "Ljava/lang/Math;", "sqrt", "(D)D" }, { "Ljava/lang/Math;", "cos", "(D)D" },
-      { "Ljava/lang/Math;", "sin", "(D)D" }, };
+      { "Ljava/lang/Math;", "sin", "(D)D" }, { "Ljava/lang/Float;", "floatToIntBits", "(F)I" }, { "Ljava/lang/Float;", "floatToRawIntBits", "(F)I" }, { "Ljava/lang/Float;", "intBitsToFloat", "(I)F" },
+      { "Ljava/lang/Double;", "doubleToLongBits", "(D)J" }, { "Ljava/lang/Double;", "doubleToRawLongBits", "(D)J" }, { "Ljava/lang/Double;", "longBitsToDouble", "(J)D" } };
 
   @Override
   public void translate(BuilderInstruction35mi i) {
