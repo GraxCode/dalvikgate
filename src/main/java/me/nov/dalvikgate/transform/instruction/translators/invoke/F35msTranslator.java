@@ -21,7 +21,7 @@ public class F35msTranslator extends AbstractInsnTranslator<BuilderInstruction35
     BuilderInstruction next = getNextOf(i);
     new F35cTranslator(it).translate(
         new BuilderInstruction35c(real, i.getRegisterCount(), i.getRegisterC(), i.getRegisterD(), i.getRegisterE(), i.getRegisterF(), i.getRegisterG(), new CustomMethodReference("Ljava/lang/Object;",
-            "$method_index_" + i.getVtableIndex() + "_size_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))),
+            "$method_vtable_" + i.getVtableIndex() + "_argsize_" + (i.getRegisterCount() - 1), DexLibCommons.generateFakeQuickDesc(i.getRegisterCount(), next))),
         getNextOf(i));
   }
 }
