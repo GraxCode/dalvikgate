@@ -4,15 +4,14 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.asm.ASMCommons;
-import me.nov.dalvikgate.transform.ITransformer;
 
 /**
  * Transformer that removes successive local store and load instructions with locals that are unused later.
  */
-public class PostLocalRemover implements ITransformer<MethodNode, MethodNode>, Opcodes {
+public class PostLocalRemover implements IPostPatcher<MethodNode>, Opcodes {
 
   @Override
-  public void build(MethodNode mn) {
+  public void applyPatch(MethodNode mn) {
     InsnList il = mn.instructions;
     for (AbstractInsnNode ain : il.toArray()) {
       AbstractInsnNode prev = ain.getPrevious(); // no label skip as it could be a jump target
@@ -56,10 +55,5 @@ public class PostLocalRemover implements ITransformer<MethodNode, MethodNode>, O
       }
     }
     return canRemove(store, ain.getNext());
-  }
-
-  @Override
-  public MethodNode getTransformed() {
-    throw new IllegalArgumentException();
   }
 }

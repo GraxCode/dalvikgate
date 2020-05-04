@@ -4,15 +4,14 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.asm.ASMCommons;
-import me.nov.dalvikgate.transform.ITransformer;
 
 /**
  * Transformer that converts successive local store and load instructions with the same local var to {@code dup}; {@code store}.
  */
-public class PostDupInserter implements ITransformer<MethodNode, MethodNode>, Opcodes {
+public class PostDupInserter implements IPostPatcher<MethodNode>, Opcodes {
 
   @Override
-  public void build(MethodNode mn) {
+  public void applyPatch(MethodNode mn) {
     InsnList il = mn.instructions;
     for (AbstractInsnNode ain : il.toArray()) {
       AbstractInsnNode prev = ain.getPrevious(); // no label skip as it could be a jump target
@@ -29,10 +28,5 @@ public class PostDupInserter implements ITransformer<MethodNode, MethodNode>, Op
       }
     }
     mn.maxStack = Math.max(mn.maxStack, 2);
-  }
-
-  @Override
-  public MethodNode getTransformed() {
-    throw new IllegalArgumentException();
   }
 }

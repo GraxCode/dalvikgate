@@ -46,10 +46,9 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       it.visit(method);
       mn.instructions = it.getTransformed();
       if (!DexToASM.noOptimize) {
-        PostLocalRemover locRem = new PostLocalRemover();
-        locRem.visit(mn);
-        PostDupInserter dups = new PostDupInserter();
-        dups.visit(mn);
+        new PostLocalRemover().applyPatch(mn);
+        new PostDupInserter().applyPatch(mn);
+        //new PostCombiner().applyPatch(mn); analyzer is probably the better way to do this
       }
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {
