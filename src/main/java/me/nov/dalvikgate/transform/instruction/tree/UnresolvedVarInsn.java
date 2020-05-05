@@ -6,8 +6,8 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.transform.instruction.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
-import me.nov.dalvikgate.transform.instruction.tree.itf.IUnresolvedInstruction;
 
 /**
  * A node that represents a local variable instruction that has not been fully resolved. Due to the ambiguity of android bytecode certain actions are not immediately clear in the

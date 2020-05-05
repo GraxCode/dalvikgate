@@ -1,4 +1,4 @@
-package me.nov.dalvikgate.transform.instruction.tree.itf;
+package me.nov.dalvikgate.transform.instruction;
 
 import org.objectweb.asm.Type;
 

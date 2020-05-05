@@ -6,8 +6,8 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.transform.instruction.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
-import me.nov.dalvikgate.transform.instruction.tree.itf.IUnresolvedInstruction;
 
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
 
