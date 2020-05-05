@@ -47,6 +47,14 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     this.argumentRegisterCount = method.getParameters().stream().mapToInt(DexLibCommons::getSize).sum() + (isStatic ? 0 : 1);
   }
 
+  public InstructionTransformer(MethodNode mn, MutableMethodImplementation builder, Type desc, boolean isStatic) {
+    this.mn = mn;
+    this.builder = builder;
+    this.dexInstructions = builder.getInstructions();
+    this.isStatic = isStatic;
+    this.argumentRegisterCount = Arrays.stream(desc.getArgumentTypes()).mapToInt(Type::getSize).sum() + (isStatic ? 0 : 1);
+  }
+
   @Override
   public InsnList getTransformed() {
     return Objects.requireNonNull(il);
@@ -196,7 +204,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       return;
     int i = 0;
     // TODO: Type analysis and fill in missing data for resolvable instructions
-    DexToASM.logger.severe(method.getDefiningClass() + " - " + method.getName());
+    if (method != null)
+      DexToASM.logger.severe(method.getDefiningClass() + " - " + method.getName());
     for (AbstractInsnNode insn : il) {
       if (insn instanceof UnresolvedJumpInsn) {
         DexToASM.logger.severe("   - " + i + ": unresolved JUMP");
