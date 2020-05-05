@@ -19,6 +19,7 @@ public class ConstTranslator extends AbstractInsnTranslator<BuilderInstruction> 
 
   // TODO 0 ints can be the same as ACONST_NULL too
   public void translate(BuilderInstruction i) {
+    // TODO problem: CONST may also initialize float. it is unknown which of them
     switch (i.getOpcode()) {
     case CONST:
       BuilderInstruction31i _31i = (BuilderInstruction31i) i;
