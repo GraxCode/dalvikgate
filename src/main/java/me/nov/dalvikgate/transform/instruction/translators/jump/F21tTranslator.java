@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.JumpInsnNode;
 
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsnNode;
+import me.nov.dalvikgate.transform.instruction.tree.UnresolvedJumpInsn;
 
 public class F21tTranslator extends AbstractInsnTranslator<BuilderInstruction21t> {
 
@@ -38,7 +38,7 @@ public class F21tTranslator extends AbstractInsnTranslator<BuilderInstruction21t
     case IF_NEZ:
       // Dalvik has no "null", instead used "0" which means we can't immediately tell if we should use object comparison, or integer comparison.
       // So we will resolve the opcode later when we can perform type analysis.
-      il.add(new UnresolvedJumpInsnNode(opcode, getASMLabel(label)));
+      il.add(new UnresolvedJumpInsn(opcode, getASMLabel(label)));
       break;
     case IF_LTZ:
       il.add(new JumpInsnNode(IFLT, getASMLabel(label)));

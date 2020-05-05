@@ -198,11 +198,11 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     // TODO: Type analysis and fill in missing data for resolvable instructions
     DexToASM.logger.severe(method.getDefiningClass() + " - " + method.getName());
     for (AbstractInsnNode insn : il) {
-      if (insn instanceof UnresolvedJumpInsnNode) {
+      if (insn instanceof UnresolvedJumpInsn) {
         DexToASM.logger.severe("   - " + i + ": unresolved JUMP");
-      } else if (insn instanceof UnresolvedVarInsnNode) {
+      } else if (insn instanceof UnresolvedVarInsn) {
         DexToASM.logger.severe("   - " + i + ": unresolved VARIABLE");
-      } else if (insn instanceof UnresolvedWideArrayInsnNode) {
+      } else if (insn instanceof UnresolvedWideArrayInsn) {
         DexToASM.logger.severe("   - " + i + ": unresolved WIDE ARRAY");
       }
       i++;
@@ -348,11 +348,10 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   }
 
   /**
-   * Old method to convert registers to labels, considering parameters and method visibility. This can lead to illegal use of labels in java bytecode.
+   * Method to convert registers to labels, considering parameters and method visibility. Be aware that dalvik reuses unused registers.
    * 
    * @param register The register to be converted
    */
-  @Deprecated
   protected int regToLocal(int register) {
     // The N arguments to a method land in the last N registers of the method's invocation frame, in order
     int startingArgs = builder.getRegisterCount() - argumentRegisterCount;
@@ -450,7 +449,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
    * @param type     Type of variable. {@code null} if ambiguous.
    */
   protected void addLocalGetSet(boolean store, int register, Type type) {
-    UnresolvedVarInsnNode var = new UnresolvedVarInsnNode(store, type);
+    UnresolvedVarInsn var = new UnresolvedVarInsn(store, type);
     var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
     if (type != null)
       var.setType(type);

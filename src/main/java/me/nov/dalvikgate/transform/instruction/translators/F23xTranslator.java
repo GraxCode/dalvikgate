@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.InsnNode;
 
 import me.nov.dalvikgate.transform.instruction.*;
 import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.tree.UnresolvedWideArrayInsnNode;
+import me.nov.dalvikgate.transform.instruction.tree.UnresolvedWideArrayInsn;
 
 public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x> {
 
@@ -76,7 +76,7 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
     case AGET_WIDE:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      il.add(new UnresolvedWideArrayInsnNode(false));
+      il.add(new UnresolvedWideArrayInsn(false));
       addLocalSet(i.getRegisterA(), null); // unsure if long or double
       return;
     case AGET_OBJECT:
@@ -114,7 +114,7 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
       addLocalGet(i.getRegisterA(), null); // unsure if long or double
-      il.add(new UnresolvedWideArrayInsnNode(true));
+      il.add(new UnresolvedWideArrayInsn(true));
       return;
     case APUT_OBJECT:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);

@@ -7,8 +7,9 @@ import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
+import me.nov.dalvikgate.transform.instruction.tree.itf.IUnresolvedInstruction;
 
-public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
+public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInstruction, Opcodes {
   private boolean store;
 
   /**
@@ -16,7 +17,7 @@ public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
    *
    * @param store {@code true} for storage insns.
    */
-  public UnresolvedWideArrayInsnNode(boolean store) {
+  public UnresolvedWideArrayInsn(boolean store) {
     super(-1);
     this.store = store;
   }
@@ -36,7 +37,7 @@ public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
   /**
    * Validate the opcode is set.
    */
-  private void validate() {
+  public void validate() {
     if (DexToASM.noResolve)
       setType(Type.LONG_TYPE);
     if (opcode < 0)
@@ -44,8 +45,6 @@ public class UnresolvedWideArrayInsnNode extends InsnNode implements Opcodes {
   }
 
   /**
-   * Update the instruction's stored type.
-   *
    * @param type either DOUBLE or LONG
    */
   public void setType(Type type) {

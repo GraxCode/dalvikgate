@@ -7,12 +7,13 @@ import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
+import me.nov.dalvikgate.transform.instruction.tree.itf.IUnresolvedInstruction;
 
 /**
  * A node that represents a local variable instruction that has not been fully resolved. Due to the ambiguity of android bytecode certain actions are not immediately clear in the
  * same way they would be in plain Java bytecode.
  */
-public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
+public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;
 
@@ -22,7 +23,7 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
    * @param store       {@code true} for storage insns.
    * @param initialType Initial type indicated by android instruction. Will be {@code null} if ambiguous.
    */
-  public UnresolvedVarInsnNode(boolean store, Type initialType) {
+  public UnresolvedVarInsn(boolean store, Type initialType) {
     super(-1, -1);
     this.store = store;
     this.initialType = initialType;
@@ -43,7 +44,7 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
   /**
    * Validate the opcode and variable index are set.
    */
-  private void validate() {
+  public void validate() {
     if (DexToASM.noResolve)
       setType(initialType == null ? Type.INT_TYPE : initialType);
     if (opcode < 0)
@@ -61,11 +62,6 @@ public class UnresolvedVarInsnNode extends VarInsnNode implements Opcodes {
     this.var = local;
   }
 
-  /**
-   * Update the instruction's stored type.
-   *
-   * @param type Type discovered for variable index.
-   */
   public void setType(Type type) {
     switch (type.getSort()) {
     case Type.OBJECT:

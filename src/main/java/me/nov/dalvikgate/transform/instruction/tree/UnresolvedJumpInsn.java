@@ -8,8 +8,9 @@ import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
+import me.nov.dalvikgate.transform.instruction.tree.itf.IUnresolvedInstruction;
 
-public class UnresolvedJumpInsnNode extends JumpInsnNode implements Opcodes {
+public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstruction, Opcodes {
   private final Opcode dalvikOp;
 
   /**
@@ -17,7 +18,7 @@ public class UnresolvedJumpInsnNode extends JumpInsnNode implements Opcodes {
    *
    * @param label the operand of the instruction to be constructed. This operand is a label that
    */
-  public UnresolvedJumpInsnNode(Opcode dalvikOp, LabelNode label) {
+  public UnresolvedJumpInsn(Opcode dalvikOp, LabelNode label) {
     super(-1, label);
     this.dalvikOp = dalvikOp;
   }
@@ -34,22 +35,15 @@ public class UnresolvedJumpInsnNode extends JumpInsnNode implements Opcodes {
     return super.clone(clonedLabels);
   }
 
-  /**
-   * Validate the opcode is set.
-   */
-  private void validate() {
+  public void validate() {
     if (DexToASM.noResolve)
-      setIsObject(true);
+      setType(Type.getType("Ljava/lang/Object;"));
     if (opcode < 0)
-      throw new UnresolvedInsnException("Variable opcode has not been resolved!");
+      throw new UnresolvedInsnException("Jump opcode has not been resolved!");
   }
 
-  /**
-   * Update opcode with knowledge of if the type being operated on is an object.
-   *
-   * @param isObject {@code true} when type of jump comparison is an object.
-   */
-  public void setIsObject(boolean isObject) {
+  public void setType(Type type) {
+    boolean isObject = type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY;
     switch (dalvikOp) {
     case IF_EQ:
       opcode = isObject ? IF_ACMPEQ : IF_ICMPEQ;
