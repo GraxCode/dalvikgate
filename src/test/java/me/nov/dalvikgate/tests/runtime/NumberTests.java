@@ -51,6 +51,7 @@ class NumberTests implements Opcodes {
 
   @Test
   void floatConstHigh16() {
+    // normal float construction
     MutableMethodImplementation mmi = new MutableMethodImplementation(1);
     mmi.addInstruction(new BuilderInstruction21ih(Opcode.CONST_HIGH16, 0, Float.floatToIntBits(21.3f)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
@@ -60,6 +61,7 @@ class NumberTests implements Opcodes {
 
   @Test
   void doubleConstWideHigh16() {
+    // normal double construction
     MutableMethodImplementation mmi = new MutableMethodImplementation(2);
     mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, Double.doubleToLongBits(363417)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
