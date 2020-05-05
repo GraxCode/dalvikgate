@@ -4,6 +4,7 @@ import static me.nov.dalvikgate.asm.ASMCommons.*;
 import static org.objectweb.asm.Type.*;
 
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnNode;
 
 import me.nov.dalvikgate.transform.instruction.*;
@@ -17,49 +18,46 @@ public class F11xTranslator extends AbstractInsnTranslator<BuilderInstruction11x
 
   @Override
   public void translate(BuilderInstruction11x i) {
-    // Move immediate word value into register.
-    // A: destination register
-    int source = i.getRegisterA();
+    // A: destination or source register
+    int register = i.getRegisterA();
     switch (i.getOpcode()) {
     case MOVE_RESULT:
       // "Move the single-word non-object result of..."
       // - So this should be a primitive
-      addLocalSet(source, getPushedTypeForInsn(getRealLast(il))); // TODO  think this can be tricked by goto
+      addLocalSet(register, getPushedTypeForInsn(getRealLast(il))); // this can be tricked by jumps or similar
+      // addLocalSet(register, null); //let the analyzer do the work
       break;
     case MOVE_EXCEPTION:
     case MOVE_RESULT_OBJECT:
-      addLocalSetObject(source);
+      addLocalSetObject(register);
       break;
     case MOVE_RESULT_WIDE:
       // Get type from last written instruction
-      addLocalSet(source, getPushedTypeForInsn(getRealLast(il))); // TODO i think this can be tricked by goto
+      addLocalSet(register, getPushedTypeForInsn(getRealLast(il))); // this can be tricked by jumps or similar
+      // addLocalSet(register, null); //let the analyzer do the work
       break;
     case MONITOR_ENTER:
-      addLocalGetObject(source);
+      addLocalGetObject(register);
       il.add(new InsnNode(MONITORENTER));
       break;
     case MONITOR_EXIT:
-      addLocalGetObject(source);
+      addLocalGetObject(register);
       il.add(new InsnNode(MONITOREXIT));
       break;
     case RETURN:
-      // Dalvik has this int-specific return
-      addLocalGet(source, INT_TYPE);
-      il.add(new InsnNode(IRETURN));
-      break;
     case RETURN_WIDE:
-      // Dalvik has this long/double-specific return
-      // Cannot determine if double or long, resolve later
-      addLocalGet(source, null);
-      il.add(new InsnNode(LRETURN));
+      // handle return instructions using known method return type, ugly but works
+      Type returnType = Type.getReturnType(it.mn.desc);
+      addLocalGet(register, returnType);
+      il.add(new InsnNode(returnType.getOpcode(IRETURN)));
       break;
     case RETURN_OBJECT:
       // Dalvik has this object-specific return
-      addLocalGetObject(source);
+      addLocalGetObject(register);
       il.add(new InsnNode(ARETURN));
       break;
     case THROW:
-      addLocalGetObject(source);
+      addLocalGetObject(register);
       il.add(new InsnNode(ATHROW));
       break;
     default:
