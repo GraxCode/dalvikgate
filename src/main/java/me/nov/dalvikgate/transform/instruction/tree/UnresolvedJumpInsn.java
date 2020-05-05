@@ -58,7 +58,7 @@ public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstr
       opcode = isObject ? IFNONNULL : IFNE;
       break;
     default:
-      throw new IllegalStateException("Unsupported opcode type: " + dalvikOp.name);
+      throw new IllegalStateException("Jump cannot be unresolved! Got " + dalvikOp.name);
     }
   }
 }

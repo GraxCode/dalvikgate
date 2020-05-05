@@ -85,7 +85,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       setOpcode(store ? DSTORE : DLOAD);
       break;
     default:
-      throw new IllegalStateException("Unsupported var type: " + type.getDescriptor());
+      throw new IllegalArgumentException("Unsupported var type: " + type.getDescriptor());
     }
   }
 }

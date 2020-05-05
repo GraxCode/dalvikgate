@@ -56,7 +56,7 @@ public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInst
       setOpcode(store ? LASTORE : LALOAD);
       break;
     default:
-      throw new IllegalStateException("Unsupported var type: " + type.getDescriptor());
+      throw new IllegalArgumentException("Only wide arrays allowed! Got " + type.getDescriptor());
     }
   }
 

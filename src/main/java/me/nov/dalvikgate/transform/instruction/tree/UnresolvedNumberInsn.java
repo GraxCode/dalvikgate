@@ -11,11 +11,11 @@ import me.nov.dalvikgate.transform.instruction.tree.itf.IUnresolvedInstruction;
 
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
 
-  private long wideValue;
+  private Number wideValue;
 
   public UnresolvedNumberInsn(long wideValue) {
     super(null);
-    this.wideValue = wideValue;
+    this.wideValue = Long.valueOf(wideValue);
   }
 
   @Override
@@ -48,21 +48,21 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case Type.BYTE:
     case Type.SHORT:
     case Type.CHAR:
-      cst = (int) wideValue;
+      cst = wideValue.intValue();
       break;
     case Type.FLOAT:
-      cst = Float.intBitsToFloat((int) wideValue);
+      cst = Float.intBitsToFloat(wideValue.intValue());
       break;
     case Type.LONG:
       cst = (long) wideValue;
       break;
     case Type.DOUBLE:
-      cst = Double.longBitsToDouble(wideValue);
+      cst = Double.longBitsToDouble(wideValue.longValue());
       break;
     default:
     case Type.OBJECT:
     case Type.ARRAY:
-      throw new IllegalStateException("Unsupported var type: " + type.getDescriptor());
+      throw new IllegalArgumentException("Objects are no numbers!");
     }
   }
 }
