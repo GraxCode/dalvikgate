@@ -12,7 +12,7 @@ import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
-import me.nov.dalvikgate.transform.instruction.exception.UnresolvedInsnException;
+import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 

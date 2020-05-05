@@ -13,7 +13,7 @@ import org.jf.dexlib2.immutable.value.ImmutableNullEncodedValue;
 import org.objectweb.asm.*;
 
 import me.nov.dalvikgate.asm.ASMCommons;
-import me.nov.dalvikgate.transform.instruction.exception.TranslationException;
+import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
 
 public class DexLibCommons {
   public static int getSize(MethodParameter p) {

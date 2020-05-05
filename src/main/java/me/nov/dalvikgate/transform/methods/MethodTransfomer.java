@@ -10,9 +10,9 @@ import org.objectweb.asm.tree.MethodNode;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
-import me.nov.dalvikgate.transform.instruction.InstructionTransformer;
-import me.nov.dalvikgate.transform.instruction.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.transform.instruction.post.*;
+import me.nov.dalvikgate.transform.instructions.InstructionTransformer;
+import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
+import me.nov.dalvikgate.transform.instructions.postoptimize.*;
 import me.nov.dalvikgate.utils.TextUtils;
 
 public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNode>, Opcodes {
