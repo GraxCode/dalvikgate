@@ -12,7 +12,6 @@ import org.jf.dexlib2.builder.*;
 import org.jf.dexlib2.builder.Label;
 import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
-import org.jf.dexlib2.iface.reference.StringReference;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
@@ -57,7 +56,10 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   public void build(DexBackedMethod method) {
     il = new InsnList();
     this.buildLabels();
+    System.out.println("---");
+
     for (BuilderInstruction i : dexInstructions) {
+      System.out.println(i.getOpcode().name);
       if (labels.containsKey(i)) {
         // add labels to the code
         il.add(labels.get(i));
@@ -79,69 +81,13 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
         continue;
       ////////////////////////// CONST //////////////////////////
       case Format11n:
-        // Move the given literal value (sign-extended to 32 bits) into the specified register.
-        // A: destination register (4 bits)
-        // B: signed int (4 bits)
-        // TODO this can be the same as ACONST_NULL too
-        BuilderInstruction11n _11n = (BuilderInstruction11n) i;
-        int value11n = _11n.getNarrowLiteral();
-        il.add(makeIntPush(value11n));
-        addLocalSet(_11n.getRegisterA(), value11n);
-        continue;
       case Format21lh:
-        // Move the given literal value (right-zero-extended to 64 bits) into the specified register-pair
-        // A: destination register (8 bits)
-        // B: signed int (16 bits)
-        BuilderInstruction21lh _21lh = (BuilderInstruction21lh) i;
-        long value23lh = _21lh.getWideLiteral();
-        il.add(makeLongPush(value23lh));
-        addLocalSet(_21lh.getRegisterA(), value23lh);
-        continue;
       case Format21s:
-        // Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
-        // A: destination register (8 bits)
-        // B: signed int (16 bits)
-        BuilderInstruction21s _21s = (BuilderInstruction21s) i;
-        int value21s = _21s.getNarrowLiteral();
-        il.add(makeIntPush(value21s));
-        addLocalSet(_21s.getRegisterA(), value21s);
-        continue;
       case Format31c:
-        // Move a reference to the string specified by the given index into the specified register.
-        // A: destination register (8 bits)
-        // B: string index
-        BuilderInstruction31c _31c = (BuilderInstruction31c) i;
-        il.add(new LdcInsnNode(((StringReference) _31c.getReference()).getString()));
-        addLocalSetObject(_31c.getRegisterA());
-        continue;
       case Format31i:
-        // 0x14: Move the given literal value into the specified register.
-        // A: destination register (8 bits)
-        // B: arbitrary 32-bit constant
-        // 0x17: Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
-        // A: destination register (8 bits)
-        // B: signed int (32 bits)
-        // TODO unsure if const-wide-32 need some bitshifting
-        BuilderInstruction31i _31i = (BuilderInstruction31i) i;
-        int value3li = _31i.getNarrowLiteral();
-        il.add(makeIntPush(value3li));
-        addLocalSet(_31i.getRegisterA(), value3li);
-        continue;
       case Format51l:
-        // Move the given literal value into the specified register-pair.
-        // A: destination register (8 bits)
-        // B: arbitrary double-width (64-bit) constant
-        BuilderInstruction51l _51l = (BuilderInstruction51l) i;
-        long value51l = _51l.getWideLiteral();
-        il.add(new LdcInsnNode(value51l));
-        addLocalSet(_51l.getRegisterA(), value51l);
-        continue;
       case Format21ih:
-        // const high 16
-        BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
-        int value21ih = _21ih.getNarrowLiteral();
-        il.add(makeIntPush(value21ih));
-        addLocalSet(_21ih.getRegisterA(), value21ih);
+        new ConstTranslator(this).translate(i);
         continue;
       ////////////////////////// OTHER //////////////////////////
       case Format11x:

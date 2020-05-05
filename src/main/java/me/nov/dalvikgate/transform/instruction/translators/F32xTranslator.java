@@ -20,6 +20,7 @@ public class F32xTranslator extends AbstractInsnTranslator<BuilderInstruction32x
       return;
     switch (i.getOpcode()) {
     case MOVE_16:
+      // TODO can be float too
       addLocalGet(source, INT_TYPE);
       addLocalSet(destination, INT_TYPE);
       break;

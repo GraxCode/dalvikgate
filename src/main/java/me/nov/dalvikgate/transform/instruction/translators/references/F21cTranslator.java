@@ -29,15 +29,15 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
     switch (i.getOpcode()) {
     case CONST_STRING:
       il.add(new LdcInsnNode(((StringReference) ref).getString()));
-      addLocalSet(local, OBJECT_TYPE);
+      addLocalSetObject(local);
       return;
     case CONST_CLASS:
       il.add(new LdcInsnNode(Type.getType(((TypeReference) ref).getType())));
-      addLocalSet(local, OBJECT_TYPE);
+      addLocalSetObject(local);
       return;
     case CONST_METHOD_HANDLE:
       il.add(new LdcInsnNode(DexLibCommons.referenceToASMHandle(((MethodHandleReference) ref))));
-      addLocalSet(local, OBJECT_TYPE);
+      addLocalSetObject(local);
       return;
     case CONST_METHOD_TYPE:
       // TODO
@@ -50,7 +50,7 @@ public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c
       return;
     case NEW_INSTANCE:
       il.add(new TypeInsnNode(NEW, Type.getType(((TypeReference) ref).getType()).getInternalName()));
-      addLocalSet(local, OBJECT_TYPE);
+      addLocalSetObject(local);
       return;
     default:
       break;

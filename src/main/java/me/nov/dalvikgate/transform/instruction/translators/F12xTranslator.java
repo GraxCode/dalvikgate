@@ -23,6 +23,7 @@ public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x
     case MOVE:
       if (source == destination) // ignore unnecessary loads and puts
         return;
+      // TODO can be float too
       addLocalGet(source, INT_TYPE);
       addLocalSet(destination, INT_TYPE);
       return;

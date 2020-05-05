@@ -1,7 +1,6 @@
 package me.nov.dalvikgate.transform.instruction.translators;
 
 import static me.nov.dalvikgate.asm.ASMCommons.*;
-import static org.objectweb.asm.Type.*;
 
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
 import org.objectweb.asm.Type;

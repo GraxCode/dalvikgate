@@ -21,6 +21,7 @@ public class F22xTranslator extends AbstractInsnTranslator<BuilderInstruction22x
       return;
     switch (i.getOpcode()) {
     case MOVE_FROM16:
+      // TODO can be float too
       addLocalGet(source, INT_TYPE);
       addLocalSet(destination, INT_TYPE);
       break;
