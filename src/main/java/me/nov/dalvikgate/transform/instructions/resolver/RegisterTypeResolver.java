@@ -63,11 +63,7 @@ public class RegisterTypeResolver {
   }
 
   private boolean isCodeEnd(BuilderInstruction i) {
-    return i.getOpcode().name.startsWith("return") || i.getOpcode().name.startsWith("throw") || isGoto(i);
-  }
-
-  private boolean isGoto(BuilderInstruction i) {
-    return i.getOpcode() == Opcode.GOTO || i.getOpcode() == Opcode.GOTO_16 || i.getOpcode() == Opcode.GOTO_32;
+    return i.getOpcode().name.startsWith("return") || i.getOpcode().name.startsWith("throw") || i.getOpcode().name.startsWith("goto");
   }
 
   private Set<Integer> analyzeJumpSubroutines(BuilderOffsetInstruction jump) {
@@ -108,7 +104,7 @@ public class RegisterTypeResolver {
   }
 
   /**
-   * @return sort of the found register type
+   * @return sort of the found register type, or UNKNOWN, or NOT_DETERMINED
    */
   public int getResultSort() {
     return foundSort;
