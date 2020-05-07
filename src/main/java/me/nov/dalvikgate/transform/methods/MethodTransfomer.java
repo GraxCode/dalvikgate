@@ -52,7 +52,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       }
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {
-        DexToASM.logger.severe(e.getStackTrace()[0] + " ::: " + e.getMessage());
+        DexToASM.logger.error("{} ::: {}", e.getStackTrace()[0], e.getMessage());
       } else {
         e.printStackTrace();
       }

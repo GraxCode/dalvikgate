@@ -10,12 +10,12 @@ import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
-
   private Number wideValue;
+  private boolean resolved;
 
   public UnresolvedNumberInsn(long wideValue) {
-    super(null);
-    this.wideValue = Long.valueOf(wideValue);
+    super(wideValue);
+    this.wideValue = wideValue;
   }
 
   @Override
@@ -62,7 +62,13 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     default:
     case Type.OBJECT:
     case Type.ARRAY:
-      throw new IllegalArgumentException("Objects are no numbers!");
+      throw new IllegalArgumentException("Tried to set object type of unresolved number instruction");
     }
+    resolved = true;
+  }
+
+  @Override
+  public boolean isResolved() {
+    return resolved;
   }
 }
