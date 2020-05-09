@@ -17,9 +17,11 @@ import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnExceptio
 
 public class DexToASM {
   public static final LogWrapper logger = new LogWrapper();
+  public static final Inheritance rootInheritGraph = new Inheritance();
   public static boolean noResolve;
   public static boolean noOptimize;
   public static String nameFilter;
+
 
   public static void dex2Jar(File inDex, File outJar) throws IOException {
     saveAsJar(outJar, convertToASMTree(inDex));
@@ -30,21 +32,17 @@ public class DexToASM {
       throw new FileNotFoundException();
     }
     DexBackedDexFile baseBackedDexFile = DexFileFactory.loadDexFile(file, Opcodes.forApi(52));
-
-    DexToASM.logger.info("Populating inheritance tree...");
-    Inheritance inheritance = new Inheritance();
-    inheritance.addDirectory(new File("lib"));
-    inheritance.install();
-    DexToASM.logger.info("Converting...");
-
-
     return convertToASMTree(baseBackedDexFile);
   }
 
   public static List<ClassNode> convertToASMTree(DexBackedDexFile baseBackedDexFile) throws IOException {
+    // Create new inheritance tree that includes files in the dex we want to convert
+    Inheritance inheritance = rootInheritGraph.copy();
+    inheritance.addDex(baseBackedDexFile);
+    // Conversion process
     List<ClassNode> asmClasses = new ArrayList<>();
     for (DexBackedClassDef clazz : baseBackedDexFile.getClasses()) {
-      ClassTransformer ct = new ClassTransformer();
+      ClassTransformer ct = new ClassTransformer(inheritance);
       ct.visit(clazz);
       asmClasses.add(ct.getTransformed());
     }
@@ -93,6 +91,21 @@ public class DexToASM {
       return Objects.requireNonNull(DexToASM.class.getPackage().getImplementationVersion());
     } catch (NullPointerException e) {
       return "(dev)";
+    }
+  }
+
+  static {
+    try {
+      long start = System.currentTimeMillis();
+      File andoidLib = new File("lib/android.jar");
+      DexToASM.logger.info("Populating root inheritance tree...");
+      rootInheritGraph.addClasspath();
+      if (andoidLib.exists()) {
+        rootInheritGraph.addDirectory(andoidLib);
+      }
+      DexToASM.logger.info("Finished root inheritance, took {}ms", (System.currentTimeMillis() - start));
+    } catch (IOException ex) {
+      throw new IllegalStateException("Failed to setup initial inheritance graph");
     }
   }
 }

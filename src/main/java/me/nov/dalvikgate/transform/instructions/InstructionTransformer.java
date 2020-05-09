@@ -9,7 +9,10 @@ import javax.annotation.Nullable;
 
 import me.coley.analysis.SimAnalyzer;
 import me.coley.analysis.SimInterpreter;
+import me.coley.analysis.TypeChecker;
+import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.utils.TextUtils;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.*;
@@ -37,6 +40,7 @@ import org.objectweb.asm.tree.analysis.Frame;
  */
 public class InstructionTransformer implements ITransformer<DexBackedMethod, InsnList>, Opcodes {
   protected InsnList il;
+  private Inheritance inheritance;
   public MethodNode mn;
   public MutableMethodImplementation builder;
   public HashMap<BuilderInstruction, LabelNode> labels;
@@ -59,6 +63,10 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     this.dexInstructions = builder.getInstructions();
     this.isStatic = isStatic;
     this.argumentRegisterCount = Arrays.stream(desc.getArgumentTypes()).mapToInt(Type::getSize).sum() + (isStatic ? 0 : 1);
+  }
+
+  public void setInheritance(Inheritance inheritance) {
+    this.inheritance = inheritance;
   }
 
   @Override
@@ -217,33 +225,60 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     DexToASM.logger.error("{}.{}{}", owner, method.getName(), DexLibCommons.getMethodDesc(method));
     // Frames
     SimInterpreter it = new SimInterpreter();
-    SimAnalyzer analyzer = new SimAnalyzer(it);
+    SimAnalyzer analyzer = new SimAnalyzer(it) {
+      @Override
+      protected TypeChecker createTypeChecker() {
+        return (parent, child) -> inheritance.getAllChildren(parent.getInternalName())
+                .contains(child.getInternalName());
+      }
+    };
+    analyzer.setThrowUnresolvedAnalyzerErrors(false);
+    analyzer.setSkipDeadCodeBlocks(false);
     InsnList initialIl = mn.instructions;
     try {
       mn.instructions = il;
-      // TODO: Update analzyer library to allow more configuration
-      //  - No "simulation", just type analysis
-      //  - Simulation, but only for primitives, types will always be object
-      //  - More control over AnalyzerException/LoggedAnalyzerException handling
       Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
       DexToASM.logger.info(" - Frames: {}", frames.length);
       for (int i = 0; i < il.size(); i++) {
         AbstractInsnNode insn = il.get(i);
         if (insn instanceof IUnresolvedInstruction) {
+          boolean fixed =false;
           IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
           // Skip if resolved
           if (resolvable.isResolved())
             continue;
           // Unresolved use frames to fix
-          if (insn instanceof UnresolvedVarInsn && ((UnresolvedVarInsn)insn).isStore()) {
-            Frame<AbstractValue> frame = frames[i];
-            resolvable.setType(frame.getStack(frame.getStackSize() - 1).getType());
+          if (insn instanceof UnresolvedVarInsn) {
+            UnresolvedVarInsn varInsn = (UnresolvedVarInsn)insn;
+            if (varInsn.isStore()) {
+              // Check value on the stack being stored
+              resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
+              fixed = true;
+            } else {
+              // TODO: Check for where this variable is used and determine type that way
+            }
+          } else if (insn instanceof UnresolvedJumpInsn) {
+            // The unresolved insn types only take one argument
+            resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
+            fixed = true;
+          }  else if (insn instanceof UnresolvedNumberInsn) {
+            // TODO: How should this be resolved?
+          } else if (insn instanceof UnresolvedWideArrayInsn) {
+            // Check type on stack top, should be double/long
+            resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
+            fixed = true;
           }
-          // TODO: Other unresolvable instruction
+          if (!fixed){
+            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
+          }
         }
       }
     } catch (AnalyzerException ex) {
       DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
+      mn.instructions = initialIl;
+      return;
+    } catch (TranslationException ex) {
+      DexToASM.logger.error(" - Translation error: {}", ex.getMessage());
       mn.instructions = initialIl;
       return;
     } catch (Throwable t) {
@@ -252,8 +287,9 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       return;
     }
     // Log missing
-    int i = 0;
+    int i = -1;
     for (AbstractInsnNode insn : il) {
+      i++;
       // Skip resolved instructions
       if (insn instanceof IUnresolvedInstruction && ((IUnresolvedInstruction) insn).isResolved())
        continue;
@@ -267,7 +303,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       } else if (insn instanceof UnresolvedNumberInsn) {
         DexToASM.logger.error("   - {} : unresolved NUMBER", i);
       }
-      i++;
     }
   }
 

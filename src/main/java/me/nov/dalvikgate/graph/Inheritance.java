@@ -32,6 +32,18 @@ public class Inheritance {
   private SetMap<String, String> childrenOfCachedAll = new SetMap<>();
 
   /**
+   * @return Copied instance.
+   */
+  public Inheritance copy() {
+    Inheritance copy = new Inheritance();
+    copy.parentsOf.putAll(parentsOf);
+    copy.childrenOf.putAll(childrenOf);
+    copy.parentsOfCachedAll.putAll(parentsOfCachedAll);
+    copy.childrenOfCachedAll.putAll(childrenOfCachedAll);
+    return copy;
+  }
+
+  /**
    * Add classes from the current classpath to the inheritance graph.
    *
    * @throws IOException When a classpath item cannot be added.
@@ -249,14 +261,5 @@ public class Inheritance {
       sb.append(parent).append(MAP_KV_SPLIT).append(String.join(MAP_VAL_SPLIT, children)).append('\n');
     });
     return sb.toString();
-  }
-
-  /**
-   * Install virtual-value parent check.
-   */
-  public void install() {
-    VirtualValue.setParentCheck((parent, child) ->
-            getAllChildren(parent.getInternalName())
-                    .contains(child.getInternalName()));
   }
 }
