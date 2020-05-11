@@ -13,11 +13,13 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
   private Number wideValue;
   private boolean resolved;
   private boolean isWide;
+  private boolean possiblyNullConst;
 
   public UnresolvedNumberInsn(boolean wide, long wideValue) {
     super(wide ? wideValue : (int) wideValue);
     this.isWide = wide;
     this.wideValue = wideValue;
+    this.possiblyNullConst = wideValue == 0;
   }
 
   @Override
@@ -64,8 +66,14 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case Type.DOUBLE:
       cst = Double.longBitsToDouble(wideValue.longValue());
       break;
-    default:
-      throw new IllegalArgumentException("Tried to set object type of unresolved number instruction");
+    case Type.OBJECT:
+    case Type.ARRAY:
+      if (possiblyNullConst)
+        throw new IllegalArgumentException("Type cannot be changed locally, replace this instruction with aconst_null instead.");
+      else
+        throw new IllegalArgumentException("Expected const 0 for object type, but value is " + cst.toString());
+    case Type.VOID:
+      throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
     resolved = true;
   }
