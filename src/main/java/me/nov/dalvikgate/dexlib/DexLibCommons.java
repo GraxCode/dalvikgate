@@ -17,7 +17,7 @@ import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
 
 public class DexLibCommons {
   public static int getSize(MethodParameter p) {
-    return p.getType().matches("(J|D)") ? 2 : 1;
+    return p.getType().matches("[JD]") ? 2 : 1;
   }
 
   public static String getMethodDesc(MethodReference methodReference) {

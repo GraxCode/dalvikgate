@@ -36,43 +36,46 @@ public class ConstTranslator extends AbstractInsnTranslator<BuilderInstruction> 
    */
 
   public void translate(BuilderInstruction i) {
+    boolean wide = false;
     switch (i.getOpcode()) {
-    case CONST:
     case CONST_WIDE_32:
+      wide = true;
+    case CONST:
       // used for everything
       BuilderInstruction31i _31i = (BuilderInstruction31i) i;
-      il.add(new UnresolvedNumberInsn(_31i.getWideLiteral()));
+      il.add(new UnresolvedNumberInsn(wide, _31i.getWideLiteral()));
       addLocalSet(_31i.getRegisterA(), null);
       break;
     case CONST_WIDE:
       // const wide, used for long, but can be used for 0 double too
       BuilderInstruction51l _51l = (BuilderInstruction51l) i;
-      il.add(new UnresolvedNumberInsn(_51l.getWideLiteral()));
+      il.add(new UnresolvedNumberInsn(true, _51l.getWideLiteral()));
       addLocalSet(_51l.getRegisterA(), null);
       break;
     case CONST_4:
       // const 4 is so small, as double or float require 32 bit minimum it can only be an int or long value
       BuilderInstruction11n _11n = (BuilderInstruction11n) i;
-      il.add(new UnresolvedNumberInsn(_11n.getWideLiteral()));
+      il.add(new UnresolvedNumberInsn(wide, _11n.getWideLiteral()));
       addLocalSet(_11n.getRegisterA(), null);
       break;
-    case CONST_16:
     case CONST_WIDE_16:
+      wide = true;
+    case CONST_16:
       // as double or float require 32 bit minimum it can only be an int or long value
       BuilderInstruction21s _21s = (BuilderInstruction21s) i;
-      il.add(new UnresolvedNumberInsn(_21s.getWideLiteral()));
+      il.add(new UnresolvedNumberInsn(wide, _21s.getWideLiteral()));
       addLocalSet(_21s.getRegisterA(), null);
       break;
     case CONST_HIGH16:
       // normally used for float initialization, but can be something else too, trust nobody
       BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
-      il.add(new UnresolvedNumberInsn(_21ih.getWideLiteral()));
+      il.add(new UnresolvedNumberInsn(false, _21ih.getWideLiteral()));
       addLocalSet(_21ih.getRegisterA(), null);
       break;
     case CONST_WIDE_HIGH16:
       // normally used for double initialization, but can be long too, trust nobody
       BuilderInstruction21lh _21lh = (BuilderInstruction21lh) i;
-      il.add(new UnresolvedNumberInsn(_21lh.getWideLiteral()));
+      il.add(new UnresolvedNumberInsn(true, _21lh.getWideLiteral()));
       addLocalSet(_21lh.getRegisterA(), null);
       break;
     case CONST_STRING_JUMBO:

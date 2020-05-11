@@ -2,6 +2,7 @@ package me.nov.dalvikgate.transform.instructions.unresolved;
 
 import java.util.Map;
 
+import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
@@ -11,6 +12,8 @@ import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnExceptio
 
 public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInstruction, Opcodes {
   private boolean store;
+  private boolean resolvedType;
+  private boolean resolvedOp;
 
   /**
    * Create new unresolved wide array store or load instruction.
@@ -18,7 +21,7 @@ public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInst
    * @param store {@code true} for storage insns.
    */
   public UnresolvedWideArrayInsn(boolean store) {
-    super(-1);
+    super(UnresolvedUtils.getDefaultWideArrayOp(store));
     this.store = store;
   }
 
@@ -58,9 +61,16 @@ public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInst
     default:
       throw new IllegalArgumentException("Only wide arrays allowed! Got " + type.getDescriptor());
     }
+    resolvedType = true;
   }
 
   public void setOpcode(int opcode) {
     this.opcode = opcode;
+    resolvedOp = true;
+  }
+
+  @Override
+  public boolean isResolved() {
+    return resolvedType && resolvedOp;
   }
 }

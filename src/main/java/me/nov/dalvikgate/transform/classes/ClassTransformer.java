@@ -3,6 +3,7 @@ package me.nov.dalvikgate.transform.classes;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import me.nov.dalvikgate.graph.Inheritance;
 import org.jf.dexlib2.dexbacked.*;
 import org.jf.dexlib2.dexbacked.value.*;
 import org.jf.dexlib2.iface.reference.MethodReference;
@@ -16,7 +17,12 @@ import me.nov.dalvikgate.transform.methods.MethodTransfomer;
 
 public class ClassTransformer implements ITransformer<DexBackedClassDef, ClassNode> {
   private static final int CLASS_V8 = 52;
+  private final Inheritance inheritance;
   private ClassNode cn;
+
+  public ClassTransformer(Inheritance inheritance) {
+    this.inheritance = inheritance;
+  }
 
   @Override
   public void build(DexBackedClassDef clazz) {
@@ -101,7 +107,7 @@ public class ClassTransformer implements ITransformer<DexBackedClassDef, ClassNo
   }
 
   public void addMethod(DexBackedMethod m) {
-    MethodTransfomer mt = new MethodTransfomer();
+    MethodTransfomer mt = new MethodTransfomer(inheritance);
     mt.visit(m);
     cn.methods.add(mt.getTransformed());
   }

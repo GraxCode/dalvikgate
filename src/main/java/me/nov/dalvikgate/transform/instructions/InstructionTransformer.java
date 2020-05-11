@@ -7,6 +7,14 @@ import java.util.*;
 
 import javax.annotation.Nullable;
 
+import me.coley.analysis.SimAnalyzer;
+import me.coley.analysis.SimInterpreter;
+import me.coley.analysis.TypeChecker;
+import me.coley.analysis.util.FrameUtil;
+import me.coley.analysis.value.AbstractValue;
+import me.nov.dalvikgate.asm.ASMCommons;
+import me.nov.dalvikgate.graph.Inheritance;
+import me.nov.dalvikgate.utils.TextUtils;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.*;
 import org.jf.dexlib2.builder.Label;
@@ -25,12 +33,15 @@ import me.nov.dalvikgate.transform.instructions.translators.invoke.*;
 import me.nov.dalvikgate.transform.instructions.translators.jump.*;
 import me.nov.dalvikgate.transform.instructions.translators.references.*;
 import me.nov.dalvikgate.transform.instructions.unresolved.*;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Frame;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
  */
 public class InstructionTransformer implements ITransformer<DexBackedMethod, InsnList>, Opcodes {
   protected InsnList il;
+  private Inheritance inheritance;
   public MethodNode mn;
   public MutableMethodImplementation builder;
   public HashMap<BuilderInstruction, LabelNode> labels;
@@ -53,6 +64,10 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     this.dexInstructions = builder.getInstructions();
     this.isStatic = isStatic;
     this.argumentRegisterCount = Arrays.stream(desc.getArgumentTypes()).mapToInt(Type::getSize).sum() + (isStatic ? 0 : 1);
+  }
+
+  public void setInheritance(Inheritance inheritance) {
+    this.inheritance = inheritance;
   }
 
   @Override
@@ -202,19 +217,140 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   public void buildDone(DexBackedMethod method) {
     if (DexToASM.noResolve)
       return;
-    int i = 0;
-    // TODO: Type analysis and fill in missing data for resolvable instructions
-    if (method != null)
-      DexToASM.logger.severe(method.getDefiningClass() + " - " + method.getName());
-    for (AbstractInsnNode insn : il) {
-      if (insn instanceof UnresolvedJumpInsn) {
-        DexToASM.logger.severe("   - " + i + ": unresolved JUMP");
-      } else if (insn instanceof UnresolvedVarInsn) {
-        DexToASM.logger.severe("   - " + i + ": unresolved VARIABLE");
-      } else if (insn instanceof UnresolvedWideArrayInsn) {
-        DexToASM.logger.severe("   - " + i + ": unresolved WIDE ARRAY");
+    if (method == null)
+      throw new IllegalStateException("Dex method for instruction visitor cannot be null");
+    if (mn == null)
+      throw new IllegalStateException("ASM method for instruction visitor cannot be null");
+    // Log
+    String owner = Type.getType(method.getDefiningClass()).getInternalName();
+    DexToASM.logger.error("{}.{}{}", owner, method.getName(), DexLibCommons.getMethodDesc(method));
+    // Frames
+    SimInterpreter it = new SimInterpreter();
+    SimAnalyzer analyzer = new SimAnalyzer(it) {
+      @Override
+      protected TypeChecker createTypeChecker() {
+        return (parent, child) -> inheritance.getAllChildren(parent.getInternalName())
+                .contains(child.getInternalName());
       }
+    };
+    analyzer.setThrowUnresolvedAnalyzerErrors(false);
+    analyzer.setSkipDeadCodeBlocks(false);
+    InsnList initialIl = mn.instructions;
+    try {
+      mn.instructions = il;
+      // TODO: Properly set these beforehand
+      mn.maxLocals = 100;
+      mn.maxStack = 100;
+      Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
+      DexToASM.logger.info(" - Frames: {}", frames.length);
+      for (int i = 0; i < il.size(); i++) {
+        AbstractInsnNode insn = il.get(i);
+        if (insn instanceof IUnresolvedInstruction) {
+          boolean fixed =false;
+          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
+          // Skip if resolved
+          if (resolvable.isResolved())
+            continue;
+          // Unresolved use frames to fix
+          if (insn instanceof UnresolvedVarInsn) {
+            UnresolvedVarInsn varInsn = (UnresolvedVarInsn)insn;
+            if (varInsn.isStore()) {
+              // Check value on the stack being stored
+              resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
+              fixed = true;
+            } else {
+              resolvable.setType(frames[i].getLocal(varInsn.var).getType());
+              fixed = true;
+            }
+          } else if (insn instanceof UnresolvedJumpInsn) {
+            // The unresolved insn types only take one argument
+            resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
+            fixed = true;
+          }  else if (insn instanceof UnresolvedNumberInsn) {
+            // TODO: There has to be a better way...
+            // Check for usage:
+            // - Field set
+            // - Method arg
+            // - Variable use in resolved variable
+            for (int j = 0; j < il.size(); j++) {
+              AbstractInsnNode insn2 = il.get(j);
+              if (insn2 instanceof FieldInsnNode) {
+                AbstractValue value = FrameUtil.getTopStack(frames[j]);
+                if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
+                  resolvable.setType(Type.getType(((FieldInsnNode) insn2).desc));
+                  fixed = true;
+                }
+              } else if (insn2 instanceof MethodInsnNode) {
+                Type methodType = Type.getMethodType(((MethodInsnNode) insn2).desc);
+                int argCount = methodType.getArgumentTypes().length;
+                for (int a = 0; a < argCount; a++) {
+                  AbstractValue value = FrameUtil.getStackFromTop(frames[j], (argCount - 1) - a);
+                  if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
+                    resolvable.setType(methodType.getArgumentTypes()[a]);
+                    fixed = true;
+                  }
+                }
+              } else if (insn2 instanceof VarInsnNode) {
+                if (insn2 instanceof UnresolvedVarInsn) {
+                  UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn2;
+                  if (unresolvedVarInsn.isResolved()) {
+                    if (unresolvedVarInsn.isStore()) {
+                      AbstractValue value = FrameUtil.getTopStack(frames[j]);
+                      if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
+                        resolvable.setType(value.getType());
+                        fixed = true;
+                      }
+                    } else {
+                      resolvable.setType(ASMCommons.getPushedTypeForInsn(insn2));
+                      fixed = true;
+                    }
+                  }
+                } else {
+                  resolvable.setType(ASMCommons.getPushedTypeForInsn(insn2));
+                  fixed = true;
+                }
+              }
+            }
+          } else if (insn instanceof UnresolvedWideArrayInsn) {
+            // Check type on stack top, should be double/long
+            resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
+            fixed = true;
+          }
+          if (!fixed){
+            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
+          }
+        }
+      }
+    } catch (AnalyzerException ex) {
+      DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
+      mn.instructions = initialIl;
+      return;
+    } catch (TranslationException ex) {
+      DexToASM.logger.error(" - Translation error: {}", ex.getMessage());
+      mn.instructions = initialIl;
+      return;
+    } catch (Throwable t) {
+      DexToASM.logger.error(" - Analyzer crash: {}", t.getMessage());
+      mn.instructions = initialIl;
+      return;
+    }
+    // Log missing
+    int i = -1;
+    for (AbstractInsnNode insn : il) {
       i++;
+      // Skip resolved instructions
+      if (insn instanceof IUnresolvedInstruction && ((IUnresolvedInstruction) insn).isResolved())
+       continue;
+      // Log unresolved type
+      if (insn instanceof UnresolvedJumpInsn) {
+        DexToASM.logger.error("   - {} : unresolved JUMP", i);
+      } else if (insn instanceof UnresolvedVarInsn) {
+        DexToASM.logger.error("   - {} : unresolved VARIABLE", i);
+      } else if (insn instanceof UnresolvedWideArrayInsn) {
+        DexToASM.logger.error("   - {} : unresolved WIDE ARRAY", i);
+      } else if (insn instanceof UnresolvedNumberInsn) {
+        DexToASM.logger.error("   - {} : unresolved NUMBER", i);
+      }
     }
   }
 
@@ -258,7 +394,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
           // no move-exception opcode, we need to make a "bridge" to match java stack sizes, as in java bytecode an exception object would be on the stack, while in dalvik there isn't.
           // offset can be reached by multiple routines
           if (startLabel == handlerLabel) {
-            DexToASM.logger.severe("unexpected case: tcb start is also handler");
+            DexToASM.logger.error("unexpected case: tcb start is also handler");
             // unexpected case, use old handler creation
             LabelNode newHandler = new LabelNode();
             il.add(newHandler);
@@ -314,7 +450,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       if (index >= dexInstructions.size()) {
         // we could throw an exception here
         // throw new TranslationException("dalvik label points to the end of the method");
-        DexToASM.logger.severe("dalvik label points to the end of the method, creating throw block");
+        DexToASM.logger.error("dalvik label points to the end of the method, creating throw block");
         LabelNode newBlock = new LabelNode();
         LabelNode afterBlock = new LabelNode();
         il.add(new JumpInsnNode(GOTO, afterBlock));
@@ -460,10 +596,13 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
   protected void addLocalGetSet(boolean store, int register, Type type) {
     UnresolvedVarInsn var = new UnresolvedVarInsn(store, type);
     var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
-    if (type != null)
+    if (DexToASM.noResolve) {
+      // For debugging
+      var.setOpcode(store ? ASTORE : ALOAD);
+      var.setType(Type.getObjectType("java/lang/Object"));
+    } else if (type != null) {
       var.setType(type);
-    else if (DexToASM.noResolve)
-      var.setOpcode(store ? ASTORE : ALOAD); // for debugging purposes
+    }
     il.add(var);
   }
 }

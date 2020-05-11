@@ -3,8 +3,14 @@ package me.nov.dalvikgate.tests.utils;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
+import java.util.Collections;
 
+import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.graph.Inheritance;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
+import org.jf.dexlib2.dexbacked.DexBackedMethod;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
@@ -50,7 +56,7 @@ public class Factory implements Opcodes {
 
   public static Class<?> bytesToClass(String name, byte[] bytes) {
     try {
-      Method define = ClassLoader.class.getDeclaredMethod("defineClass0", String.class, byte[].class, int.class, int.class, ProtectionDomain.class);
+      Method define = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class, ProtectionDomain.class);
       define.setAccessible(true);
       return (Class<?>) define.invoke(ClassLoader.getSystemClassLoader(), name, bytes, 0, bytes.length, null);
     } catch (Exception e) {
@@ -59,10 +65,29 @@ public class Factory implements Opcodes {
   }
 
   public static MethodNode runDexToASM(Type desc, MutableMethodImplementation mmi) {
+    return runDexToASM(getNopInheritance(), desc, mmi);
+  }
+
+  public static MethodNode runDexToASM(Inheritance inheritance, Type desc, MutableMethodImplementation mmi) {
     MethodNode mn = buildMethod(desc, null);
     InstructionTransformer it = new InstructionTransformer(mn, mmi, desc, true);
-    it.visit(null);
+    it.setInheritance(inheritance);
+    DexBackedMethod dm = Mockito.mock(DexBackedMethod.class);
+    Mockito.when(dm.getName()).thenReturn("dummy");
+    Mockito.when(dm.getParameters()).thenReturn(Collections.emptyList());
+    Mockito.when(dm.getReturnType()).thenReturn(desc.getReturnType().getDescriptor());
+    Mockito.when(dm.getDefiningClass()).thenReturn("Lcom/TestClass;");
+    Mockito.when(dm.getAccessFlags()).thenReturn(Opcodes.ACC_STATIC);
+    it.visit(dm);
     mn.instructions = it.getTransformed();
     return mn;
+  }
+
+  public static Inheritance getNopInheritance() {
+    return new Inheritance();
+  }
+
+  public static Inheritance getFullIheritance() {
+    return DexToASM.rootInheritGraph;
   }
 }

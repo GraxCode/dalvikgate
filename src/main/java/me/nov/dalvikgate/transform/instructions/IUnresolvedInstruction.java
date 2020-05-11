@@ -1,6 +1,7 @@
 package me.nov.dalvikgate.transform.instructions;
 
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 
 public interface IUnresolvedInstruction {
   /**
@@ -14,4 +15,9 @@ public interface IUnresolvedInstruction {
    * @param type Type discovered by analyzer.
    */
   void setType(Type type);
+
+  /**
+   * @return {@code true} if instruction's value was resolved.
+   */
+  boolean isResolved();
 }
