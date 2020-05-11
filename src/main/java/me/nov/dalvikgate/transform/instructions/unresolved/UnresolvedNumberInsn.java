@@ -13,8 +13,8 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
   private Number wideValue;
   private boolean resolved;
 
-  public UnresolvedNumberInsn(long wideValue) {
-    super(wideValue);
+  public UnresolvedNumberInsn(boolean wide, long wideValue) {
+    super(wide ? wideValue : (int) wideValue);
     this.wideValue = wideValue;
   }
 
