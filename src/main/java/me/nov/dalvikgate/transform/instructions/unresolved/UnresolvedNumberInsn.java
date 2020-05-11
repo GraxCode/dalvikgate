@@ -12,9 +12,11 @@ import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnExceptio
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
   private Number wideValue;
   private boolean resolved;
+  private boolean isWide;
 
   public UnresolvedNumberInsn(boolean wide, long wideValue) {
     super(wide ? wideValue : (int) wideValue);
+    this.isWide = wide;
     this.wideValue = wideValue;
   }
 
@@ -42,6 +44,9 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
 
   @Override
   public void setType(Type type) {
+    if (type.getSize() != (isWide ? 2 : 1)) {
+      throw new IllegalArgumentException("Wrong size, expected a " + (isWide ? "wide" : "single word") + " type, but got " + type.getClassName());
+    }
     switch (type.getSort()) {
     case Type.BOOLEAN:
     case Type.INT:
@@ -60,8 +65,6 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       cst = Double.longBitsToDouble(wideValue.longValue());
       break;
     default:
-    case Type.OBJECT:
-    case Type.ARRAY:
       throw new IllegalArgumentException("Tried to set object type of unresolved number instruction");
     }
     resolved = true;
