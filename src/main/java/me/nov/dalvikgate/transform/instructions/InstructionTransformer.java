@@ -326,6 +326,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       mn.instructions = initialIl;
       return;
     } catch (Throwable t) {
+      t.printStackTrace();
       DexToASM.logger.error(" - Analyzer crash: {}", t.getMessage());
       mn.instructions = initialIl;
       return;

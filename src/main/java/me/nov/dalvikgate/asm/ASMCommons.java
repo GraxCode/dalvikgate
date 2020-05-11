@@ -257,15 +257,15 @@ public class ASMCommons implements Opcodes {
       else
         return OBJECT_TYPE;
     case AbstractInsnNode.VAR_INSN:
-      if (op == ASTORE || op == ALOAD)
+      if (op == ASTORE)
         return OBJECT_TYPE;
-      else if (op == ISTORE || op == ILOAD)
+      else if (op == ISTORE)
         return Type.INT_TYPE;
-      else if (op == LSTORE || op == LLOAD)
+      else if (op == LSTORE)
         return Type.LONG_TYPE;
-      else if (op == FSTORE || op == FLOAD)
+      else if (op == FSTORE)
         return Type.FLOAT_TYPE;
-      else if (op == DSTORE || op == DLOAD)
+      else if (op == DSTORE)
         return Type.DOUBLE_TYPE;
     }
     throw new IllegalArgumentException(insn.getClass().getSimpleName() + " - OP: " + insn.getOpcode());
