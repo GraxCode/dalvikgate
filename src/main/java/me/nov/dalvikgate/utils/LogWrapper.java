@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.regex.Matcher;
 
+@SuppressWarnings("unused")
 public class LogWrapper {
   private static final Logger logfile = LoggerFactory.getLogger("logfile");
   private static final Logger console = LoggerFactory.getLogger("console");

@@ -4,16 +4,15 @@ import java.io.*;
 import java.util.*;
 import java.util.jar.*;
 
-import me.nov.dalvikgate.graph.Inheritance;
-import me.nov.dalvikgate.utils.LogWrapper;
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.dexbacked.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
-
+import me.nov.dalvikgate.utils.LogWrapper;
 
 public class DexToASM {
   public static final LogWrapper logger = new LogWrapper();
@@ -21,7 +20,6 @@ public class DexToASM {
   public static boolean noResolve;
   public static boolean noOptimize;
   public static String nameFilter;
-
 
   public static void dex2Jar(File inDex, File outJar) throws IOException {
     saveAsJar(outJar, convertToASMTree(inDex));

@@ -10,11 +10,6 @@ import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 
-/**
- * A node that represents a local variable instruction that has not been fully resolved.
- * Due to the ambiguity of android bytecode certain actions are not immediately clear in the
- * same way they would be in plain Java bytecode.
- */
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;

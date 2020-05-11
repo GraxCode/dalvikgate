@@ -5,6 +5,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class SetMap<K, V> extends TreeMap<K, Set<V>> {
+  private static final long serialVersionUID = 1L;
+
   public void putSingle(K key, V value) {
     computeIfAbsent(key, k -> new TreeSet<>()).add(value);
   }

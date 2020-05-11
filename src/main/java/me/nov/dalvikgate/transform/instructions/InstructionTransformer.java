@@ -7,14 +7,6 @@ import java.util.*;
 
 import javax.annotation.Nullable;
 
-import me.coley.analysis.SimAnalyzer;
-import me.coley.analysis.SimInterpreter;
-import me.coley.analysis.TypeChecker;
-import me.coley.analysis.util.FrameUtil;
-import me.coley.analysis.value.AbstractValue;
-import me.nov.dalvikgate.asm.ASMCommons;
-import me.nov.dalvikgate.graph.Inheritance;
-import me.nov.dalvikgate.utils.TextUtils;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.*;
 import org.jf.dexlib2.builder.Label;
@@ -22,10 +14,16 @@ import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Frame;
 
+import me.coley.analysis.*;
+import me.coley.analysis.util.FrameUtil;
+import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
-import me.nov.dalvikgate.asm.Access;
+import me.nov.dalvikgate.asm.*;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instructions.exception.*;
 import me.nov.dalvikgate.transform.instructions.translators.*;
@@ -33,8 +31,6 @@ import me.nov.dalvikgate.transform.instructions.translators.invoke.*;
 import me.nov.dalvikgate.transform.instructions.translators.jump.*;
 import me.nov.dalvikgate.transform.instructions.translators.references.*;
 import me.nov.dalvikgate.transform.instructions.unresolved.*;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.

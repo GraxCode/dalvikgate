@@ -1,24 +1,17 @@
 package me.nov.dalvikgate.graph;
 
-import me.coley.analysis.value.VirtualValue;
-import me.nov.dalvikgate.utils.SetMap;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.objectweb.asm.ClassReader;
-
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.jar.JarFile;
-import java.util.jar.JarInputStream;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
+import java.util.*;
+import java.util.jar.*;
+import java.util.stream.*;
+import java.util.zip.*;
+
+import org.jf.dexlib2.dexbacked.DexBackedDexFile;
+import org.objectweb.asm.ClassReader;
+
+import me.nov.dalvikgate.utils.SetMap;
 
 /**
  * Simple class inheritance graph.
@@ -125,6 +118,7 @@ public class Inheritance {
         }
       }
     }
+    zipArchive.close();
   }
 
   /**
@@ -150,6 +144,7 @@ public class Inheritance {
         }
       }
     }
+    jarArchive.close();
   }
 
   /**
