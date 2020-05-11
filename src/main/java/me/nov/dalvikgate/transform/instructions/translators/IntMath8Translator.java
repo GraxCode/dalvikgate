@@ -5,6 +5,7 @@ import static org.objectweb.asm.Type.*;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22b;
 import org.objectweb.asm.tree.InsnNode;
 
+import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 
@@ -23,7 +24,7 @@ public class IntMath8Translator extends AbstractInsnTranslator<BuilderInstructio
     // B: source register (8 bits)
     // C: signed int constant (8 bits)
     addLocalGet(i.getRegisterB(), INT_TYPE);
-    addLocalGet(i.getRegisterA(), INT_TYPE);
+    il.add(ASMCommons.makeIntPush(i.getNarrowLiteral())); 
     switch (i.getOpcode()) {
     case ADD_INT_LIT8:
       il.add(new InsnNode(IADD));
