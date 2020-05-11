@@ -2,18 +2,16 @@ package me.nov.dalvikgate.tests.utils;
 
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
-import me.nov.dalvikgate.DexToASM;
-import me.nov.dalvikgate.graph.Inheritance;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
+import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.instructions.InstructionTransformer;
 
 public class Factory implements Opcodes {
