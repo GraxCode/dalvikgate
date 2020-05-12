@@ -2,6 +2,7 @@ package me.nov.dalvikgate.transform.methods;
 
 import java.util.Objects;
 
+import me.nov.dalvikgate.graph.Inheritance;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
@@ -16,7 +17,12 @@ import me.nov.dalvikgate.transform.instructions.postoptimize.*;
 import me.nov.dalvikgate.utils.TextUtils;
 
 public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNode>, Opcodes {
+  private final Inheritance inheritance;
   private MethodNode mn;
+
+  public MethodTransfomer(Inheritance inheritance) {
+    this.inheritance = inheritance;
+  }
 
   @Override
   public void build(DexBackedMethod method) {
@@ -43,6 +49,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       MutableMethodImplementation builder = new MutableMethodImplementation(method.getImplementation());
       mn.maxLocals = mn.maxStack = builder.getRegisterCount(); // we need this because some decompilers crash if this is zero
       InstructionTransformer it = new InstructionTransformer(mn, method, builder);
+      it.setInheritance(inheritance);
       it.visit(method);
       mn.instructions = it.getTransformed();
       if (!DexToASM.noOptimize) {
@@ -52,7 +59,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       }
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {
-        DexToASM.logger.severe(e.getStackTrace()[0] + " ::: " + e.getMessage());
+        DexToASM.logger.error("{} ::: {}", e.getStackTrace()[0], e.getMessage());
       } else {
         e.printStackTrace();
       }

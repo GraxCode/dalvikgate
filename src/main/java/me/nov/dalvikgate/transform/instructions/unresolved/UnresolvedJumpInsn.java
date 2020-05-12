@@ -2,6 +2,7 @@ package me.nov.dalvikgate.transform.instructions.unresolved;
 
 import java.util.Map;
 
+import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -12,14 +13,16 @@ import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnExceptio
 
 public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstruction, Opcodes {
   private final Opcode dalvikOp;
+  private boolean resolved;
 
   /**
    * Create new unresolved jump instruction.
    *
-   * @param label the operand of the instruction to be constructed. This operand is a label that
+   * @param dalvikOp Original dalvik opcode.
+   * @param label    Destination of jump
    */
   public UnresolvedJumpInsn(Opcode dalvikOp, LabelNode label) {
-    super(-1, label);
+    super(UnresolvedUtils.getDefaultJumpOp(dalvikOp), label);
     this.dalvikOp = dalvikOp;
   }
 
@@ -60,5 +63,11 @@ public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstr
     default:
       throw new IllegalStateException("Jump cannot be unresolved! Got " + dalvikOp.name);
     }
+    resolved = true;
+  }
+
+  @Override
+  public boolean isResolved() {
+    return resolved;
   }
 }

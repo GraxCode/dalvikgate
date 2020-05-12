@@ -2,44 +2,27 @@ package me.nov.dalvikgate;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.jar.*;
-import java.util.logging.Logger;
 
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.dexbacked.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
-import picocli.CommandLine;
-import picocli.CommandLine.Option;
+import me.nov.dalvikgate.utils.LogWrapper;
 
-public class DexToASM implements Callable<Integer> {
-  public static final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-
-  public static void main(String[] args) throws IOException {
-    int exitCode = new CommandLine(new DexToASM()).execute(args);
-    System.exit(exitCode);
-  }
-
-  @Option(names = { "-i", "--in" }, paramLabel = "input", description = "the dalvik file to convert (dex/odex/apk)")
-  public static File input;
-
-  @Option(names = { "-o", "--out" }, paramLabel = "output", description = "the output jar archive")
-  public static File output;
-
-  @Option(names = { "-nr", "--noresolve" }, description = "do not resolve variable types")
+public class DexToASM {
+  public static final LogWrapper logger = new LogWrapper();
+  public static final Inheritance rootInheritGraph = new Inheritance();
   public static boolean noResolve;
-
-  @Option(names = { "-no", "--nooptimize" }, description = "do not optimize produced code")
   public static boolean noOptimize;
+  public static String nameFilter;
 
-  @Override
-  public Integer call() throws Exception {
-    saveAsJar(output, convertToASMTree(input));
-    return 0;
+  public static void dex2Jar(File inDex, File outJar) throws IOException {
+    saveAsJar(outJar, convertToASMTree(inDex));
   }
 
   public static List<ClassNode> convertToASMTree(File file) throws IOException {
@@ -47,11 +30,17 @@ public class DexToASM implements Callable<Integer> {
       throw new FileNotFoundException();
     }
     DexBackedDexFile baseBackedDexFile = DexFileFactory.loadDexFile(file, Opcodes.forApi(52));
-    Set<? extends DexBackedClassDef> baseClassDefs = baseBackedDexFile.getClasses();
-    List<ClassNode> asmClasses = new ArrayList<>();
+    return convertToASMTree(baseBackedDexFile);
+  }
 
-    for (DexBackedClassDef clazz : baseClassDefs) {
-      ClassTransformer ct = new ClassTransformer();
+  public static List<ClassNode> convertToASMTree(DexBackedDexFile baseBackedDexFile) throws IOException {
+    // Create new inheritance tree that includes files in the dex we want to convert
+    Inheritance inheritance = rootInheritGraph.copy();
+    inheritance.addDex(baseBackedDexFile);
+    // Conversion process
+    List<ClassNode> asmClasses = new ArrayList<>();
+    for (DexBackedClassDef clazz : baseBackedDexFile.getClasses()) {
+      ClassTransformer ct = new ClassTransformer(inheritance);
       ct.visit(clazz);
       asmClasses.add(ct.getTransformed());
     }
@@ -65,14 +54,16 @@ public class DexToASM implements Callable<Integer> {
       out.write(makeManifest().getBytes());
       out.closeEntry();
       for (ClassNode c : classes) {
+        if (!c.name.matches(nameFilter))
+          continue;
         try {
           out.putNextEntry(new JarEntry(c.name + ".class"));
           out.write(Conversion.toBytecode(c));
           out.closeEntry();
         } catch (UnresolvedInsnException e) {
-          DexToASM.logger.severe("SKIP: " + c.name + " - " + e.getMessage());
+          DexToASM.logger.error("SKIP: {} - Reason: {}", c.name, e.getMessage());
         } catch (Exception e) {
-          DexToASM.logger.severe("FAIL: " + c.name);
+          DexToASM.logger.error("FAIL: {} - Reason: {}", c.name, e.getMessage());
           e.printStackTrace();
         }
       }
@@ -98,6 +89,21 @@ public class DexToASM implements Callable<Integer> {
       return Objects.requireNonNull(DexToASM.class.getPackage().getImplementationVersion());
     } catch (NullPointerException e) {
       return "(dev)";
+    }
+  }
+
+  static {
+    try {
+      long start = System.currentTimeMillis();
+      File andoidLib = new File("lib/android.jar");
+      DexToASM.logger.info("Populating root inheritance tree...");
+      rootInheritGraph.addClasspath();
+      if (andoidLib.exists()) {
+        rootInheritGraph.addDirectory(andoidLib);
+      }
+      DexToASM.logger.info("Finished root inheritance, took {}ms", (System.currentTimeMillis() - start));
+    } catch (IOException ex) {
+      throw new IllegalStateException("Failed to setup initial inheritance graph");
     }
   }
 }

@@ -10,7 +10,7 @@ import org.objectweb.asm.*;
 
 import me.nov.dalvikgate.tests.utils.Factory;
 
-class NumberTests implements Opcodes {
+class ConstTypeTests implements Opcodes {
 
   @Test
   void intConst32() {
@@ -44,9 +44,9 @@ class NumberTests implements Opcodes {
   void doubleConst64() {
     // unusual double construction
     MutableMethodImplementation mmi = new MutableMethodImplementation(2);
-    mmi.addInstruction(new BuilderInstruction51l(Opcode.CONST_WIDE, 0, Double.doubleToLongBits(363412)));
+    mmi.addInstruction(new BuilderInstruction51l(Opcode.CONST_WIDE, 0, Double.doubleToLongBits(363412d)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
-    assertEquals(363412, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
+    assertEquals(363412d, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
   }
 
   @Test
@@ -63,8 +63,8 @@ class NumberTests implements Opcodes {
   void doubleConstWideHigh16() {
     // normal double construction
     MutableMethodImplementation mmi = new MutableMethodImplementation(2);
-    mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, Double.doubleToLongBits(363417)));
+    mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, Double.doubleToLongBits(363417d)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
-    assertEquals(363417, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
+    assertEquals(363417d, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
   }
 }

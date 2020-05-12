@@ -2,6 +2,7 @@ package me.nov.dalvikgate.transform.instructions.unresolved;
 
 import java.util.Map;
 
+import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
@@ -9,13 +10,12 @@ import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 
-/**
- * A node that represents a local variable instruction that has not been fully resolved. Due to the ambiguity of android bytecode certain actions are not immediately clear in the
- * same way they would be in plain Java bytecode.
- */
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;
+  private boolean resolvedOp;
+  private boolean resolvedVar;
+
 
   /**
    * Create new unresolved variable instruction.
@@ -24,7 +24,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
    * @param initialType Initial type indicated by android instruction. Will be {@code null} if ambiguous.
    */
   public UnresolvedVarInsn(boolean store, Type initialType) {
-    super(-1, -1);
+    super(UnresolvedUtils.getDefaultVarOp(store), -1);
     this.store = store;
     this.initialType = initialType;
   }
@@ -60,6 +60,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
    */
   public void setLocal(int local) {
     this.var = local;
+    resolvedVar = true;
   }
 
   public void setType(Type type) {
@@ -87,5 +88,16 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     default:
       throw new IllegalArgumentException("Unsupported var type: " + type.getDescriptor());
     }
+    resolvedOp = true;
+  }
+
+
+  @Override
+  public boolean isResolved() {
+    return resolvedVar && resolvedOp;
+  }
+
+  public boolean isStore() {
+    return store;
   }
 }

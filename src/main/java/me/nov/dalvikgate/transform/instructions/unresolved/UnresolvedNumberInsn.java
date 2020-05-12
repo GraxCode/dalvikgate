@@ -10,12 +10,16 @@ import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
-
   private Number wideValue;
+  private boolean resolved;
+  private boolean isWide;
+  private boolean possiblyNullConst;
 
-  public UnresolvedNumberInsn(long wideValue) {
-    super(null);
-    this.wideValue = Long.valueOf(wideValue);
+  public UnresolvedNumberInsn(boolean wide, long wideValue) {
+    super(wide ? wideValue : (int) wideValue);
+    this.isWide = wide;
+    this.wideValue = wideValue;
+    this.possiblyNullConst = wideValue == 0;
   }
 
   @Override
@@ -42,6 +46,9 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
 
   @Override
   public void setType(Type type) {
+    if (type.getSize() != (isWide ? 2 : 1)) {
+      throw new IllegalArgumentException("Wrong size, expected a " + (isWide ? "wide" : "single word") + " type, but got " + type.getClassName());
+    }
     switch (type.getSort()) {
     case Type.BOOLEAN:
     case Type.INT:
@@ -59,10 +66,20 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case Type.DOUBLE:
       cst = Double.longBitsToDouble(wideValue.longValue());
       break;
-    default:
     case Type.OBJECT:
     case Type.ARRAY:
-      throw new IllegalArgumentException("Objects are no numbers!");
+      if (possiblyNullConst)
+        throw new IllegalArgumentException("Type cannot be changed locally, replace this instruction with aconst_null instead.");
+      else
+        throw new IllegalArgumentException("Expected const 0 for object type, but value is " + cst.toString());
+    case Type.VOID:
+      throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
+    resolved = true;
+  }
+
+  @Override
+  public boolean isResolved() {
+    return resolved;
   }
 }
