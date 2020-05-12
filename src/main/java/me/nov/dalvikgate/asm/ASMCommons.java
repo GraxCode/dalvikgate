@@ -260,6 +260,108 @@ public class ASMCommons implements Opcodes {
     throw new IllegalArgumentException(insn.getClass().getSimpleName() + " - OP: " + insn.getOpcode());
   }
 
+  /**
+   * @param insn Zero operand instruction.
+   * @return Operating type on the top of the stack
+   */
+  public static Type getOperatingType(InsnNode insn) {
+    Type type = null;
+    switch (insn.getOpcode()) {
+    case AASTORE:
+    case ARRAYLENGTH:
+    case ARETURN:
+    case ATHROW:
+    case MONITORENTER:
+    case MONITOREXIT:
+      type = Type.getObjectType("java/lang/Object");
+      break;
+    case D2F:
+    case D2I:
+    case D2L:
+    case DADD:
+    case DASTORE:
+    case DCMPG:
+    case DCMPL:
+    case DDIV:
+    case DMUL:
+    case DNEG:
+    case DREM:
+    case DRETURN:
+    case DSUB:
+      type = Type.DOUBLE_TYPE;
+      break;
+    case F2D:
+    case F2I:
+    case F2L:
+    case FADD:
+    case FASTORE:
+    case FCMPG:
+    case FCMPL:
+    case FDIV:
+    case FMUL:
+    case FNEG:
+    case FREM:
+    case FRETURN:
+    case FSUB:
+      type = Type.FLOAT_TYPE;
+      break;
+    case CALOAD:
+    case SALOAD:
+    case BALOAD:
+    case DALOAD:
+    case FALOAD:
+    case LALOAD:
+    case IALOAD:
+    case AALOAD:
+    case BASTORE:
+    case CASTORE:
+    case SASTORE:
+    case IASTORE:
+    case I2B:
+    case I2C:
+    case I2D:
+    case I2F:
+    case I2L:
+    case I2S:
+    case IADD:
+    case IAND:
+    case IDIV:
+    case IMUL:
+    case INEG:
+    case IOR:
+    case IREM:
+    case IRETURN:
+    case ISHL:
+    case ISHR:
+    case ISUB:
+    case IUSHR:
+    case IXOR:
+      type = Type.INT_TYPE;
+      break;
+    case L2D:
+    case L2F:
+    case L2I:
+    case LADD:
+    case LASTORE:
+    case LAND:
+    case LCMP:
+    case LDIV:
+    case LMUL:
+    case LNEG:
+    case LOR:
+    case LREM:
+    case LRETURN:
+    case LSHL:
+    case LSHR:
+    case LSUB:
+    case LUSHR:
+    case LXOR:
+      type = Type.LONG_TYPE;
+      break;
+    }
+    return type;
+  }
+
   public static boolean isBlockEnd(AbstractInsnNode ain) {
     return isReturn(ain) || ain.getType() == AbstractInsnNode.JUMP_INSN || ain.getOpcode() == ATHROW;
   }
