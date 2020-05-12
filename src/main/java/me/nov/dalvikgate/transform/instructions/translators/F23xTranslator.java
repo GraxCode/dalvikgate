@@ -141,16 +141,11 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
       addLocalGet(i.getRegisterA(), SHORT_TYPE);
       il.add(new InsnNode(SASTORE));
       return;
-    case ADD_INT:
-      addLocalGet(i.getRegisterB(), OBJECT_TYPE);
-      addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalGet(i.getRegisterA(), SHORT_TYPE);
-      il.add(new InsnNode(SASTORE));
-      return;
     // Perform the identified binary operation on the two source registers, storing the result in the destination register.
     // A: destination register or pair (8 bits)
     // B: first source register or pair (8 bits)
     // C: second source register or pair (8 bits)
+    case ADD_INT:
     case SUB_INT:
     case MUL_INT:
     case DIV_INT:
@@ -198,6 +193,10 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
       throw new UnsupportedInsnException(i);
     }
     switch (i.getOpcode()) {
+    case ADD_INT:
+      il.add(new InsnNode(IADD));
+      addLocalSet(i.getRegisterA(), INT_TYPE);
+      break;
     case SUB_INT:
       il.add(new InsnNode(ISUB));
       addLocalSet(i.getRegisterA(), INT_TYPE);
