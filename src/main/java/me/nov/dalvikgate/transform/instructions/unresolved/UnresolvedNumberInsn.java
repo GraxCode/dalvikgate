@@ -23,6 +23,9 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
 
   public UnresolvedNumberInsn(boolean wide, long wideValue) {
     super(wide ? wideValue : (int) wideValue);
+    if(!wide && ((wideValue & 0xffffffff00000000L) != 0)) {
+      throw new IllegalArgumentException("Number is wide but not marked as wide: " + Long.toBinaryString(wideValue));
+    }
     this.isWide = wide;
     this.wideValue = wideValue;
     this.possiblyNullConst = wideValue == 0;
