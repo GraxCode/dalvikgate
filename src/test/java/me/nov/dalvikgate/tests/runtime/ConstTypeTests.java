@@ -2,8 +2,10 @@ package me.nov.dalvikgate.tests.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.math.BigInteger;
+
 import org.jf.dexlib2.Opcode;
-import org.jf.dexlib2.builder.*;
+import org.jf.dexlib2.builder.MethodImplementationBuilder;
 import org.jf.dexlib2.builder.instruction.*;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
@@ -62,20 +64,22 @@ class ConstTypeTests implements Opcodes {
 
   @Test
   void floatConstHigh16() {
+    int value = new BigInteger("100110100000000000000000000000", 2).intValue(); // only high 16 values allowed
     // normal float construction
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(1);
-    mmi.addInstruction(new BuilderInstruction21ih(Opcode.CONST_HIGH16, 0, Float.floatToIntBits(1.3f)));
+    mmi.addInstruction(new BuilderInstruction21ih(Opcode.CONST_HIGH16, 0, value));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
 
-    assertEquals(1.3f, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE), mmi)));
+    assertEquals(Float.intBitsToFloat(value), Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE), mmi)));
   }
 
   @Test
   void doubleConstWideHigh16() {
+    long value = new BigInteger("10110101010000000000000000000000000000000000000000000000000000", 2).longValue(); // only high 16 values allowed
     // normal double construction
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(2);
-    mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, Double.doubleToLongBits(126d)));
+    mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, value));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
-    assertEquals(126d, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
+    assertEquals(Double.longBitsToDouble(value), Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
   }
 }
