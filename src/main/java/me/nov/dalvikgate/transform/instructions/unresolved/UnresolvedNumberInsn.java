@@ -1,6 +1,5 @@
 package me.nov.dalvikgate.transform.instructions.unresolved;
 
-import java.util.List;
 import java.util.Map;
 
 import me.coley.analysis.util.FrameUtil;
@@ -13,6 +12,8 @@ import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 import org.objectweb.asm.tree.analysis.Frame;
+
+import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
 
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
   private Number wideValue;
@@ -96,6 +97,8 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     // - Method arg
     // - Variable use in resolved variable
     for (int j = 0; j < method.instructions.size(); j++) {
+      if (j == index)
+        continue;
       AbstractInsnNode insn = method.instructions.get(j);
       int op = insn.getOpcode();
       // Check against fields
@@ -103,7 +106,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
         // Check if the value being stored in the field
         if ((op == PUTFIELD || op == PUTSTATIC) ) {
           AbstractValue value = FrameUtil.getTopStack(frames[j]);
-          if (isDirectlyResponsible(value)) {
+          if (isDirectlyResponsible(this, value)) {
             setType(Type.getType(((FieldInsnNode) insn).desc));
             break;
           }
@@ -111,7 +114,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
         // Check if the field context is this instruction
         if (op == PUTFIELD || op == GETFIELD) {
           AbstractValue owner = FrameUtil.getStackFromTop(frames[j], 1);
-          if (isDirectlyResponsible(owner)) {
+          if (isDirectlyResponsible(this, owner)) {
             setType(Type.getType(((FieldInsnNode) insn).owner));
             break;
           }
@@ -124,7 +127,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
         int argCount = methodType.getArgumentTypes().length;
         for (int a = 0; a < argCount; a++) {
           AbstractValue value = FrameUtil.getStackFromTop(frames[j], (argCount - 1) - a);
-          if (isDirectlyResponsible(value)) {
+          if (isDirectlyResponsible(this, value)) {
             setType(methodType.getArgumentTypes()[a]);
             return true;
           }
@@ -132,7 +135,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
         // Check if the method context is this instruction
         if (op == INVOKEINTERFACE || op == INVOKESPECIAL || op == INVOKEVIRTUAL) {
           AbstractValue owner = FrameUtil.getStackFromTop(frames[j], 1);
-          if (isDirectlyResponsible(owner)) {
+          if (isDirectlyResponsible(this, owner)) {
             setType(Type.getType(((MethodInsnNode) insn).owner));
             break;
           }
@@ -140,45 +143,78 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       }
       // Check against variables
       else if (insn instanceof VarInsnNode) {
-        // Resolvable variables must be resolved first
-        if (insn instanceof UnresolvedVarInsn) {
-          UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn;
-          if (unresolvedVarInsn.isResolved()) {
+        // Storage
+        if (op >= ISTORE && op <= ASTORE) {
+          // Must be responsible
+          AbstractValue value = FrameUtil.getTopStack(frames[j]);
+          if (!isDirectlyResponsible(this, value))
+            continue;
+          // Resolvable variables must be resolved first
+          if (insn instanceof UnresolvedVarInsn) {
+            UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn;
+            if (unresolvedVarInsn.isResolved()) {
+              setType(ASMCommons.getPushedTypeForInsn(insn));
+              break;
+            }
+          }
+          // Normal variable
+          else {
             setType(ASMCommons.getPushedTypeForInsn(insn));
             break;
           }
-        }
-        // Normal variable
-        else {
-          setType(ASMCommons.getPushedTypeForInsn(insn));
-          break;
+        } else if (op >= ILOAD && op <= ALOAD) {
+          // Must be responsible
+          AbstractValue value = frames[j].getLocal(((VarInsnNode) insn).var);
+          if (!isDirectlyResponsible(this, value))
+            continue;
+          // Resolvable variables must be resolved first
+          if (insn instanceof UnresolvedVarInsn) {
+            UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn;
+            if (unresolvedVarInsn.isResolved()) {
+              Type type =  null;
+              if (op == ALOAD)
+                type = Type.getObjectType("java/lang/Object");
+              else if (op == ILOAD)
+                type =  Type.INT_TYPE;
+              else if (op == LLOAD)
+                type =  Type.LONG_TYPE;
+              else if (op == FLOAD)
+                type =  Type.FLOAT_TYPE;
+              else if (op == DLOAD)
+                type =  Type.DOUBLE_TYPE;
+              setType(type);
+              break;
+            }
+          }
+          // Normal variable
+          else {
+            Type type =  null;
+            if (op == ALOAD)
+              type = Type.getObjectType("java/lang/Object");
+            else if (op == ILOAD)
+              type =  Type.INT_TYPE;
+            else if (op == LLOAD)
+              type =  Type.LONG_TYPE;
+            else if (op == FLOAD)
+              type =  Type.FLOAT_TYPE;
+            else if (op == DLOAD)
+              type =  Type.DOUBLE_TYPE;
+            setType(type);
+            break;
+          }
         }
       }
       // Check against zero-operand instructions (math types and such)
       else if (insn instanceof InsnNode) {
         AbstractValue value = FrameUtil.getTopStack(frames[j]);
-        if (isDirectlyResponsible(value)) {
+        if (isDirectlyResponsible(this, value)) {
           Type type = ASMCommons.getOperatingType((InsnNode) insn);
           setType(type);
         }
       }
     }
-    return false;
+    return isResolved();
   }
 
-  /**
-   * Check if the instruction immediately given in the contributing insns list is this current insn... unless its a variable load.
-   * Then check the next insn.
-   *
-   * @param value Value to check.
-   * @return {@code true} if this instruction is responsible for the given value.
-   */
-  private boolean isDirectlyResponsible(AbstractValue value) {
-    List<AbstractInsnNode> insns = value.getInsns();
-    AbstractInsnNode top;
-    int offset = 1;
-    while ((top = insns.get(insns.size() - offset)) instanceof VarInsnNode)
-      offset++;
-    return equals(top);
-  }
+
 }

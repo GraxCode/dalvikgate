@@ -1,7 +1,12 @@
 package me.nov.dalvikgate.utils;
 
+import me.coley.analysis.value.AbstractValue;
 import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.VarInsnNode;
+
+import java.util.List;
 
 public class UnresolvedUtils implements Opcodes {
   public static int getDefaultVarOp(boolean store) {
@@ -25,5 +30,22 @@ public class UnresolvedUtils implements Opcodes {
     default:
       throw new IllegalStateException("Jump cannot be unresolved! Got " + dalvikOp.name);
     }
+  }
+
+  /**
+   * Check if the instruction immediately given in the contributing insns list is this given insn... unless its a variable load.
+   * Then check the next insn.
+   *
+   * @param insn  Given instruction
+   * @param value Value to check.
+   * @return {@code true} if the given instruction is responsible for the given value.
+   */
+  public static boolean isDirectlyResponsible(AbstractInsnNode insn, AbstractValue value) {
+    List<AbstractInsnNode> insns = value.getInsns();
+    AbstractInsnNode top = null;
+    int offset = 1;
+    while (offset <= insns.size() && (top = insns.get(insns.size() - offset)) instanceof VarInsnNode && !top.equals(insn))
+      offset++;
+    return insn.equals(top);
   }
 }

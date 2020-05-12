@@ -4,6 +4,7 @@ import java.util.Map;
 
 import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
+import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -12,6 +13,9 @@ import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 import org.objectweb.asm.tree.analysis.Frame;
+
+import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
+
 
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
@@ -105,6 +109,34 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
 
   @Override
   public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
+    Type retType = null;
+    int retIndex = -1;
+    for (int j = 0; j < method.instructions.size(); j++) {
+      if (j == index)
+        continue;
+      switch (method.instructions.get(j).getOpcode()) {
+      case ARETURN:
+      case IRETURN:
+      case FRETURN:
+      case DRETURN:
+      case LRETURN:
+        retIndex = j;
+        retType = Type.getMethodType(method.desc).getReturnType();
+        break;
+      case RETURN:
+      default:
+        break;
+      }
+    }
+    if (retType != null) {
+      AbstractValue retValue = FrameUtil.getTopStack(frames[retIndex]);
+      if (isDirectlyResponsible(this, retValue)) {
+        setType(retType);
+        return true;
+      }
+    }
+
+
     if (store) {
       AbstractValue value = FrameUtil.getTopStack(frames[index]);
       setType(value.getType());
@@ -112,19 +144,6 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       AbstractValue local = frames[index].getLocal(var);
       setType(local.getType());
     }
-    /*
-     for (int j = 0; j < il.size(); j++) {
-       AbstractInsnNode insn2 = il.get(j);
-       if (insn2 instanceof InsnNode) {
-         AbstractValue value = FrameUtil.getTopStack(frames[j]);
-         if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
-           Type type = ASMCommons.getOperatingType((InsnNode) insn2);
-           resolvable.setType(type);
-           fixed = true;
-         }
-       }
-     }
-     */
     return isResolved();
-}
+  }
 }
