@@ -2,7 +2,6 @@ package me.nov.dalvikgate.transform.methods;
 
 import java.util.Objects;
 
-import me.nov.dalvikgate.graph.Inheritance;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.Opcodes;
@@ -10,6 +9,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.ASMCommons;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instructions.InstructionTransformer;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
@@ -55,7 +55,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
       if (!DexToASM.noOptimize) {
         new PostLocalRemover().applyPatch(mn);
         new PostDupInserter().applyPatch(mn);
-        //new PostCombiner().applyPatch(mn); analyzer is probably the better way to do this
+        // new PostCombiner().applyPatch(mn); analyzer is probably the better way to do this
       }
     } catch (Exception e) {
       if (e instanceof UnsupportedInsnException) {

@@ -2,17 +2,17 @@ package me.nov.dalvikgate.transform.instructions.unresolved;
 
 import java.util.Map;
 
-import me.coley.analysis.util.FrameUtil;
-import me.coley.analysis.value.AbstractValue;
-import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.Frame;
 
+import me.coley.analysis.util.FrameUtil;
+import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
-import org.objectweb.asm.tree.analysis.Frame;
+import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstruction, Opcodes {
   private final Opcode dalvikOp;

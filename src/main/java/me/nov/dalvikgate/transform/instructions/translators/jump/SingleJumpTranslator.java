@@ -11,7 +11,6 @@ import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedJumpInsn;
 
-
 public class SingleJumpTranslator extends AbstractInsnTranslator<BuilderInstruction21t> {
 
   public SingleJumpTranslator(InstructionTransformer it) {

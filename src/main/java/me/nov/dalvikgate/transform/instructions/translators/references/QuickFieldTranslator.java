@@ -8,7 +8,6 @@ import org.objectweb.asm.Type;
 
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
-
 import me.nov.dalvikgate.utils.CustomFieldReference;
 
 public class QuickFieldTranslator extends AbstractInsnTranslator<BuilderInstruction22cs> {

@@ -9,7 +9,6 @@ import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
 import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedNumberInsn;
 
-
 public class ConstTranslator extends AbstractInsnTranslator<BuilderInstruction> {
 
   public ConstTranslator(InstructionTransformer it) {

@@ -1,19 +1,19 @@
 package me.nov.dalvikgate.transform.instructions.unresolved;
 
+import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
+
 import java.util.Map;
+
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.Frame;
 
 import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
-import me.nov.dalvikgate.asm.ASMCommons;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-
 import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
 
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
   private Number wideValue;
@@ -104,7 +104,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       // Check against fields
       if (insn instanceof FieldInsnNode) {
         // Check if the value being stored in the field
-        if ((op == PUTFIELD || op == PUTSTATIC) ) {
+        if ((op == PUTFIELD || op == PUTSTATIC)) {
           AbstractValue value = FrameUtil.getTopStack(frames[j]);
           if (isDirectlyResponsible(this, value)) {
             setType(Type.getType(((FieldInsnNode) insn).desc));
@@ -171,34 +171,34 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
           if (insn instanceof UnresolvedVarInsn) {
             UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn;
             if (unresolvedVarInsn.isResolved()) {
-              Type type =  null;
+              Type type = null;
               if (op == ALOAD)
                 type = Type.getObjectType("java/lang/Object");
               else if (op == ILOAD)
-                type =  Type.INT_TYPE;
+                type = Type.INT_TYPE;
               else if (op == LLOAD)
-                type =  Type.LONG_TYPE;
+                type = Type.LONG_TYPE;
               else if (op == FLOAD)
-                type =  Type.FLOAT_TYPE;
+                type = Type.FLOAT_TYPE;
               else if (op == DLOAD)
-                type =  Type.DOUBLE_TYPE;
+                type = Type.DOUBLE_TYPE;
               setType(type);
               break;
             }
           }
           // Normal variable
           else {
-            Type type =  null;
+            Type type = null;
             if (op == ALOAD)
               type = Type.getObjectType("java/lang/Object");
             else if (op == ILOAD)
-              type =  Type.INT_TYPE;
+              type = Type.INT_TYPE;
             else if (op == LLOAD)
-              type =  Type.LONG_TYPE;
+              type = Type.LONG_TYPE;
             else if (op == FLOAD)
-              type =  Type.FLOAT_TYPE;
+              type = Type.FLOAT_TYPE;
             else if (op == DLOAD)
-              type =  Type.DOUBLE_TYPE;
+              type = Type.DOUBLE_TYPE;
             setType(type);
             break;
           }
@@ -215,6 +215,5 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     }
     return isResolved();
   }
-
 
 }

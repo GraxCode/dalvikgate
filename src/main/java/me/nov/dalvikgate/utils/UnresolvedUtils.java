@@ -1,12 +1,12 @@
 package me.nov.dalvikgate.utils;
 
-import me.coley.analysis.value.AbstractValue;
+import java.util.List;
+
 import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
-import java.util.List;
+import me.coley.analysis.value.AbstractValue;
 
 public class UnresolvedUtils implements Opcodes {
   public static int getDefaultVarOp(boolean store) {
@@ -33,8 +33,7 @@ public class UnresolvedUtils implements Opcodes {
   }
 
   /**
-   * Check if the instruction immediately given in the contributing insns list is this given insn... unless its a variable load.
-   * Then check the next insn.
+   * Check if the instruction immediately given in the contributing insns list is this given insn... unless its a variable load. Then check the next insn.
    *
    * @param insn  Given instruction
    * @param value Value to check.

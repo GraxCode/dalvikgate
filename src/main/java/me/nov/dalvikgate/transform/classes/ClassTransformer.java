@@ -3,7 +3,6 @@ package me.nov.dalvikgate.transform.classes;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import me.nov.dalvikgate.graph.Inheritance;
 import org.jf.dexlib2.dexbacked.*;
 import org.jf.dexlib2.dexbacked.value.*;
 import org.jf.dexlib2.iface.reference.MethodReference;
@@ -11,6 +10,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.dexlib.DexLibCommons;
+import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.fields.FieldTransfomer;
 import me.nov.dalvikgate.transform.methods.MethodTransfomer;

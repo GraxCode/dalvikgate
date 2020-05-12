@@ -32,7 +32,6 @@ class ConstTypeTests implements Opcodes {
     assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
   }
 
-
   @Test
   void floatConst32() {
     // unusual float construction
@@ -65,18 +64,18 @@ class ConstTypeTests implements Opcodes {
   void floatConstHigh16() {
     // normal float construction
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(1);
-    mmi.addInstruction(new BuilderInstruction21ih(Opcode.CONST_HIGH16, 0, Float.floatToIntBits(21.3f)));
+    mmi.addInstruction(new BuilderInstruction21ih(Opcode.CONST_HIGH16, 0, Float.floatToIntBits(1.3f)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
 
-    assertEquals(21.3f, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE), mmi)));
+    assertEquals(1.3f, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE), mmi)));
   }
 
   @Test
   void doubleConstWideHigh16() {
     // normal double construction
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(2);
-    mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, Double.doubleToLongBits(363417d)));
+    mmi.addInstruction(new BuilderInstruction21lh(Opcode.CONST_WIDE_HIGH16, 0, Double.doubleToLongBits(126d)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
-    assertEquals(363417d, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
+    assertEquals(126d, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.DOUBLE_TYPE), mmi)));
   }
 }

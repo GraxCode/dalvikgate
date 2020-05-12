@@ -1,28 +1,25 @@
 package me.nov.dalvikgate.transform.instructions.unresolved;
 
+import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
+
 import java.util.Map;
+
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.Frame;
 
 import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
-import me.nov.dalvikgate.asm.ASMCommons;
-import me.nov.dalvikgate.utils.UnresolvedUtils;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
-
+import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;
   private boolean resolvedOp;
   private boolean resolvedVar;
-
 
   /**
    * Create new unresolved variable instruction.
@@ -135,7 +132,6 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
         return true;
       }
     }
-
 
     if (store) {
       AbstractValue value = FrameUtil.getTopStack(frames[index]);

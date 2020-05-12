@@ -12,7 +12,6 @@ import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 
-
 public class F21cTranslator extends AbstractInsnTranslator<BuilderInstruction21c> {
 
   public F21cTranslator(InstructionTransformer it) {

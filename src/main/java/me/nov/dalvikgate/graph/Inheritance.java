@@ -217,8 +217,7 @@ public class Inheritance {
   public Set<String> getAllParents(String name) {
     Set<String> set = parentsOfCachedAll.get(name);
     if (set == null)
-      parentsOfCachedAll.put(name, set = (getParents(name).stream().map(n -> getAllParents(n).stream())
-              .reduce(getParents(name).stream(), Stream::concat)).collect(Collectors.toSet()));
+      parentsOfCachedAll.put(name, set = (getParents(name).stream().map(n -> getAllParents(n).stream()).reduce(getParents(name).stream(), Stream::concat)).collect(Collectors.toSet()));
     return set;
   }
 
@@ -240,8 +239,7 @@ public class Inheritance {
   public Set<String> getAllChildren(String name) {
     Set<String> set = childrenOfCachedAll.get(name);
     if (set == null)
-      childrenOfCachedAll.put(name, set = (getChildren(name).stream().map(n -> getAllChildren(n).stream())
-              .reduce(getChildren(name).stream(), Stream::concat)).collect(Collectors.toSet()));
+      childrenOfCachedAll.put(name, set = (getChildren(name).stream().map(n -> getAllChildren(n).stream()).reduce(getChildren(name).stream(), Stream::concat)).collect(Collectors.toSet()));
     return set;
   }
 

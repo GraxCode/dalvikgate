@@ -9,7 +9,6 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 
-
 public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x> {
 
   public F12xTranslator(InstructionTransformer it) {

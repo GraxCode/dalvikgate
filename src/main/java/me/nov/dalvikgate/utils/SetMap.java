@@ -1,8 +1,6 @@
 package me.nov.dalvikgate.utils;
 
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 public class SetMap<K, V> extends TreeMap<K, Set<V>> {
   private static final long serialVersionUID = 1L;

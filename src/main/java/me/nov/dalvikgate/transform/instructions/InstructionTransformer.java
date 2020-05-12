@@ -18,10 +18,9 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 
 import me.coley.analysis.*;
-import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
-import me.nov.dalvikgate.asm.*;
+import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
@@ -225,8 +224,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     SimAnalyzer analyzer = new SimAnalyzer(it) {
       @Override
       protected TypeChecker createTypeChecker() {
-        return (parent, child) -> inheritance.getAllChildren(parent.getInternalName())
-                .contains(child.getInternalName());
+        return (parent, child) -> inheritance.getAllChildren(parent.getInternalName()).contains(child.getInternalName());
       }
     };
     analyzer.setThrowUnresolvedAnalyzerErrors(false);
@@ -296,6 +294,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       mn.instructions = initialIl;
       return;
     } catch (Throwable t) {
+      t.printStackTrace();
       DexToASM.logger.error(" - Analyzer crash: {}", t.getMessage());
       mn.instructions = initialIl;
       return;

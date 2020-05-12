@@ -12,7 +12,6 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 
-
 public class F22cTranslator extends AbstractInsnTranslator<BuilderInstruction22c> {
 
   public F22cTranslator(InstructionTransformer it) {

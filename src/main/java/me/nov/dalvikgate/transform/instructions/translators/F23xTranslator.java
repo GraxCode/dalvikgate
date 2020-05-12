@@ -11,7 +11,6 @@ import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedWideArrayInsn;
 
-
 public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x> {
 
   public F23xTranslator(InstructionTransformer it) {

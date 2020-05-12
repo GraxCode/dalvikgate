@@ -1,9 +1,10 @@
 package me.nov.dalvikgate.transform.instructions;
 
-import me.coley.analysis.value.AbstractValue;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Frame;
+
+import me.coley.analysis.value.AbstractValue;
 
 /**
  * A node that represents an instruction that has not been fully resolved. Due to the ambiguity of android bytecode certain actions are not immediately clear in the same way they

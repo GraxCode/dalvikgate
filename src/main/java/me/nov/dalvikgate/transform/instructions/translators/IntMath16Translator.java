@@ -9,7 +9,6 @@ import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 
-
 public class IntMath16Translator extends AbstractInsnTranslator<BuilderInstruction22s> {
 
   public IntMath16Translator(InstructionTransformer it) {
@@ -24,13 +23,13 @@ public class IntMath16Translator extends AbstractInsnTranslator<BuilderInstructi
     // B: source register (4 bits)
     // C: signed int constant (16 bits)
     addLocalGet(i.getRegisterB(), INT_TYPE);
-    il.add(ASMCommons.makeIntPush(i.getNarrowLiteral())); 
+    il.add(ASMCommons.makeIntPush(i.getNarrowLiteral()));
     switch (i.getOpcode()) {
     case ADD_INT_LIT16:
       il.add(new InsnNode(IADD));
       break;
     case RSUB_INT:
-      //reverse subtraction
+      // reverse subtraction
       il.add(new InsnNode(SWAP));
       il.add(new InsnNode(ISUB));
       break;

@@ -7,7 +7,6 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction32x;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 
-
 public class Move16Translator extends AbstractInsnTranslator<BuilderInstruction32x> {
   public Move16Translator(InstructionTransformer it) {
     super(it);

@@ -13,7 +13,6 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
 
-
 /**
  * Payload instructions
  */
