@@ -17,19 +17,14 @@ public class IndistinguishableConstTests {
    */
   @Test
   void withJump() {
-    MutableMethodImplementation mmi = new MutableMethodImplementation(2);
+    MethodImplementationBuilder mmi = new MethodImplementationBuilder(2);
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, 0)); // either Object null or int 0
-    // * jump here
+    mmi.addInstruction(new BuilderInstruction21t(Opcode.IF_EQZ, 0, mmi.getLabel("target")));
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 1637));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 1));
-    BuilderInstruction31i target;
-    mmi.addInstruction(target = new BuilderInstruction31i(Opcode.CONST, 1, 832));
+    mmi.addLabel("target");
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 832));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 1));
-
-    Label label = target.getLocation().addNewLabel();
-
-    // *
-    mmi.addInstruction(1, new BuilderInstruction21t(Opcode.IF_EQZ, 0, label));
 
     assertEquals(832, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
   }

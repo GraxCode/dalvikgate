@@ -4,7 +4,7 @@ import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.*;
 
-import org.jf.dexlib2.builder.MutableMethodImplementation;
+import org.jf.dexlib2.builder.*;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.mockito.Mockito;
 import org.objectweb.asm.*;
@@ -62,16 +62,16 @@ public class Factory implements Opcodes {
     }
   }
 
-  public static MethodNode runDexToASM(Type desc, MutableMethodImplementation mmi) {
+  public static MethodNode runDexToASM(Type desc, MethodImplementationBuilder mmi) {
     return runDexToASM(getNopInheritance(), desc, mmi);
   }
 
-  public static MethodNode runDexToASM(Inheritance inheritance, Type desc, MutableMethodImplementation mmi) {
+  public static MethodNode runDexToASM(Inheritance inheritance, Type desc, MethodImplementationBuilder builder) {
     MethodNode mn = buildMethod(desc, null);
-    InstructionTransformer it = new InstructionTransformer(mn, mmi, desc, true);
+    InstructionTransformer it = new InstructionTransformer(mn, new MutableMethodImplementation(builder.getMethodImplementation()), desc, true);
     it.setInheritance(inheritance);
     DexBackedMethod dm = Mockito.mock(DexBackedMethod.class);
-    Mockito.when(dm.getName()).thenReturn("dummy");
+    Mockito.when(dm.getName()).thenReturn("dummy" + builder.hashCode());
     Mockito.when(dm.getParameters()).thenReturn(Collections.emptyList());
     Mockito.when(dm.getReturnType()).thenReturn(desc.getReturnType().getDescriptor());
     Mockito.when(dm.getDefiningClass()).thenReturn("Lcom/TestClass;");
