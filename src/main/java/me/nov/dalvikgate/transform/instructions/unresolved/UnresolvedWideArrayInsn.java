@@ -2,6 +2,8 @@ package me.nov.dalvikgate.transform.instructions.unresolved;
 
 import java.util.Map;
 
+import me.coley.analysis.util.FrameUtil;
+import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -9,6 +11,7 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
+import org.objectweb.asm.tree.analysis.Frame;
 
 public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInstruction, Opcodes {
   private boolean store;
@@ -72,5 +75,21 @@ public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInst
   @Override
   public boolean isResolved() {
     return resolvedType && resolvedOp;
+  }
+
+  @Override
+  public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
+    // STORE: arrayref, index, value -> _
+    // LOAD:: arrayref, index -> value
+    if (store) {
+      // Check value on stack being stored
+      AbstractValue value = FrameUtil.getTopStack(frames[index]);
+      setType(value.getType());
+    } else {
+      // arrayref, index -> value
+      AbstractValue arrayRef = FrameUtil.getStackFromTop(frames[index], 1);
+      setType(arrayRef.getType().getElementType());
+    }
+    return isResolved();
   }
 }

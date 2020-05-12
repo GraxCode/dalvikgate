@@ -40,6 +40,8 @@ public class DexToASM {
     // Conversion process
     List<ClassNode> asmClasses = new ArrayList<>();
     for (DexBackedClassDef clazz : baseBackedDexFile.getClasses()) {
+      if (!clazz.getType().substring(1, clazz.getType().length() - 1).matches(nameFilter))
+        continue;
       ClassTransformer ct = new ClassTransformer(inheritance);
       ct.visit(clazz);
       asmClasses.add(ct.getTransformed());

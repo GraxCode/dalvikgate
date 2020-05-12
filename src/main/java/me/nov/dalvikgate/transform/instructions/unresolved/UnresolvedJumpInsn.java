@@ -2,6 +2,8 @@ package me.nov.dalvikgate.transform.instructions.unresolved;
 
 import java.util.Map;
 
+import me.coley.analysis.util.FrameUtil;
+import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.utils.UnresolvedUtils;
 import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.*;
@@ -10,6 +12,7 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
+import org.objectweb.asm.tree.analysis.Frame;
 
 public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstruction, Opcodes {
   private final Opcode dalvikOp;
@@ -69,5 +72,12 @@ public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstr
   @Override
   public boolean isResolved() {
     return resolved;
+  }
+
+  @Override
+  public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
+    AbstractValue value = FrameUtil.getTopStack(frames[index]);
+    setType(value.getType());
+    return isResolved();
   }
 }

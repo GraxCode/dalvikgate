@@ -237,86 +237,56 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
-      Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
-      DexToASM.logger.info(" - Frames: {}", frames.length);
+      Frame<AbstractValue>[] frames = null;
+      // WIDE ARRAY
+      frames = analyzer.analyze(owner, mn);
       for (int i = 0; i < il.size(); i++) {
         AbstractInsnNode insn = il.get(i);
-        if (insn instanceof IUnresolvedInstruction) {
-          boolean fixed =false;
+        if (insn instanceof UnresolvedWideArrayInsn) {
           IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
-          // Skip if resolved
           if (resolvable.isResolved())
             continue;
-          // Unresolved use frames to fix
-          if (insn instanceof UnresolvedVarInsn) {
-            UnresolvedVarInsn varInsn = (UnresolvedVarInsn)insn;
-            if (varInsn.isStore()) {
-              // Check value on the stack being stored
-              resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
-              fixed = true;
-            } else {
-              resolvable.setType(frames[i].getLocal(varInsn.var).getType());
-              fixed = true;
-            }
-          } else if (insn instanceof UnresolvedJumpInsn) {
-            // The unresolved insn types only take one argument
-            resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
-            fixed = true;
-          }  else if (insn instanceof UnresolvedNumberInsn) {
-            // TODO: There has to be a better way...
-            // Check for usage:
-            // - Field set
-            // - Method arg
-            // - Variable use in resolved variable
-            for (int j = 0; j < il.size(); j++) {
-              AbstractInsnNode insn2 = il.get(j);
-              if (insn2 instanceof FieldInsnNode) {
-                AbstractValue value = FrameUtil.getTopStack(frames[j]);
-                if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
-                  resolvable.setType(Type.getType(((FieldInsnNode) insn2).desc));
-                  fixed = true;
-                }
-              } else if (insn2 instanceof MethodInsnNode) {
-                Type methodType = Type.getMethodType(((MethodInsnNode) insn2).desc);
-                int argCount = methodType.getArgumentTypes().length;
-                for (int a = 0; a < argCount; a++) {
-                  AbstractValue value = FrameUtil.getStackFromTop(frames[j], (argCount - 1) - a);
-                  if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
-                    resolvable.setType(methodType.getArgumentTypes()[a]);
-                    fixed = true;
-                  }
-                }
-              } else if (insn2 instanceof VarInsnNode) {
-                if (insn2 instanceof UnresolvedVarInsn) {
-                  UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn2;
-                  if (unresolvedVarInsn.isResolved()) {
-                    if (unresolvedVarInsn.isStore()) {
-                      AbstractValue value = FrameUtil.getTopStack(frames[j]);
-                      if (value.getInsns().get(value.getInsns().size() - 1).equals(insn)) {
-                        resolvable.setType(value.getType());
-                        fixed = true;
-                      }
-                    } else {
-                      resolvable.setType(ASMCommons.getPushedTypeForInsn(insn2));
-                      fixed = true;
-                    }
-                  }
-                } else {
-                  resolvable.setType(ASMCommons.getPushedTypeForInsn(insn2));
-                  fixed = true;
-                }
-              }
-            }
-          } else if (insn instanceof UnresolvedWideArrayInsn) {
-            // Check type on stack top, should be double/long
-            resolvable.setType(FrameUtil.getTopStack(frames[i]).getType());
-            fixed = true;
-          }
-          if (!fixed){
+          if (!resolvable.tryResolve(i, mn, frames))
             throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
-          }
         }
       }
+      // VARIABLES
+      frames = analyzer.analyze(owner, mn);
+      for (int i = 0; i < il.size(); i++) {
+        AbstractInsnNode insn = il.get(i);
+        if (insn instanceof UnresolvedVarInsn) {
+          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
+          if (resolvable.isResolved())
+            continue;
+          if (!resolvable.tryResolve(i, mn, frames))
+            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
+        }
+      }
+      // NUMBERS
+      frames = analyzer.analyze(owner, mn);
+      for (int i = 0; i < il.size(); i++) {
+        AbstractInsnNode insn = il.get(i);
+        if (insn instanceof UnresolvedNumberInsn) {
+          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
+          if (resolvable.isResolved())
+            continue;
+          if (!resolvable.tryResolve(i, mn, frames))
+            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
+        }
+      }
+      // JUMP
+      frames = analyzer.analyze(owner, mn);
+      for (int i = 0; i < il.size(); i++) {
+        AbstractInsnNode insn = il.get(i);
+        if (insn instanceof UnresolvedJumpInsn) {
+          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
+          if (resolvable.isResolved())
+            continue;
+          if (!resolvable.tryResolve(i, mn, frames))
+            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
+        }
+      }
+      DexToASM.logger.info(" - Success: {}", frames.length);
     } catch (AnalyzerException ex) {
       DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
       mn.instructions = initialIl;
@@ -326,7 +296,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       mn.instructions = initialIl;
       return;
     } catch (Throwable t) {
-      t.printStackTrace();
       DexToASM.logger.error(" - Analyzer crash: {}", t.getMessage());
       mn.instructions = initialIl;
       return;
@@ -337,7 +306,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       i++;
       // Skip resolved instructions
       if (insn instanceof IUnresolvedInstruction && ((IUnresolvedInstruction) insn).isResolved())
-       continue;
+        continue;
       // Log unresolved type
       if (insn instanceof UnresolvedJumpInsn) {
         DexToASM.logger.error("   - {} : unresolved JUMP", i);
