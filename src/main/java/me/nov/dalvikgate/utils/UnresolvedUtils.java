@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import me.coley.analysis.value.AbstractValue;
+import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 
 public class UnresolvedUtils implements Opcodes {
   public static int getDefaultVarOp(boolean store) {
@@ -46,5 +47,9 @@ public class UnresolvedUtils implements Opcodes {
     while (offset <= insns.size() && (top = insns.get(insns.size() - offset)) instanceof VarInsnNode && !top.equals(insn))
       offset++;
     return insn.equals(top);
+  }
+
+  public static boolean containsUnresolved(List<AbstractInsnNode> insns) {
+    return insns.stream().anyMatch(insn -> insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved());
   }
 }

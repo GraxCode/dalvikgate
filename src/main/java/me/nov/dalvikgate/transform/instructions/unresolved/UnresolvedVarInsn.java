@@ -133,6 +133,10 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       }
     }
 
+    // problem here is that AbstractValue can have the value of an unresolved number. Let's say we want a double. UnresolvedNumberInsn uses long as default type. The analyzer takes the
+    // long and assumes the var store is lstore.
+
+    // make use of UnresolvedUtils.containsUnresolved(value.getInsns())) here
     if (store) {
       AbstractValue value = FrameUtil.getTopStack(frames[index]);
       setType(value.getType());
