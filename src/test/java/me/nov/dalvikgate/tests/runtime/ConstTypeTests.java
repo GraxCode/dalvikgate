@@ -24,16 +24,23 @@ class ConstTypeTests implements Opcodes {
   }
 
   @Test
-  void intConst32WithMath() {
+  void intConst32WithMathFailing() {
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(1);
-    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, 100));
-    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 50));
-    mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 0, 1, 2));
-    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 2));
-
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 100));
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 2, 50));
+    mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 3, 2, 1));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 3));
     assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
   }
-
+  @Test
+  void intConst32WithMathPassing() {
+    MethodImplementationBuilder mmi = new MethodImplementationBuilder(1);
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 100));
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 3, 50));
+    mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 5, 3, 1));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 5));
+    assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
+  }
   @Test
   void floatConst32() {
     // unusual float construction

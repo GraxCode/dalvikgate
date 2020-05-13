@@ -61,7 +61,6 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
       il.add(new InsnNode(LCMP));
       addLocalSet(i.getRegisterA(), INT_TYPE);
       return;
-
     // array loads and sets
     // A: value register or pair; may be source or dest (8 bits)
     // B: array register (8 bits)

@@ -18,6 +18,7 @@ import me.nov.dalvikgate.utils.UnresolvedUtils;
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;
+  private Type foundType;
   private boolean resolvedOp;
   private boolean resolvedVar;
 
@@ -68,6 +69,10 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
   }
 
   public void setType(Type type) {
+    if (resolvedOp){
+      return;
+    }
+    this.foundType = type;
     switch (type.getSort()) {
     case Type.OBJECT:
     case Type.ARRAY:
@@ -106,6 +111,41 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
 
   @Override
   public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
+    if (tryResolveWithRetType(index, method, frames))
+      return true;
+    // Check via analysis
+    if (store) {
+      AbstractValue value = FrameUtil.getTopStack(frames[index]);
+      if (UnresolvedUtils.containsUnresolved(value.getInsns())) {
+        // Can't use
+      } else {
+        setType(value.getType());
+      }
+    } else {
+      AbstractValue local = frames[index].getLocal(var);
+      if (UnresolvedUtils.containsUnresolved(local.getInsns())) {
+        // Can't use
+      } else {
+        setType(local.getType());
+      }
+    }
+    // TODO: Registers can be reused... what should we do then?
+    // Check other variables on the same register
+    for (int i = 0; i < method.instructions.size(); i++) {
+     if (i == index)
+       continue;
+     AbstractInsnNode insn = method.instructions.get(i);
+     if (insn instanceof UnresolvedVarInsn) {
+       UnresolvedVarInsn vin = (UnresolvedVarInsn) insn;
+       if (vin.isResolved()) {
+         setType(vin.foundType);
+       }
+     }
+    }
+    return isResolved();
+  }
+
+  private boolean tryResolveWithRetType(int index, MethodNode method, Frame<AbstractValue>[] frames) {
     Type retType = null;
     int retIndex = -1;
     for (int j = 0; j < method.instructions.size(); j++) {
@@ -132,18 +172,6 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
         return true;
       }
     }
-
-    // problem here is that AbstractValue can have the value of an unresolved number. Let's say we want a double. UnresolvedNumberInsn uses long as default type. The analyzer takes the
-    // long and assumes the var store is lstore.
-
-    // make use of UnresolvedUtils.containsUnresolved(value.getInsns())) here
-    if (store) {
-      AbstractValue value = FrameUtil.getTopStack(frames[index]);
-      setType(value.getType());
-    } else {
-      AbstractValue local = frames[index].getLocal(var);
-      setType(local.getType());
-    }
-    return isResolved();
+    return false;
   }
 }

@@ -272,20 +272,24 @@ public class ASMCommons implements Opcodes {
   }
 
   /**
-   * @param insn Zero operand instruction.
+   * @param insn Some insntruction.
    * @return Operating type on the top of the stack
    */
-  public static Type getOperatingType(InsnNode insn) {
+  public static Type getOperatingType(AbstractInsnNode insn) {
     Type type = null;
     switch (insn.getOpcode()) {
+    case CHECKCAST:
+    case INSTANCEOF:
     case AASTORE:
     case ARRAYLENGTH:
     case ARETURN:
     case ATHROW:
+    case ASTORE:
     case MONITORENTER:
     case MONITOREXIT:
       type = Type.getObjectType("java/lang/Object");
       break;
+    case DSTORE:
     case D2F:
     case D2I:
     case D2L:
@@ -301,6 +305,7 @@ public class ASMCommons implements Opcodes {
     case DSUB:
       type = Type.DOUBLE_TYPE;
       break;
+    case FSTORE:
     case F2D:
     case F2I:
     case F2L:
@@ -316,6 +321,19 @@ public class ASMCommons implements Opcodes {
     case FSUB:
       type = Type.FLOAT_TYPE;
       break;
+    case ISTORE:
+    case IFEQ:
+    case IFNE:
+    case IFLT:
+    case IFGE:
+    case IFGT:
+    case IFLE:
+    case IF_ICMPEQ:
+    case IF_ICMPNE:
+    case IF_ICMPLT:
+    case IF_ICMPGE:
+    case IF_ICMPGT:
+    case IF_ICMPLE:
     case CALOAD:
     case SALOAD:
     case BALOAD:
@@ -349,6 +367,7 @@ public class ASMCommons implements Opcodes {
     case IXOR:
       type = Type.INT_TYPE;
       break;
+    case LSTORE:
     case L2D:
     case L2F:
     case L2I:
