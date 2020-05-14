@@ -76,7 +76,7 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
       il.add(new UnresolvedWideArrayInsn(false));
-      addLocalSet(i.getRegisterA(), null); // unsure if long or double
+      addLocalSet(i.getRegisterA(), true); // unsure if long or double
       return;
     case AGET_OBJECT:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
@@ -112,7 +112,7 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
     case APUT_WIDE:
       addLocalGet(i.getRegisterB(), OBJECT_TYPE);
       addLocalGet(i.getRegisterC(), INT_TYPE);
-      addLocalGet(i.getRegisterA(), null); // unsure if long or double
+      addLocalGet(i.getRegisterA(), true); // unsure if long or double
       il.add(new UnresolvedWideArrayInsn(true));
       return;
     case APUT_OBJECT:

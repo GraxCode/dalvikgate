@@ -34,8 +34,8 @@ public class CompareJumpTranslator extends AbstractInsnTranslator<BuilderInstruc
       addLocalGet(first, INT_TYPE);
       addLocalGet(second, INT_TYPE);
     } else {
-      addLocalGet(first, null);
-      addLocalGet(second, null);
+      addLocalGet(first, false);
+      addLocalGet(second, false);
     }
     Label label = i.getTarget();
     switch (opcode) {

@@ -19,6 +19,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
   private final Type initialType;
   private boolean resolvedOp;
   private boolean resolvedVar;
+  private boolean wide;
 
   /**
    * Create new unresolved variable instruction.
@@ -26,8 +27,9 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
    * @param store       {@code true} for storage insns.
    * @param initialType Initial type indicated by android instruction. Will be {@code null} if ambiguous.
    */
-  public UnresolvedVarInsn(boolean store, Type initialType) {
+  public UnresolvedVarInsn(boolean wide, boolean store, Type initialType) {
     super(UnresolvedUtils.getDefaultVarOp(store), -1);
+    this.wide = wide;
     this.store = store;
     this.initialType = initialType;
   }
@@ -116,16 +118,15 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       setType(type);
     } else {
       // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
-
-      // TODO setType(possibleType) here, pass "boolean wide" as argument and then do something like setType(wide ? Type.LONG_TYPE : Type.INT_TYPE)
+      setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
       // why int and not object? well, imagine this scenario:
-      
-      //unresolved ldc 5
-      //unresolved var store 3
-      //unresolved var load 3
-      //unresolved jump ifeq/null label1
-      
-      //variable will never get resolved. type will be set to int and cause no problem (jump and number will get resolved properly).
+
+      // unresolved ldc 5
+      // unresolved var store 3
+      // unresolved var load 3
+      // unresolved jump ifeq/null label1
+
+      // variable will never get resolved. type will be set to int and cause no problem (jump and number will get resolved properly too).
     }
     return isResolved();
   }

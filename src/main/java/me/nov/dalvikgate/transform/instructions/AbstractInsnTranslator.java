@@ -1,11 +1,18 @@
 package me.nov.dalvikgate.transform.instructions;
 
+import static me.nov.dalvikgate.asm.ASMCommons.*;
+import static org.objectweb.asm.Type.*;
+
 import java.util.HashMap;
 
 import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.Label;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
+
+import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
+import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedVarInsn;
 
 public abstract class AbstractInsnTranslator<T extends BuilderInstruction> implements Opcodes {
 
@@ -58,7 +65,7 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param register Register index.
    */
   protected void addLocalSetObject(int register) {
-    it.addLocalSetObject(register);
+    addLocalGetSet(true, register, OBJECT_TYPE);
   }
 
   /**
@@ -68,7 +75,17 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param type     Discovered type to put.
    */
   protected void addLocalSet(int register, Type type) {
-    it.addLocalSet(register, type);
+    if (type.getSort() == ARRAY)
+      type = ARRAY_TYPE;
+    else if (type.getSort() == OBJECT)
+      type = OBJECT_TYPE;
+    else if (type.getSort() == VOID)
+      throw new TranslationException("Illegal type 'void'");
+    addLocalGetSet(true, register, type);
+  }
+
+  protected void addLocalSet(int register, boolean wide) {
+    addLocalGetSet(true, register, null, wide);
   }
 
   /**
@@ -78,17 +95,10 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param value    Int value.
    */
   protected void addLocalSet(int register, int value) {
-    it.addLocalSet(register, value);
-  }
-
-  /**
-   * Add local set for potentially long type.
-   *
-   * @param register Register index.
-   * @param value    Long value.
-   */
-  protected void addLocalSet(int register, long value) {
-    it.addLocalSet(register, value);
+    if (value == 0)
+      addLocalGetSet(true, register, null, false);
+    else
+      addLocalGetSet(true, register, INT_TYPE);
   }
 
   /**
@@ -97,7 +107,7 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param register Register index.
    */
   protected void addLocalGetObject(int register) {
-    it.addLocalGetObject(register);
+    addLocalGetSet(false, register, OBJECT_TYPE);
   }
 
   /**
@@ -107,7 +117,27 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param type     Discovered type to get.
    */
   protected void addLocalGet(int register, Type type) {
-    it.addLocalGet(register, type);
+    if (type.getSort() == ARRAY)
+      type = ARRAY_TYPE;
+    else if (type.getSort() == OBJECT)
+      type = OBJECT_TYPE;
+    else if (type.getSort() == VOID)
+      throw new TranslationException("Illegal type 'void'");
+    addLocalGetSet(false, register, type);
+  }
+
+  /**
+   * Add local get for unknown types.
+   *
+   * @param register Register index.
+   * @param type     Discovered type to get.
+   */
+  protected void addLocalGet(int register, boolean wide) {
+    addLocalGetSet(false, register, null, wide);
+  }
+
+  protected void addLocalGetSet(boolean store, int register, Type type) {
+    addLocalGetSet(store, register, type, type.getSize() > 1);
   }
 
   /**
@@ -117,7 +147,16 @@ public abstract class AbstractInsnTranslator<T extends BuilderInstruction> imple
    * @param register Variable index.
    * @param type     Type of variable. {@code null} if ambiguous.
    */
-  protected void addLocalGetSet(boolean store, int register, Type type) {
-    it.addLocalGetSet(store, register, type);
+  protected void addLocalGetSet(boolean store, int register, Type type, boolean wide) {
+    UnresolvedVarInsn var = new UnresolvedVarInsn(wide, store, type);
+    var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
+    if (DexToASM.noResolve) {
+      // For debugging
+      var.setOpcode(store ? ASTORE : ALOAD);
+      var.setType(Type.getObjectType("java/lang/Object"));
+    } else if (type != null) {
+      var.setType(type);
+    }
+    il.add(var);
   }
 }

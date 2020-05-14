@@ -30,7 +30,7 @@ public class SingleJumpTranslator extends AbstractInsnTranslator<BuilderInstruct
       // - Or are all single jumps based on integers?
       addLocalGet(source, INT_TYPE);
     } else {
-      addLocalGet(source, null);
+      addLocalGet(source, false);
     }
     Label label = i.getTarget();
     switch (opcode) {

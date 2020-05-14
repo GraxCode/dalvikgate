@@ -23,7 +23,7 @@ public class ConstTranslator extends AbstractInsnTranslator<BuilderInstruction> 
       // Value: signed int (4 bits)
       BuilderInstruction11n _11n = (BuilderInstruction11n) i;
       il.add(new UnresolvedNumberInsn(wide, _11n.getWideLiteral()));
-      addLocalSet(_11n.getRegisterA(), null);
+      addLocalSet(_11n.getRegisterA(), wide);
       break;
     case CONST_WIDE_16:
       // Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
@@ -33,7 +33,7 @@ public class ConstTranslator extends AbstractInsnTranslator<BuilderInstruction> 
       // Value: signed int (16 bits)
       BuilderInstruction21s _21s = (BuilderInstruction21s) i;
       il.add(new UnresolvedNumberInsn(wide, _21s.getWideLiteral()));
-      addLocalSet(_21s.getRegisterA(), null);
+      addLocalSet(_21s.getRegisterA(), wide);
       break;
     case CONST_WIDE_32:
       // Move the given literal value (sign-extended to 64 bits) into the specified register-pair.
@@ -43,28 +43,28 @@ public class ConstTranslator extends AbstractInsnTranslator<BuilderInstruction> 
       // Value: arbitrary 32-bit constant
       BuilderInstruction31i _31i = (BuilderInstruction31i) i;
       il.add(new UnresolvedNumberInsn(wide, _31i.getWideLiteral()));
-      addLocalSet(_31i.getRegisterA(), null);
+      addLocalSet(_31i.getRegisterA(), wide);
       break;
     case CONST_WIDE:
       // Move the given literal value into the specified register-pair.
       // Value: arbitrary double-width (64-bit) constant
       BuilderInstruction51l _51l = (BuilderInstruction51l) i;
       il.add(new UnresolvedNumberInsn(wide, _51l.getWideLiteral()));
-      addLocalSet(_51l.getRegisterA(), null);
+      addLocalSet(_51l.getRegisterA(), wide);
       break;
     case CONST_HIGH16:
       // Move the given literal value (right-zero-extended to 32 bits) into the specified register.
       // Value: signed int (16 bits)
       BuilderInstruction21ih _21ih = (BuilderInstruction21ih) i;
       il.add(new UnresolvedNumberInsn(wide, _21ih.getWideLiteral()));
-      addLocalSet(_21ih.getRegisterA(), null);
+      addLocalSet(_21ih.getRegisterA(), wide);
       break;
     case CONST_WIDE_HIGH16:
       // Move the given literal value (right-zero-extended to 64 bits) into the specified register-pair.
       // Value: signed int (16 bits)
       BuilderInstruction21lh _21lh = (BuilderInstruction21lh) i;
       il.add(new UnresolvedNumberInsn(wide, _21lh.getWideLiteral()));
-      addLocalSet(_21lh.getRegisterA(), null);
+      addLocalSet(_21lh.getRegisterA(), wide);
       break;
     case CONST_STRING_JUMBO:
       // I think we can all agree this has to be a string

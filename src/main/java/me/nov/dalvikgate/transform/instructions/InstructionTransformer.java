@@ -1,13 +1,11 @@
 package me.nov.dalvikgate.transform.instructions;
 
 import static me.nov.dalvikgate.asm.ASMCommons.*;
-import static org.objectweb.asm.Type.*;
 
 import java.util.*;
 
 import javax.annotation.Nullable;
 
-import me.nov.dalvikgate.transform.instructions.resolving.InstructionResolver;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.*;
 import org.jf.dexlib2.builder.Label;
@@ -15,22 +13,18 @@ import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
 
-import me.coley.analysis.*;
-import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instructions.exception.*;
+import me.nov.dalvikgate.transform.instructions.resolving.InstructionResolver;
 import me.nov.dalvikgate.transform.instructions.translators.*;
 import me.nov.dalvikgate.transform.instructions.translators.invoke.*;
 import me.nov.dalvikgate.transform.instructions.translators.jump.*;
 import me.nov.dalvikgate.transform.instructions.translators.references.*;
-import me.nov.dalvikgate.transform.instructions.unresolved.*;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
@@ -370,105 +364,5 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       return register - startingArgs; // 0 is reserved for "this"
     }
     return register + argumentRegisterCount;
-  }
-
-  /**
-   * Add local set for object type.
-   *
-   * @param register Register index.
-   */
-  protected void addLocalSetObject(int register) {
-    addLocalGetSet(true, register, OBJECT_TYPE);
-  }
-
-  /**
-   * Add local set for the given type.
-   *
-   * @param register Register index.
-   * @param type     Discovered type to put.
-   */
-  protected void addLocalSet(int register, Type type) {
-    if (type != null) {
-      if (type.getSort() == ARRAY)
-        type = ARRAY_TYPE;
-      else if (type.getSort() == OBJECT)
-        type = OBJECT_TYPE;
-      else if (type.getSort() == VOID)
-        throw new TranslationException("Illegal type 'void'");
-    }
-    addLocalGetSet(true, register, type);
-  }
-
-  /**
-   * Add local set for potentially int type.
-   *
-   * @param register Register index.
-   * @param value    Int value.
-   */
-  protected void addLocalSet(int register, int value) {
-    addLocalGetSet(true, register, value == 0 ? null : INT_TYPE);
-  }
-
-  /**
-   * Add local set for potentially long type.
-   *
-   * @param register Register index.
-   * @param value    Long value.
-   */
-  protected void addLocalSet(int register, long value) {
-    addLocalGetSet(true, register, value == 0 ? null : LONG_TYPE);
-  }
-
-  /**
-   * Add local get for object type.
-   *
-   * @param register Register index.
-   */
-  protected void addLocalGetObject(int register) {
-    addLocalGetSet(false, register, OBJECT_TYPE);
-  }
-
-  /**
-   * Add local get for the given type.
-   *
-   * @param register Register index.
-   * @param type     Discovered type to get.
-   */
-  protected void addLocalGet(int register, Type type) {
-    if (type != null) {
-      if (type.getSort() == ARRAY)
-        type = ARRAY_TYPE;
-      else if (type.getSort() == OBJECT)
-        type = OBJECT_TYPE;
-      else if (type.getSort() == VOID)
-        throw new TranslationException("Illegal type 'void'");
-    }
-    // TODO: Check calls to this method. Is there a case where "0" will be used as a "null"?
-    // if so, then uncomment the following code:
-    //
-    // else if (type.getSort() == INT)
-    // type = null;
-    //
-    addLocalGetSet(false, register, type);
-  }
-
-  /**
-   * Add local set for given type.
-   *
-   * @param store    {@code true} when insn is a setter.
-   * @param register Variable index.
-   * @param type     Type of variable. {@code null} if ambiguous.
-   */
-  protected void addLocalGetSet(boolean store, int register, Type type) {
-    UnresolvedVarInsn var = new UnresolvedVarInsn(store, type);
-    var.setLocal(regToLocal(register)); // only for now. this only works when no variables are reused.
-    if (DexToASM.noResolve) {
-      // For debugging
-      var.setOpcode(store ? ASTORE : ALOAD);
-      var.setType(Type.getObjectType("java/lang/Object"));
-    } else if (type != null) {
-      var.setType(type);
-    }
-    il.add(var);
   }
 }

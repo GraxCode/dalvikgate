@@ -1,7 +1,5 @@
 package me.nov.dalvikgate.transform.instructions.translators;
 
-import static org.objectweb.asm.Type.*;
-
 import org.jf.dexlib2.builder.instruction.BuilderInstruction22x;
 
 import me.nov.dalvikgate.transform.instructions.*;
@@ -22,13 +20,13 @@ public class MoveFrom16Translator extends AbstractInsnTranslator<BuilderInstruct
     switch (i.getOpcode()) {
     case MOVE_FROM16:
       // TODO can be float too
-      addLocalGet(source, INT_TYPE);
-      addLocalSet(destination, INT_TYPE);
+      addLocalGet(source, false);
+      addLocalSet(destination, false);
       break;
     case MOVE_WIDE_FROM16:
       // Cannot determine if double or long, resolve later
-      addLocalGet(source, null);
-      addLocalSet(destination, null);
+      addLocalGet(source, true);
+      addLocalSet(destination, true);
       break;
     case MOVE_OBJECT_FROM16:
       addLocalGetObject(source);
