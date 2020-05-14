@@ -8,6 +8,7 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.Frame;
 
+import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
@@ -112,11 +113,20 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
   public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
     if (var == -1)
       throw new IllegalArgumentException();
+
     Type type = tryResolve(method.instructions.get(index).getNext());
     visited.clear();
     if (type != null) {
       setType(type);
     } else {
+      if (store) {
+        // if it cannot be resolved, try to the stack to resolve it.
+        AbstractValue value = FrameUtil.getTopStack(frames[index]);
+        if (!UnresolvedUtils.containsUnresolved(value.getInsns())) {
+          setType(value.getType());
+          return true;
+        }
+      }
       // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
       setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
       // why int and not object? well, imagine this scenario:
@@ -128,7 +138,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
 
       // variable will never get resolved. type will be set to int and cause no problem (jump and number will get resolved properly too).
     }
-    return isResolved();
+    return true;
   }
 
   private ArrayList<AbstractInsnNode> visited = new ArrayList<>();
