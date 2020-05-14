@@ -3,7 +3,6 @@ package me.nov.dalvikgate.transform.instructions.translators;
 import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.instruction.*;
 import org.jf.dexlib2.iface.reference.StringReference;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.LdcInsnNode;
 
 import me.nov.dalvikgate.transform.instructions.*;

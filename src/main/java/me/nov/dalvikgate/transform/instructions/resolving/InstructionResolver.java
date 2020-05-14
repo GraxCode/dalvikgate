@@ -1,8 +1,14 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
-import me.coley.analysis.SimAnalyzer;
-import me.coley.analysis.SimInterpreter;
-import me.coley.analysis.TypeChecker;
+import java.util.List;
+
+import org.jf.dexlib2.dexbacked.DexBackedMethod;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Frame;
+
+import me.coley.analysis.*;
 import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
@@ -11,21 +17,7 @@ import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
-import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedJumpInsn;
-import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedNumberInsn;
-import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedVarInsn;
-import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedWideArrayInsn;
-import org.jf.dexlib2.dexbacked.DexBackedMethod;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import java.util.List;
+import me.nov.dalvikgate.transform.instructions.unresolved.*;
 
 public class InstructionResolver implements Opcodes {
   private final Inheritance inheritance;
@@ -63,7 +55,7 @@ public class InstructionResolver implements Opcodes {
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
-      visitNormalInnstructions(owner);
+      visitNormalInstructions(owner);
       // VARIABLES
       Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
       for (int i = il.size() - 1; i >= 0; i--) {
@@ -148,7 +140,7 @@ public class InstructionResolver implements Opcodes {
     }
   }
 
-  private void visitNormalInnstructions(String owner) throws AnalyzerException {
+  private void visitNormalInstructions(String owner) throws AnalyzerException {
     Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
     for (int i = 0; i < il.size(); i++) {
       Frame<AbstractValue> frame = frames[i];

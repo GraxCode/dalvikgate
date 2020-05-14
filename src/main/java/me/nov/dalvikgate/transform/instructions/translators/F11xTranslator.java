@@ -24,7 +24,7 @@ public class F11xTranslator extends AbstractInsnTranslator<BuilderInstruction11x
       // "Move the single-word non-object result of..."
       // - So this should be a primitive
       addLocalSet(register, getPushedTypeForInsn(getRealLast(il))); // this can be tricked by jumps or similar
-      // addLocalSet(register, null); //let the analyzer do the work
+      // addLocalSet(register, null); //TODO let the analyzer do the work
       break;
     case MOVE_EXCEPTION:
     case MOVE_RESULT_OBJECT:
@@ -33,7 +33,7 @@ public class F11xTranslator extends AbstractInsnTranslator<BuilderInstruction11x
     case MOVE_RESULT_WIDE:
       // Get type from last written instruction
       addLocalSet(register, getPushedTypeForInsn(getRealLast(il))); // this can be tricked by jumps or similar
-      // addLocalSet(register, null); //let the analyzer do the work
+      // addLocalSet(register, null); //TODO let the analyzer do the work
       break;
     case MONITOR_ENTER:
       addLocalGetObject(register);
