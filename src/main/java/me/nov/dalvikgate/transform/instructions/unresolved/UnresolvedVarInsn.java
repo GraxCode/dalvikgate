@@ -187,9 +187,24 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
           return subroutineType;
         }
         // else continue
-      } else if (ain.getType() == AbstractInsnNode.TABLESWITCH_INSN || ain.getType() == AbstractInsnNode.LOOKUPSWITCH_INSN) {
-        // try resolve all targets
-        throw new IllegalArgumentException("unimplemented");
+      } else if (ain.getType() == AbstractInsnNode.TABLESWITCH_INSN) {
+        TableSwitchInsnNode tsin = (TableSwitchInsnNode) ain;
+        for (LabelNode label : tsin.labels) {
+          Type subroutineType = tryResolve(label);
+          if (subroutineType != null) {
+            return subroutineType;
+          }
+        }
+        ain = tsin.dflt;
+      } else if (ain.getType() == AbstractInsnNode.LOOKUPSWITCH_INSN) {
+        LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) ain;
+        for (LabelNode label : lsin.labels) {
+          Type subroutineType = tryResolve(label);
+          if (subroutineType != null) {
+            return subroutineType;
+          }
+        }
+        ain = lsin.dflt;
       }
       ain = ain.getNext();
     }
