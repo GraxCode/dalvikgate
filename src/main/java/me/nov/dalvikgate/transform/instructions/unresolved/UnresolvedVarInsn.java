@@ -120,7 +120,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       setType(type);
     } else {
       if (store) {
-        // if it cannot be resolved, try to the stack to resolve it.
+        // if it cannot be resolved, try to the stack to resolve it. this may be needed for e.g. wide array loads.
         AbstractValue value = FrameUtil.getTopStack(frames[index]);
         if (!UnresolvedUtils.containsUnresolved(value.getInsns())) {
           setType(value.getType());
@@ -136,7 +136,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       // unresolved var load 3
       // unresolved jump ifeq/null label1
 
-      // variable will never get resolved. type will be set to int and cause no problem (jump and number will get resolved properly too).
+      // the variable will never get resolved. type should be set to int and cause no problem (jump and number will get resolved properly too).
     }
     return true;
   }
