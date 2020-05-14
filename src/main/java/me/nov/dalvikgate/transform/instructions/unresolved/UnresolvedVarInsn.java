@@ -17,7 +17,6 @@ import me.nov.dalvikgate.utils.UnresolvedUtils;
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;
-  private Type foundType;
   private boolean resolvedOp;
   private boolean resolvedVar;
 
@@ -71,7 +70,6 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     if (resolvedOp) {
       return;
     }
-    this.foundType = type;
     switch (type.getSort()) {
     case Type.OBJECT:
     case Type.ARRAY:

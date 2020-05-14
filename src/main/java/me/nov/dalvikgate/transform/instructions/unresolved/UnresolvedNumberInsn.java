@@ -1,6 +1,6 @@
 package me.nov.dalvikgate.transform.instructions.unresolved;
 
-import static me.nov.dalvikgate.utils.UnresolvedUtils.*;
+import static me.nov.dalvikgate.asm.ASMCommons.*;
 
 import java.util.Map;
 
@@ -8,10 +8,8 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.Frame;
 
-import me.coley.analysis.util.FrameUtil;
 import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
-import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 
@@ -22,8 +20,8 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
   private boolean possiblyNullConst;
 
   public UnresolvedNumberInsn(boolean wide, long wideValue) {
-    super(wide ? wideValue : (int) wideValue);
-    if(!wide && ((wideValue & 0xffffffff00000000L) != 0)) {
+    super(wide ? wideValue : ((int) wideValue));
+    if (!wide && ((wideValue & 0xffffffff00000000L) != 0)) {
       throw new IllegalArgumentException("Number is wide but not marked as wide: " + Long.toBinaryString(wideValue));
     }
     this.isWide = wide;
@@ -81,7 +79,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case Type.OBJECT:
     case Type.ARRAY:
       if (possiblyNullConst)
-        throw new IllegalArgumentException("Type cannot be changed locally, replace this instruction with aconst_null instead.");
+        cst = Type.getType("V"); // TODO: replace afterwards with postoptimizer
       else
         throw new IllegalArgumentException("Expected const 0 for object type, but value is " + cst.toString());
     case Type.VOID:
@@ -97,141 +95,24 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
 
   @Override
   public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
-    // TODO: There has to be a better way...
-    // Check for usage:
-    // - Field set
-    // - Method arg
-    // - Variable use in resolved variable
-    int maxVarLoad = possiblyNullConst ? ALOAD : DLOAD;
-    int maxVarStore = possiblyNullConst ? ASTORE : DSTORE;
-    for (int j = 0; j < method.instructions.size(); j++) {
-      if (j == index)
-        continue;
-      AbstractInsnNode insn = method.instructions.get(j);
-      int op = insn.getOpcode();
-      // Check against fields
-      if (insn instanceof FieldInsnNode) {
-        // Check if the value being stored in the field
-        if ((op == PUTFIELD || op == PUTSTATIC)) {
-          AbstractValue value = FrameUtil.getTopStack(frames[j]);
-          if (isDirectlyResponsible(this, value)) {
-            Type type = Type.getType(((FieldInsnNode) insn).desc);
-            if (canUseType(type))
-              setType(type);
-          }
-        }
-        // Check if the field context is this instruction
-        if (op == PUTFIELD || op == GETFIELD) {
-          AbstractValue owner = FrameUtil.getStackFromTop(frames[j], 1);
-          if (isDirectlyResponsible(this, owner)) {
-            Type type = Type.getType(((FieldInsnNode) insn).owner);
-            if (canUseType(type))
-              setType(type);
-          }
-        }
-      }
-      // Check against method descriptors
-      else if (insn instanceof MethodInsnNode) {
-        Type methodType = Type.getMethodType(((MethodInsnNode) insn).desc);
-        // Check against argument types
-        int argCount = methodType.getArgumentTypes().length;
-        for (int a = 0; a < argCount; a++) {
-          AbstractValue value = FrameUtil.getStackFromTop(frames[j], (argCount - 1) - a);
-          if (isDirectlyResponsible(this, value)) {
-            Type type = methodType.getArgumentTypes()[a];
-            if (canUseType(type))
-              setType(type);
-          }
-        }
-        // Check if the method context is this instruction
-        if (op == INVOKEINTERFACE || op == INVOKESPECIAL || op == INVOKEVIRTUAL) {
-          AbstractValue owner = FrameUtil.getStackFromTop(frames[j], 1);
-          if (isDirectlyResponsible(this, owner)) {
-            Type type = Type.getType(((MethodInsnNode) insn).owner);
-            if (canUseType(type))
-              setType(type);
-          }
-        }
-      }
-      // Check against variables
-      else if (insn instanceof VarInsnNode) {
-        // Storage
-        if (op >= ISTORE && op <= maxVarStore) {
-          // Must be responsible
-          AbstractValue value = FrameUtil.getTopStack(frames[j]);
-          if (!isDirectlyResponsible(this, value))
-            continue;
-          // Resolvable variables must be resolved first
-          if (insn instanceof UnresolvedVarInsn) {
-            UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn;
-            if (unresolvedVarInsn.isResolved()) {
-              Type type = ASMCommons.getPushedTypeForInsn(insn);
-              if (canUseType(type))
-                setType(type);
-            }
-          }
-          // Normal variable
-          else {
-            Type type = ASMCommons.getPushedTypeForInsn(insn);
-            if (canUseType(type))
-              setType(type);
-          }
-        } else if (op >= ILOAD && op <= maxVarLoad) {
-          // Must be responsible
-          AbstractValue value = frames[j].getLocal(((VarInsnNode) insn).var);
-          if (!isDirectlyResponsible(this, value))
-            continue;
-          // Resolvable variables must be resolved first
-          if (insn instanceof UnresolvedVarInsn) {
-            UnresolvedVarInsn unresolvedVarInsn = (UnresolvedVarInsn) insn;
-            if (unresolvedVarInsn.isResolved()) {
-              Type type = null;
-              if (op == ALOAD)
-                type = Type.getObjectType("java/lang/Object");
-              else if (op == ILOAD)
-                type = Type.INT_TYPE;
-              else if (op == LLOAD)
-                type = Type.LONG_TYPE;
-              else if (op == FLOAD)
-                type = Type.FLOAT_TYPE;
-              else if (op == DLOAD)
-                type = Type.DOUBLE_TYPE;
-              if (canUseType(type))
-                setType(type);
-            }
-          }
-          // Normal variable
-          else {
-            Type type = null;
-            if (op == ALOAD)
-              type = Type.getObjectType("java/lang/Object");
-            else if (op == ILOAD)
-              type = Type.INT_TYPE;
-            else if (op == LLOAD)
-              type = Type.LONG_TYPE;
-            else if (op == FLOAD)
-              type = Type.FLOAT_TYPE;
-            else if (op == DLOAD)
-              type = Type.DOUBLE_TYPE;
-            if (canUseType(type))
-              setType(type);
-          }
-        }
-      }
-      // Check against zero-operand instructions (math types and such)
-      else if (insn instanceof InsnNode) {
-        AbstractValue value = FrameUtil.getTopStack(frames[j]);
-        if (isDirectlyResponsible(this, value)) {
-          Type type = ASMCommons.getOperatingType((InsnNode) insn);
-          if (canUseType(type))
-            setType(type);
-        }
-      }
+    VarInsnNode store = (VarInsnNode) method.instructions.get(index + 1);
+    switch (store.getOpcode()) {
+    case ASTORE:
+      setType(OBJECT_TYPE);
+      break;
+    case ISTORE:
+      setType(Type.INT_TYPE);
+      break;
+    case FSTORE:
+      setType(Type.FLOAT_TYPE);
+      break;
+    case DSTORE:
+      setType(Type.DOUBLE_TYPE);
+      break;
+    case LSTORE:
+      setType(Type.LONG_TYPE);
+      break;
     }
-    return isResolved();
-  }
-
-  private boolean canUseType(Type type) {
-    return type.getSize() == (isWide ? 2 : 1);
+    return true;
   }
 }

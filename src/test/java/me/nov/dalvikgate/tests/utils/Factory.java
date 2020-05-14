@@ -1,5 +1,6 @@
 package me.nov.dalvikgate.tests.utils;
 
+import java.io.*;
 import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.*;
@@ -10,7 +11,10 @@ import org.mockito.Mockito;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
+import com.google.common.io.Files;
+
 import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.instructions.InstructionTransformer;
 
@@ -81,6 +85,16 @@ public class Factory implements Opcodes {
     return mn;
   }
 
+  public static void saveDebug(MethodNode mn) {
+    ClassNode cn = createClassProxy();
+    cn.methods.add(mn);
+    try {
+      Files.write(Conversion.toBytecode(cn), new File("debug.class"));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   public static Inheritance getNopInheritance() {
     return new Inheritance();
   }
@@ -88,4 +102,5 @@ public class Factory implements Opcodes {
   public static Inheritance getFullIheritance() {
     return DexToASM.rootInheritGraph;
   }
+
 }
