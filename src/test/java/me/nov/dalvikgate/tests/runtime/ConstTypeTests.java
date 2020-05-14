@@ -30,7 +30,6 @@ class ConstTypeTests implements Opcodes {
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 2, 50));
     mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 3, 2, 1));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 3));
-    Factory.saveDebug(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi));
     assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
   }
 

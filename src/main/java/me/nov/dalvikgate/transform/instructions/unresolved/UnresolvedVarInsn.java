@@ -115,7 +115,9 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     if (type != null) {
       setType(type);
     } else {
-      // type is null, just guess the type, as the local is never used
+      // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
+
+      // TODO setType(possibleType) here, pass "boolean wide" as argument and then do something like setType(wide ? Type.LONG_TYPE : Type.INT_TYPE)
     }
     return isResolved();
   }
@@ -140,7 +142,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
         if (vin.var == var && canBeReferencePoint) {
           if (isVarStore(op)) {
             // variable is set before it is loaded, we don't know the type, as the register could now store something else.
-            // TODO test if in dalvik the same is possible as in java, reusing locals with different type sorts.
+            // TODO test if in dalvik the same is possible as in java, reusing locals with different type sorts, otherwise this can be removed
             return null;
           } else {
             switch (op) {

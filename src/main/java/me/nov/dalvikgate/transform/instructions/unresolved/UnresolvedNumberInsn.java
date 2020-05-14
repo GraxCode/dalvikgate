@@ -95,7 +95,11 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
 
   @Override
   public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
+    // as variables are resolved before, we can use them to resolve numbers by their register types
     VarInsnNode store = (VarInsnNode) method.instructions.get(index + 1);
+    if (store instanceof UnresolvedVarInsn && !((UnresolvedVarInsn) store).isResolved()) {
+      throw new IllegalArgumentException();
+    }
     switch (store.getOpcode()) {
     case ASTORE:
       setType(OBJECT_TYPE);
@@ -112,7 +116,10 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case LSTORE:
       setType(Type.LONG_TYPE);
       break;
+    default:
+      throw new IllegalArgumentException();
     }
+
     return true;
   }
 }
