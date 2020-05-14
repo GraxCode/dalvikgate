@@ -55,7 +55,6 @@ public class InstructionResolver implements Opcodes {
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
-      visitNormalInstructions(owner);
       // VARIABLES
       Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
       for (int i = il.size() - 1; i >= 0; i--) {
@@ -138,46 +137,5 @@ public class InstructionResolver implements Opcodes {
         DexToASM.logger.error("   - {} : unresolved NUMBER", i);
       }
     }
-  }
-
-  private void visitNormalInstructions(String owner) throws AnalyzerException {
-    Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
-    for (int i = 0; i < il.size(); i++) {
-      Frame<AbstractValue> frame = frames[i];
-      AbstractInsnNode insn = il.get(i);
-      if (insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved())
-        continue;
-      int op = insn.getOpcode();
-      // Check insns that take one operand of a known type
-      if ((op >= I2L && op <= I2S) || (op >= IRETURN && op <= ARETURN) || (op >= ARRAYLENGTH && op <= MONITOREXIT) ||
-              (op >= IFEQ && op <= IFLE) || (op >= ISTORE && op <= ASTORE)) {
-        Type type = ASMCommons.getOperatingType(insn);
-        AbstractInsnNode stackTop1 = last(FrameUtil.getTopStack(frame).getInsns());
-        if (stackTop1 instanceof IUnresolvedInstruction) {
-          ((IUnresolvedInstruction) stackTop1).setType(type);
-        }
-      }
-      // Check insns that take two operand of the same type
-      if ((op >= IADD && op <= LXOR) || (op >= LCMP && op <= DCMPG) || (op >= IF_ICMPEQ && op <= IF_ICMPLE)) {
-        Type type = ASMCommons.getOperatingType(insn);
-        AbstractInsnNode stackTop1 = last(FrameUtil.getTopStack(frame).getInsns());
-        AbstractInsnNode stackTop2 = last(FrameUtil.getStackFromTop(frame, 1).getInsns());
-        if (stackTop1 instanceof IUnresolvedInstruction) {
-          ((IUnresolvedInstruction) stackTop1).setType(type);
-        }
-        if (stackTop2 instanceof IUnresolvedInstruction) {
-          ((IUnresolvedInstruction) stackTop2).setType(type);
-        }
-      }
-      // TODO: Check insns that take variable operand types
-      //  - MethodInsnNode
-      //    - owner, args
-      //  - FielInsnNode
-      //    - owner, type (put)
-    }
-  }
-
-  private static <T> T last(List<T> list) {
-    return list.get(list.size() - 1);
   }
 }

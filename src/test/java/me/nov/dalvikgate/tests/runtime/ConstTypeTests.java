@@ -24,22 +24,22 @@ class ConstTypeTests implements Opcodes {
   }
 
   @Test
-  void intConst32WithMathFailing() {
-    MethodImplementationBuilder mmi = new MethodImplementationBuilder(3);
-    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 100));
-    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 2, 50));
-    mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 3, 2, 1));
-    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 3));
-    assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
-  }
-
-  @Test
-  void intConst32WithMathPassing() {
+  void intConst32WithMath() {
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(5);
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 100));
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 3, 50));
     mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 5, 3, 1));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 5));
+    assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
+  }
+
+  @Test
+  void intConst32WithMath2() {
+    MethodImplementationBuilder mmi = new MethodImplementationBuilder(3);
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 100));
+    mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 2, 50));
+    mmi.addInstruction(new BuilderInstruction23x(Opcode.ADD_INT, 3, 2, 1));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 3));
     assertEquals(150, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
   }
 
@@ -105,7 +105,6 @@ class ConstTypeTests implements Opcodes {
     mmi.addLabel("target");
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 1, 832));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 1));
-
     assertEquals(832, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.INT_TYPE), mmi)));
   }
 }
