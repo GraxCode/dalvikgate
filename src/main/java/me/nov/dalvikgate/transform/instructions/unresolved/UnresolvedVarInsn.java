@@ -118,6 +118,14 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
 
       // TODO setType(possibleType) here, pass "boolean wide" as argument and then do something like setType(wide ? Type.LONG_TYPE : Type.INT_TYPE)
+      // why int and not object? well, imagine this scenario:
+      
+      //unresolved ldc 5
+      //unresolved var store 3
+      //unresolved var load 3
+      //unresolved jump ifeq/null label1
+      
+      //variable will never get resolved. type will be set to int and cause no problem (jump and number will get resolved properly).
     }
     return isResolved();
   }
