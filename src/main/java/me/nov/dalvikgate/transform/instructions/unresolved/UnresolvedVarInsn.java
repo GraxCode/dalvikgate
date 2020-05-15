@@ -114,6 +114,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     if (var == -1)
       throw new IllegalArgumentException();
 
+    //TODO try resolve backwards for loads
     Type type = tryResolve(method.instructions.get(index).getNext());
     visited.clear();
     if (type != null) {

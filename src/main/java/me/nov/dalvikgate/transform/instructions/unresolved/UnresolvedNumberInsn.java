@@ -82,13 +82,15 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case Type.OBJECT:
     case Type.ARRAY:
       if (possiblyNullConst)
-        cst = Type.getType("V"); // TODO: replace afterwards with postoptimizer
+        cst = Type.getType("V");
       else
         throw new IllegalArgumentException("Expected const 0 for object type, but value is " + cst.toString());
     case Type.VOID:
       throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
     resolved = true;
+    
+    // TODO: replace afterwards with MethodVisitor to simplify and replace null types with aconst_null
   }
 
   @Override
