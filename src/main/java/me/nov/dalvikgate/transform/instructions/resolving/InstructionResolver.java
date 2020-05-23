@@ -3,43 +3,24 @@ package me.nov.dalvikgate.transform.instructions.resolving;
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.*;
 
-import me.coley.analysis.*;
-import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
-import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
 import me.nov.dalvikgate.transform.instructions.unresolved.*;
 
 public class InstructionResolver implements Opcodes {
-  private final Inheritance inheritance;
   private final DexBackedMethod method;
   private final MethodNode mn;
   private final InsnList il;
-  private SimAnalyzer analyzer;
+  private static final int MAX_ITERATIONS = 10;
 
-  public InstructionResolver(Inheritance inheritance, DexBackedMethod method, MethodNode mn, InsnList il) {
-    this.inheritance = inheritance;
+  public InstructionResolver(DexBackedMethod method, MethodNode mn, InsnList il) {
     this.method = method;
     this.mn = mn;
     this.il = il;
-    setupAnalyzer();
-  }
-
-  private void setupAnalyzer() {
-    SimInterpreter it = new SimInterpreter();
-    analyzer = new SimAnalyzer(it) {
-      @Override
-      protected TypeChecker createTypeChecker() {
-        return (parent, child) -> inheritance.getAllChildren(parent.getInternalName()).contains(child.getInternalName());
-      }
-    };
-    analyzer.setThrowUnresolvedAnalyzerErrors(false);
-    analyzer.setSkipDeadCodeBlocks(false);
   }
 
   public void run() {
@@ -51,62 +32,26 @@ public class InstructionResolver implements Opcodes {
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
-      // VARIABLES
-      Frame<AbstractValue>[] frames = analyzer.analyze(owner, mn);
-      for (int i = il.size() - 1; i >= 0; i--) {
-        AbstractInsnNode insn = il.get(i);
-        if (insn instanceof UnresolvedVarInsn) {
-          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
-          if (resolvable.isResolved())
-            continue;
-          if (!resolvable.tryResolve(i, mn, frames))
-            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
+      for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+        new Analyzer<>(new TypeResolver(iteration >= MAX_ITERATIONS - 1)).analyze(owner, mn);
+        for (int i = il.size() - 1; i >= 0; i--) {
+          AbstractInsnNode insn = il.get(i);
+          if (insn instanceof UnresolvedVarInsn) {
+            UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
+            if (resolvable.isResolved())
+              continue;
+            resolvable.tryResolveUnlinked(i, mn);
+          }
         }
       }
-      // NUMBERS
-      frames = analyzer.analyze(owner, mn);
-      for (int i = il.size() - 1; i >= 0; i--) {
-        AbstractInsnNode insn = il.get(i);
-        if (insn instanceof UnresolvedNumberInsn) {
-          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
-          if (resolvable.isResolved())
-            continue;
-          if (!resolvable.tryResolve(i, mn, frames))
-            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
-        }
-      }
-      // WIDE ARRAY
-      frames = analyzer.analyze(owner, mn);
-      for (int i = il.size() - 1; i >= 0; i--) {
-        AbstractInsnNode insn = il.get(i);
-        if (insn instanceof UnresolvedWideArrayInsn) {
-          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
-          if (resolvable.isResolved())
-            continue;
-          if (!resolvable.tryResolve(i, mn, frames))
-            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
-        }
-      }
-      // JUMP
-      frames = analyzer.analyze(owner, mn);
-      for (int i = il.size() - 1; i >= 0; i--) {
-        AbstractInsnNode insn = il.get(i);
-        if (insn instanceof UnresolvedJumpInsn) {
-          IUnresolvedInstruction resolvable = (IUnresolvedInstruction) insn;
-          if (resolvable.isResolved())
-            continue;
-          if (!resolvable.tryResolve(i, mn, frames))
-            throw new TranslationException("Failed to patch unresolved instruction: " + insn.getClass().getSimpleName() + " - " + mn.name + mn.desc);
-        }
-      }
-
-      DexToASM.logger.info(" - Success: {}", frames.length);
     } catch (AnalyzerException ex) {
       DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
+      ex.printStackTrace();
       mn.instructions = initialIl;
       return;
     } catch (TranslationException ex) {
       DexToASM.logger.error(" - Translation error: {}", ex.getMessage());
+      ex.printStackTrace();
       mn.instructions = initialIl;
       return;
     } catch (Throwable t) {

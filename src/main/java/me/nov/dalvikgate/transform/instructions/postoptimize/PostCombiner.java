@@ -40,7 +40,7 @@ public class PostCombiner implements IPostPatcher<MethodNode>, Opcodes {
     }
     if (ain.getType() == AbstractInsnNode.VAR_INSN && ain.getOpcode() >= 0) {
       if (ain.getOpcode() == ASMCommons.getOppositeVarOp(store.getOpcode())) {
-        if (((VarInsnNode) ain).var == ((VarInsnNode) store).var) {
+        if (((VarInsnNode) ain).var == store.var) {
           // variable is loaded
           return (VarInsnNode) ain;
         }
@@ -50,16 +50,16 @@ public class PostCombiner implements IPostPatcher<MethodNode>, Opcodes {
   }
 
   private boolean isReused(VarInsnNode store, AbstractInsnNode ain) {
-    if (ASMCommons.isReturn(ain) || ain.getOpcode() == ATHROW) {
+    if (ain == null || ASMCommons.isReturn(ain) || ain.getOpcode() == ATHROW) {
       return false;
     }
-    if (ain == null || ASMCommons.isBlockEnd(ain) || ain.getType() == AbstractInsnNode.LABEL) {
+    if (ASMCommons.isBlockEnd(ain) || ain.getType() == AbstractInsnNode.LABEL) {
       // reached end of block, could be reused afterwards
       return true;
     }
     if (ain.getType() == AbstractInsnNode.VAR_INSN && ain.getOpcode() >= 0) {
       if (ain.getOpcode() == ASMCommons.getOppositeVarOp(store.getOpcode())) {
-        if (((VarInsnNode) ain).var == ((VarInsnNode) store).var) {
+        if (((VarInsnNode) ain).var == store.var) {
           // variable is reused
           return true;
         }
@@ -71,9 +71,7 @@ public class PostCombiner implements IPostPatcher<MethodNode>, Opcodes {
   private boolean isNotRooted(AbstractInsnNode prev) {
     switch (prev.getOpcode()) {
     case LDC:
-      return true;
     case ACONST_NULL:
-      return true;
     case ICONST_M1:
     case ICONST_0:
     case ICONST_1:
@@ -81,22 +79,16 @@ public class PostCombiner implements IPostPatcher<MethodNode>, Opcodes {
     case ICONST_3:
     case ICONST_4:
     case ICONST_5:
-      return true;
     case DCONST_0:
     case DCONST_1:
-      return true;
     case LCONST_0:
     case LCONST_1:
-      return true;
     case FCONST_0:
     case FCONST_1:
     case FCONST_2:
-      return true;
     case NEW:
-      return true;
     case BIPUSH:
     case SIPUSH:
-      return true;
     case GETSTATIC:
       return true;
     }

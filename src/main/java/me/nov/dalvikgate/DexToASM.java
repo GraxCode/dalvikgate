@@ -9,14 +9,12 @@ import org.jf.dexlib2.dexbacked.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
-import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
 import me.nov.dalvikgate.utils.LogWrapper;
 
 public class DexToASM {
   public static final LogWrapper logger = new LogWrapper();
-  public static final Inheritance rootInheritGraph = new Inheritance();
   public static boolean noResolve;
   public static boolean noOptimize;
   public static String nameFilter;
@@ -35,14 +33,12 @@ public class DexToASM {
 
   public static List<ClassNode> convertToASMTree(DexBackedDexFile baseBackedDexFile) throws IOException {
     // Create new inheritance tree that includes files in the dex we want to convert
-    Inheritance inheritance = rootInheritGraph.copy();
-    inheritance.addDex(baseBackedDexFile);
     // Conversion process
     List<ClassNode> asmClasses = new ArrayList<>();
     for (DexBackedClassDef clazz : baseBackedDexFile.getClasses()) {
       if (!clazz.getType().substring(1, clazz.getType().length() - 1).matches(nameFilter))
         continue;
-      ClassTransformer ct = new ClassTransformer(inheritance);
+      ClassTransformer ct = new ClassTransformer();
       ct.visit(clazz);
       asmClasses.add(ct.getTransformed());
     }
@@ -91,21 +87,6 @@ public class DexToASM {
       return Objects.requireNonNull(DexToASM.class.getPackage().getImplementationVersion());
     } catch (NullPointerException e) {
       return "(dev)";
-    }
-  }
-
-  static {
-    try {
-      long start = System.currentTimeMillis();
-      File andoidLib = new File("lib/android.jar");
-      DexToASM.logger.info("Populating root inheritance tree...");
-      rootInheritGraph.addClasspath();
-      if (andoidLib.exists()) {
-        rootInheritGraph.addDirectory(andoidLib);
-      }
-      DexToASM.logger.info("Finished root inheritance, took {}ms", (System.currentTimeMillis() - start));
-    } catch (IOException ex) {
-      throw new IllegalStateException("Failed to setup initial inheritance graph");
     }
   }
 }

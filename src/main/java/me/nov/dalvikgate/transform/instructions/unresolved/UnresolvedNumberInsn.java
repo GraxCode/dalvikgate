@@ -1,14 +1,10 @@
 package me.nov.dalvikgate.transform.instructions.unresolved;
 
-import static me.nov.dalvikgate.asm.ASMCommons.*;
-
 import java.util.Map;
 
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.Frame;
 
-import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
@@ -89,42 +85,12 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
     resolved = true;
-    
+
     // TODO: replace afterwards with MethodVisitor to simplify and replace null types with aconst_null
   }
 
   @Override
   public boolean isResolved() {
     return resolved;
-  }
-
-  @Override
-  public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
-    // as variables are resolved before, we can use them to resolve numbers by their register types
-    VarInsnNode store = (VarInsnNode) method.instructions.get(index + 1);
-    if (store instanceof UnresolvedVarInsn && !((UnresolvedVarInsn) store).isResolved()) {
-      throw new IllegalArgumentException();
-    }
-    switch (store.getOpcode()) {
-    case ASTORE:
-      setType(OBJECT_TYPE);
-      break;
-    case ISTORE:
-      setType(Type.INT_TYPE);
-      break;
-    case FSTORE:
-      setType(Type.FLOAT_TYPE);
-      break;
-    case DSTORE:
-      setType(Type.DOUBLE_TYPE);
-      break;
-    case LSTORE:
-      setType(Type.LONG_TYPE);
-      break;
-    default:
-      throw new IllegalArgumentException();
-    }
-
-    return true;
   }
 }

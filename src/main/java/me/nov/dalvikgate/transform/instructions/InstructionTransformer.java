@@ -17,7 +17,6 @@ import org.objectweb.asm.tree.*;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
-import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instructions.exception.*;
 import me.nov.dalvikgate.transform.instructions.resolving.InstructionResolver;
@@ -31,7 +30,6 @@ import me.nov.dalvikgate.transform.instructions.translators.references.*;
  */
 public class InstructionTransformer implements ITransformer<DexBackedMethod, InsnList>, Opcodes {
   protected InsnList il;
-  private Inheritance inheritance;
   public MethodNode mn;
   public MutableMethodImplementation builder;
   public HashMap<BuilderInstruction, LabelNode> labels;
@@ -54,10 +52,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     this.dexInstructions = builder.getInstructions();
     this.isStatic = isStatic;
     this.argumentRegisterCount = Arrays.stream(desc.getArgumentTypes()).mapToInt(Type::getSize).sum() + (isStatic ? 0 : 1);
-  }
-
-  public void setInheritance(Inheritance inheritance) {
-    this.inheritance = inheritance;
   }
 
   @Override
@@ -211,7 +205,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
       throw new IllegalStateException("Dex method for instruction visitor cannot be null");
     if (mn == null)
       throw new IllegalStateException("ASM method for instruction visitor cannot be null");
-    new InstructionResolver(inheritance, method, mn, il).run();
+    new InstructionResolver(method, mn, il).run();
   }
 
   /**

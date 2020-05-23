@@ -49,7 +49,6 @@ class ConstTypeTests implements Opcodes {
     MethodImplementationBuilder mmi = new MethodImplementationBuilder(1);
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, Float.floatToIntBits(1.2f)));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
-
     assertEquals(1.2f, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE), mmi)));
   }
 

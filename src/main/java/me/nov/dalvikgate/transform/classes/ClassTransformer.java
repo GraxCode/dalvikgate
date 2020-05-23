@@ -10,19 +10,13 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.dexlib.DexLibCommons;
-import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.fields.FieldTransfomer;
 import me.nov.dalvikgate.transform.methods.MethodTransfomer;
 
 public class ClassTransformer implements ITransformer<DexBackedClassDef, ClassNode> {
   private static final int CLASS_V8 = 52;
-  private final Inheritance inheritance;
   private ClassNode cn;
-
-  public ClassTransformer(Inheritance inheritance) {
-    this.inheritance = inheritance;
-  }
 
   @Override
   public void build(DexBackedClassDef clazz) {
@@ -107,7 +101,7 @@ public class ClassTransformer implements ITransformer<DexBackedClassDef, ClassNo
   }
 
   public void addMethod(DexBackedMethod m) {
-    MethodTransfomer mt = new MethodTransfomer(inheritance);
+    MethodTransfomer mt = new MethodTransfomer();
     mt.visit(m);
     cn.methods.add(mt.getTransformed());
   }

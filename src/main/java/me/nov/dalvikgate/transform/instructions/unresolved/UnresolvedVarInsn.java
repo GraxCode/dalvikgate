@@ -6,10 +6,7 @@ import java.util.*;
 
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.Frame;
 
-import me.coley.analysis.util.FrameUtil;
-import me.coley.analysis.value.AbstractValue;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
@@ -73,6 +70,9 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     if (resolvedOp) {
       return;
     }
+    if (type.getSize() != (wide ? 2 : 1)) {
+      throw new IllegalArgumentException("Wrong size, expected a " + (wide ? "wide" : "single word") + " type, but got " + type.getClassName());
+    }
     switch (type.getSort()) {
     case Type.OBJECT:
     case Type.ARRAY:
@@ -109,27 +109,18 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     return resolvedVar && resolvedOp;
   }
 
-  @Override
-  public boolean tryResolve(int index, MethodNode method, Frame<AbstractValue>[] frames) {
+  public boolean tryResolveUnlinked(int index, MethodNode method) {
     if (var == -1)
       throw new IllegalArgumentException();
 
-    //TODO try resolve backwards for loads
+    // TODO try resolve backwards for loads
     Type type = tryResolve(method.instructions.get(index).getNext());
     visited.clear();
     if (type != null) {
       setType(type);
     } else {
-      if (store) {
-        // if it cannot be resolved, try to the stack to resolve it. this may be needed for e.g. wide array loads.
-        AbstractValue value = FrameUtil.getTopStack(frames[index]);
-        if (!UnresolvedUtils.containsUnresolved(value.getInsns())) {
-          setType(value.getType());
-          return true;
-        }
-      }
       // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
-      setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
+      // setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
       // why int and not object? well, imagine this scenario:
 
       // unresolved ldc 5
@@ -142,7 +133,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     return true;
   }
 
-  private ArrayList<AbstractInsnNode> visited = new ArrayList<>();
+  private Set<AbstractInsnNode> visited = new HashSet<>();
 
   private Type tryResolve(AbstractInsnNode ain) {
     while (ain != null && !isReturn(ain)) {

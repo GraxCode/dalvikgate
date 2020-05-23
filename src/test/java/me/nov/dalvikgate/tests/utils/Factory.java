@@ -13,9 +13,7 @@ import org.objectweb.asm.tree.*;
 
 import com.google.common.io.Files;
 
-import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.Conversion;
-import me.nov.dalvikgate.graph.Inheritance;
 import me.nov.dalvikgate.transform.instructions.InstructionTransformer;
 
 public class Factory implements Opcodes {
@@ -66,14 +64,9 @@ public class Factory implements Opcodes {
     }
   }
 
-  public static MethodNode runDexToASM(Type desc, MethodImplementationBuilder mmi) {
-    return runDexToASM(getNopInheritance(), desc, mmi);
-  }
-
-  public static MethodNode runDexToASM(Inheritance inheritance, Type desc, MethodImplementationBuilder builder) {
+  public static MethodNode runDexToASM(Type desc, MethodImplementationBuilder builder) {
     MethodNode mn = buildMethod(desc, null);
     InstructionTransformer it = new InstructionTransformer(mn, new MutableMethodImplementation(builder.getMethodImplementation()), desc, true);
-    it.setInheritance(inheritance);
     DexBackedMethod dm = Mockito.mock(DexBackedMethod.class);
     Mockito.when(dm.getName()).thenReturn("dummy" + builder.hashCode());
     Mockito.when(dm.getParameters()).thenReturn(Collections.emptyList());
@@ -93,14 +86,6 @@ public class Factory implements Opcodes {
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }
-
-  public static Inheritance getNopInheritance() {
-    return new Inheritance();
-  }
-
-  public static Inheritance getFullIheritance() {
-    return DexToASM.rootInheritGraph;
   }
 
 }
