@@ -17,11 +17,9 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
 
   public UnresolvedNumberInsn(boolean wide, long wideValue) {
     super(wideValue);
-    if (!wide && ((wideValue & 0xffffffff00000000L) != 0)) {
-      throw new IllegalArgumentException("Number is wide but not marked as wide: " + Long.toBinaryString(wideValue));
-    }
     if (!wide) {
-      cst = Long.valueOf(wideValue).intValue();
+      // don't check if wideValue has upper bits, as values can be negative too. dexlib already does checking.
+      cst = ((int) wideValue);
     }
     this.isWide = wide;
     this.wideValue = wideValue;

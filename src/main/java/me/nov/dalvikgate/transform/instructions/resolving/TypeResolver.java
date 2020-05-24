@@ -27,8 +27,7 @@ public class TypeResolver extends SourceInterpreter {
           ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value1)));
         else if (!isUnresolved(value2))
           ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value2)));
-
-        if (aggressive) {
+        else if (aggressive) {
           // type of jump or variable does not matter. set it to int.
           if (isUnresolved(value1))
             getTopUnresolved(value1).setType(Type.INT_TYPE);
@@ -269,7 +268,7 @@ public class TypeResolver extends SourceInterpreter {
     if (insn instanceof UnresolvedJumpInsn && !((IUnresolvedInstruction) insn).isResolved()) {
       if (!isUnresolved(value))
         ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value)));
-      if (aggressive) {
+      else if (aggressive) {
         // type of jump or variable does not matter. set it to int.
         if (isUnresolved(value)) {
           getTopUnresolved(value).setType(Type.INT_TYPE);
@@ -469,7 +468,7 @@ public class TypeResolver extends SourceInterpreter {
   }
 
   public static AbstractInsnNode getTop(SourceValue value) {
-    if(value.insns.isEmpty()) {
+    if (value.insns.isEmpty()) {
       throw new IllegalArgumentException("value has no top");
     }
     return value.insns.toArray(new AbstractInsnNode[0])[value.insns.size() - 1];
