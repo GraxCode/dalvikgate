@@ -1,5 +1,7 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
+import java.util.ArrayList;
+
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -8,14 +10,13 @@ import org.objectweb.asm.tree.analysis.*;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
-import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
 import me.nov.dalvikgate.transform.instructions.unresolved.*;
+import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class InstructionResolver implements Opcodes {
   private final DexBackedMethod method;
   private final MethodNode mn;
   private final InsnList il;
-  private static final int MAX_ITERATIONS = 10;
 
   public InstructionResolver(DexBackedMethod method, MethodNode mn, InsnList il) {
     this.method = method;
@@ -32,8 +33,10 @@ public class InstructionResolver implements Opcodes {
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
-      for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-        new Analyzer<>(new TypeResolver(iteration >= MAX_ITERATIONS - 1)).analyze(owner, mn);
+      boolean aggressive = false;
+      int unresolved = UnresolvedUtils.countUnresolved(il);
+      while (true) {
+        new Analyzer<>(new TypeResolver(aggressive)).analyze(owner, mn);
         for (int i = il.size() - 1; i >= 0; i--) {
           AbstractInsnNode insn = il.get(i);
           if (insn instanceof UnresolvedVarInsn) {
@@ -43,20 +46,29 @@ public class InstructionResolver implements Opcodes {
             resolvable.tryResolveUnlinked(i, mn);
           }
         }
+        int newUnresolved = UnresolvedUtils.countUnresolved(il);
+        if (newUnresolved == 0)
+          break; // everything resolved, break!
+        if (newUnresolved < unresolved) {
+          aggressive = false; // use normal method again, no false resulutions wanted
+          unresolved = newUnresolved; // set state
+          continue;
+        }
+        // nothing has changed, still the same amount of unresolved instructions
+        if (!aggressive) {
+          aggressive = true;
+          continue;
+        }
+        break;
       }
     } catch (AnalyzerException ex) {
       DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
-      ex.printStackTrace();
       mn.instructions = initialIl;
-      return;
-    } catch (TranslationException ex) {
-      DexToASM.logger.error(" - Translation error: {}", ex.getMessage());
-      ex.printStackTrace();
-      mn.instructions = initialIl;
+      addAnnotation("TypeResolutionFailed");
       return;
     } catch (Throwable t) {
-      t.printStackTrace();
       DexToASM.logger.error(" - Analyzer crash: {}", t.getMessage());
+      addAnnotation("TypeResolutionCrashed");
       mn.instructions = initialIl;
       return;
     }
@@ -78,5 +90,11 @@ public class InstructionResolver implements Opcodes {
         DexToASM.logger.error("   - {} : unresolved NUMBER", i);
       }
     }
+  }
+
+  private void addAnnotation(String string) {
+    if (mn.visibleAnnotations == null)
+      mn.visibleAnnotations = new ArrayList<>();
+    mn.visibleAnnotations.add(new AnnotationNode("Lme/nov/dalvikgate/" + string + ";"));
   }
 }

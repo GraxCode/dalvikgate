@@ -3,7 +3,7 @@ package me.nov.dalvikgate.transform.instructions.resolving;
 import java.util.List;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
@@ -11,11 +11,11 @@ import me.nov.dalvikgate.transform.instructions.unresolved.*;
 
 public class TypeResolver extends SourceInterpreter {
   private static final Type OBJECT_TYPE = Type.getType("Ljava/lang/Object;");
-  private boolean finalRun;
+  private boolean aggressive;
 
-  public TypeResolver(boolean finalRun) {
+  public TypeResolver(boolean aggs) {
     super(ASM8);
-    this.finalRun = finalRun;
+    this.aggressive = aggs;
   }
 
   @Override
@@ -26,7 +26,7 @@ public class TypeResolver extends SourceInterpreter {
       else if (!isUnresolved(value2))
         ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value2)));
 
-      if (finalRun) {
+      if (aggressive) {
         // type of jump or variable does not matter. set it to int.
         if (isUnresolved(value1)) {
           getTopUnresolved(value1).setType(Type.INT_TYPE);
@@ -122,11 +122,11 @@ public class TypeResolver extends SourceInterpreter {
       return OBJECT_TYPE;
     case IF_ACMPEQ:
     case IF_ACMPNE:
+    case PUTFIELD:
       return OBJECT_TYPE;
     case DCMPL:
     case DCMPG:
       return Type.DOUBLE_TYPE;
-    case PUTFIELD:
     default:
       throw new AssertionError();
     }
@@ -165,18 +165,100 @@ public class TypeResolver extends SourceInterpreter {
 
   @Override
   public SourceValue naryOperation(AbstractInsnNode insn, List<? extends SourceValue> values) {
-    // TODO Auto-generated method stub
+    if (insn.getOpcode() == MULTIANEWARRAY) {
+      values.stream().filter(v -> isUnresolved(v)).forEach(v -> getTopUnresolved(v).setType(Type.INT_TYPE));
+    } else {
+      boolean hasReference = false;
+      String desc;
+      switch (insn.getOpcode()) {
+      case INVOKEVIRTUAL:
+      case INVOKESPECIAL:
+      case INVOKEINTERFACE:
+        hasReference = true;
+      case INVOKESTATIC:
+        desc = ((MethodInsnNode) insn).desc;
+        break;
+      case INVOKEDYNAMIC:
+        desc = ((InvokeDynamicInsnNode) insn).desc;
+        break;
+      default:
+        throw new AssertionError();
+      }
+      if (hasReference && isUnresolved(values.get(0))) {
+        getTopUnresolved(values.get(0)).setType(OBJECT_TYPE);
+      }
+      int j = 0;
+      Type[] args = Type.getArgumentTypes(desc);
+      for (int i = hasReference ? 1 : 0; i < values.size(); i++) {
+        Type arg = args[j];
+        if (isUnresolved(values.get(i))) {
+          getTopUnresolved(values.get(i)).setType(arg);
+        }
+        j++;
+      }
+    }
     return super.naryOperation(insn, values);
   }
 
   @Override
   public void returnOperation(AbstractInsnNode insn, SourceValue value, SourceValue expected) {
-    // TODO Auto-generated method stub
+    if (isUnresolved(value)) {
+      IUnresolvedInstruction unres = getTopUnresolved(value);
+      switch (insn.getOpcode()) {
+      case IRETURN:
+        unres.setType(Type.INT_TYPE);
+        break;
+      case LRETURN:
+        unres.setType(Type.LONG_TYPE);
+        break;
+      case FRETURN:
+        unres.setType(Type.FLOAT_TYPE);
+        break;
+      case DRETURN:
+        unres.setType(Type.DOUBLE_TYPE);
+        break;
+      case ARETURN:
+        unres.setType(OBJECT_TYPE);
+        break;
+      }
+    }
     super.returnOperation(insn, value, expected);
   }
 
   @Override
   public SourceValue ternaryOperation(AbstractInsnNode insn, SourceValue value1, SourceValue value2, SourceValue value3) {
+    if (insn instanceof UnresolvedWideArrayInsn && !((IUnresolvedInstruction) insn).isResolved()) {
+      UnresolvedWideArrayInsn unres = (UnresolvedWideArrayInsn) insn;
+      unres.setType(getPushType(getTop(value3))); // TODO find a better way
+    } else {
+      if (isUnresolved(value1))
+        getTopUnresolved(value1).setType(OBJECT_TYPE);
+      if (isUnresolved(value2))
+        getTopUnresolved(value2).setType(Type.INT_TYPE);
+      if (isUnresolved(value3)) {
+        IUnresolvedInstruction unres = getTopUnresolved(value3);
+        switch (insn.getOpcode()) {
+        case IASTORE:
+        case BASTORE:
+        case CASTORE:
+        case SASTORE:
+          unres.setType(Type.INT_TYPE);
+          break;
+        case LASTORE:
+          unres.setType(Type.LONG_TYPE);
+          break;
+        case FASTORE:
+          unres.setType(Type.FLOAT_TYPE);
+          break;
+        case DASTORE:
+          unres.setType(Type.DOUBLE_TYPE);
+          break;
+        case AASTORE:
+          unres.setType(OBJECT_TYPE);
+          break;
+        }
+      }
+    }
     return super.ternaryOperation(insn, value1, value2, value3);
   }
 
@@ -186,7 +268,7 @@ public class TypeResolver extends SourceInterpreter {
       if (!isUnresolved(value))
         ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value)));
 
-      if (finalRun) {
+      if (aggressive) {
         // type of jump or variable does not matter. set it to int.
         if (isUnresolved(value)) {
           getTopUnresolved(value).setType(Type.INT_TYPE);
@@ -248,11 +330,13 @@ public class TypeResolver extends SourceInterpreter {
       case MONITOREXIT:
       case IFNULL:
       case IFNONNULL:
+      case GETFIELD:
         iui.setType(OBJECT_TYPE);
         break;
-      default:
       case PUTSTATIC:
-      case GETFIELD:
+        iui.setType(Type.getType(((FieldInsnNode) insn).desc));
+        break;
+      default:
         throw new AssertionError("unimplemented");
       }
     }

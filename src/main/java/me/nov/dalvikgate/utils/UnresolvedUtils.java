@@ -1,10 +1,11 @@
 package me.nov.dalvikgate.utils;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 import org.jf.dexlib2.Opcode;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.*;
 
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 
@@ -34,5 +35,9 @@ public class UnresolvedUtils implements Opcodes {
 
   public static boolean containsUnresolved(List<AbstractInsnNode> insns) {
     return insns.stream().anyMatch(insn -> insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved());
+  }
+
+  public static int countUnresolved(InsnList il) {
+    return (int) StreamSupport.stream(il.spliterator(), false).filter(insn -> insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved()).count();
   }
 }
