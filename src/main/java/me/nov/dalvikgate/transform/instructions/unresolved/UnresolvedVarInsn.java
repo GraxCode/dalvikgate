@@ -109,7 +109,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     return resolvedVar && resolvedOp;
   }
 
-  public boolean tryResolveUnlinked(int index, MethodNode method) {
+  public boolean tryResolveUnlinked(int index, MethodNode method, boolean finalPass) {
     if (var == -1)
       throw new IllegalArgumentException();
 
@@ -118,17 +118,17 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     visited.clear();
     if (type != null) {
       setType(type);
-    } else {
+    } else if (finalPass) {
+      setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
       // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
-      // setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
       // why int and not object? well, imagine this scenario:
 
-      // unresolved ldc 5
+      // unresolved ldc 0
       // unresolved var store 3
       // unresolved var load 3
       // unresolved jump ifeq/null label1
 
-      // the variable will never get resolved. type should be set to int and cause no problem (jump and number will get resolved properly too).
+      // the variable will never get resolved. type should be set to int and cause no problem as it is not used as "real register" (jump and number will get resolved properly too).
     }
     return true;
   }

@@ -51,15 +51,16 @@ public class InstructionResolver implements Opcodes {
         }
       }
 
-      boolean usedAggressive = false;
       boolean aggressive = false;
-      int unresolved = UnresolvedUtils.countUnresolved(il);
+      boolean finalPass = false;
+      
+      int unresolvedCount = UnresolvedUtils.countUnresolved(il);
 
       // ALGORITHM
       // 1: multiple passes using type resolver -> repeat if unresolved decrease
       // 2: try link locals -> go to 1 if unresolved decrease
-      // 3: end if aggressive, else go to 1 and enable aggressive
-
+      // 3: continue with 4 if aggressive, else go to 1 and enable aggressive
+      // 4: enable final pass and go to 2
       while (true) {
         new Analyzer<>(new TypeResolver(aggressive)).analyze(owner, mn);
         for (int i = il.size() - 1; i >= 0; i--) {
@@ -71,15 +72,14 @@ public class InstructionResolver implements Opcodes {
             }
           }
         }
-        int newUnresolved = UnresolvedUtils.countUnresolved(il);
-        if (newUnresolved == 0)
+        int newUnresolvedCount = UnresolvedUtils.countUnresolved(il);
+        if (newUnresolvedCount == 0)
           break; // everything resolved, break!
-        if (newUnresolved < unresolved) {
+        if (newUnresolvedCount < unresolvedCount) {
           if (aggressive) {
-            usedAggressive = true;
             aggressive = false; // use normal method again, no false resulutions wanted
           }
-          unresolved = newUnresolved; // set state
+          unresolvedCount = newUnresolvedCount;
           continue;
         }
         // link variable types together, see if we can improve something this way
@@ -89,17 +89,16 @@ public class InstructionResolver implements Opcodes {
             UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
             if (resolvable.isResolved())
               continue;
-            resolvable.tryResolveUnlinked(i, mn);
+            resolvable.tryResolveUnlinked(i, mn, finalPass);
           }
         }
-        newUnresolved = UnresolvedUtils.countUnresolved(il);
-        if (newUnresolved < unresolved) {
+        newUnresolvedCount = UnresolvedUtils.countUnresolved(il);
+        if (newUnresolvedCount < unresolvedCount) {
           // redo everything!
           if (aggressive) {
-            usedAggressive = true;
             aggressive = false; // use normal method again, no false resulutions wanted
           }
-          unresolved = newUnresolved; // set state
+          unresolvedCount = newUnresolvedCount; // set state
           continue;
         }
         // nothing has changed, still the same amount of unresolved instructions
@@ -107,10 +106,13 @@ public class InstructionResolver implements Opcodes {
           aggressive = true;
           continue;
         }
+        if (!finalPass) {
+          // resolve variables without any use
+          finalPass = true;
+          aggressive = false;
+          continue;
+        }
         break;
-      }
-      if (aggressive || usedAggressive) {
-        addAnnotation("AggressivelyResolved");
       }
     } catch (AnalyzerException ex) {
       DexToASM.logger.error("Analyzer error: {}: {}{}", ex, owner, method.getName(), DexLibCommons.getMethodDesc(method));
