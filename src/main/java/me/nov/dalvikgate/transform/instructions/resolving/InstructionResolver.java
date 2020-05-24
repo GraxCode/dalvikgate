@@ -54,18 +54,18 @@ public class InstructionResolver implements Opcodes {
       boolean usedAggressive = false;
       boolean aggressive = false;
       int unresolved = UnresolvedUtils.countUnresolved(il);
+
+      // ALGORITHM
+      // 1: multiple passes using type resolver -> repeat if unresolved decrease
+      // 2: try link locals -> go to 1 if unresolved decrease
+      // 3: end if aggressive, else go to 1 and enable aggressive
+
       while (true) {
         new Analyzer<>(new TypeResolver(aggressive)).analyze(owner, mn);
         for (int i = il.size() - 1; i >= 0; i--) {
           AbstractInsnNode insn = il.get(i);
-          if (insn instanceof UnresolvedVarInsn) {
-            UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
-            if (resolvable.isResolved())
-              continue;
-            resolvable.tryResolveUnlinked(i, mn);
-          }
-          if(insn instanceof UnresolvedNumberInsn) {
-            if(((UnresolvedNumberInsn) insn).cst.equals(Type.getType("V"))) {
+          if (insn instanceof UnresolvedNumberInsn) {
+            if (((UnresolvedNumberInsn) insn).cst.equals(Type.getType("V"))) {
               // replace actual null ldcs with aconst_null
               il.set(insn, new InsnNode(ACONST_NULL));
             }
@@ -75,6 +75,26 @@ public class InstructionResolver implements Opcodes {
         if (newUnresolved == 0)
           break; // everything resolved, break!
         if (newUnresolved < unresolved) {
+          if (aggressive) {
+            usedAggressive = true;
+            aggressive = false; // use normal method again, no false resulutions wanted
+          }
+          unresolved = newUnresolved; // set state
+          continue;
+        }
+        // link variable types together, see if we can improve something this way
+        for (int i = il.size() - 1; i >= 0; i--) {
+          AbstractInsnNode insn = il.get(i);
+          if (insn instanceof UnresolvedVarInsn) {
+            UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
+            if (resolvable.isResolved())
+              continue;
+            resolvable.tryResolveUnlinked(i, mn);
+          }
+        }
+        newUnresolved = UnresolvedUtils.countUnresolved(il);
+        if (newUnresolved < unresolved) {
+          // redo everything!
           if (aggressive) {
             usedAggressive = true;
             aggressive = false; // use normal method again, no false resulutions wanted
@@ -105,6 +125,7 @@ public class InstructionResolver implements Opcodes {
     }
     int unresolvedCount = UnresolvedUtils.countUnresolved(il);
     if (unresolvedCount > 0) {
+      addAnnotation("TypeResolutionIncomplete");
       DexToASM.logger.error("{} missing unresolved instructions in {}: {}{}", unresolvedCount, owner, method.getName(), DexLibCommons.getMethodDesc(method));
     }
   }
