@@ -20,7 +20,7 @@ public class ParameterTests {
     mmi.addLabel("target");
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, 25));
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
-    Factory.saveDebug(Factory.runDexToASM(Type.getMethodType(Type.getType(int.class), Type.getType(Object.class)), mmi));
+    
     assertEquals(30, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.getType(int.class), Type.getType(Object.class)), mmi), new Object()));
   }
 
