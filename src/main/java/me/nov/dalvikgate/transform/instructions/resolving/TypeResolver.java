@@ -469,6 +469,9 @@ public class TypeResolver extends SourceInterpreter {
   }
 
   public static AbstractInsnNode getTop(SourceValue value) {
+    if(value.insns.isEmpty()) {
+      throw new IllegalArgumentException("value has no top");
+    }
     return value.insns.toArray(new AbstractInsnNode[0])[value.insns.size() - 1];
   }
 

@@ -87,12 +87,12 @@ public class InstructionResolver implements Opcodes {
         addAnnotation("AggressivelyResolved");
       }
     } catch (AnalyzerException ex) {
-      DexToASM.logger.error(" - Analyzer error: {}", ex);
+      DexToASM.logger.error("Analyzer error: {}: {}{}", ex, owner, method.getName(), DexLibCommons.getMethodDesc(method));
       mn.instructions = initialIl;
       addAnnotation("TypeResolutionFailed");
       return;
     } catch (Throwable t) {
-      DexToASM.logger.error(" - Analyzer crash: {}", t);
+      DexToASM.logger.error("Analyzer crash: {}: {}{}", t, owner, method.getName(), DexLibCommons.getMethodDesc(method));
       addAnnotation("TypeResolutionCrashed");
       mn.instructions = initialIl;
       return;
