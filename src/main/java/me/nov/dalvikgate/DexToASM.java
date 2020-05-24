@@ -9,9 +9,9 @@ import org.jf.dexlib2.dexbacked.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.nov.dalvikgate.asm.Conversion;
+import me.nov.dalvikgate.logging.LogWrapper;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
-import me.nov.dalvikgate.utils.LogWrapper;
 
 public class DexToASM {
   public static final LogWrapper logger = new LogWrapper();

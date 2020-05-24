@@ -11,7 +11,6 @@ import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.ASMCommons;
 import me.nov.dalvikgate.transform.ITransformer;
 import me.nov.dalvikgate.transform.instructions.InstructionTransformer;
-import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
 import me.nov.dalvikgate.transform.instructions.postoptimize.*;
 import me.nov.dalvikgate.utils.TextUtils;
 
@@ -51,11 +50,7 @@ public class MethodTransfomer implements ITransformer<DexBackedMethod, MethodNod
         // new PostCombiner().applyPatch(mn); analyzer is probably the better way to do this
       }
     } catch (Exception e) {
-      if (e instanceof UnsupportedInsnException) {
-        DexToASM.logger.error("{} ::: {}", e.getStackTrace()[0], e.getMessage());
-      } else {
-        e.printStackTrace();
-      }
+      DexToASM.logger.error("Exception at translation", e);
       mn.instructions = ASMCommons.makeExceptionThrow("java/lang/IllegalStateException", e.toString() + " / " + TextUtils.stacktraceToString(e));
       mn.maxStack = 3;
       mn.tryCatchBlocks.clear();

@@ -10,8 +10,7 @@ import org.objectweb.asm.tree.analysis.*;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
-import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
-import me.nov.dalvikgate.transform.instructions.unresolved.*;
+import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedVarInsn;
 import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class InstructionResolver implements Opcodes {
@@ -27,7 +26,6 @@ public class InstructionResolver implements Opcodes {
 
   public void run() {
     String owner = Type.getType(method.getDefiningClass()).getInternalName();
-    DexToASM.logger.error("{}.{}{}", owner, method.getName(), DexLibCommons.getMethodDesc(method));
     InsnList initialIl = mn.instructions;
     try {
       mn.instructions = il;
@@ -89,34 +87,19 @@ public class InstructionResolver implements Opcodes {
         addAnnotation("AggressivelyResolved");
       }
     } catch (AnalyzerException ex) {
-      ex.printStackTrace();
-      DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
+      DexToASM.logger.error(" - Analyzer error: {}", ex);
       mn.instructions = initialIl;
       addAnnotation("TypeResolutionFailed");
       return;
     } catch (Throwable t) {
-      DexToASM.logger.error(" - Analyzer crash: {}", t.getMessage());
+      DexToASM.logger.error(" - Analyzer crash: {}", t);
       addAnnotation("TypeResolutionCrashed");
       mn.instructions = initialIl;
       return;
     }
-    // Log missing
-    int i = -1;
-    for (AbstractInsnNode insn : il) {
-      i++;
-      // Skip resolved instructions
-      if (insn instanceof IUnresolvedInstruction && ((IUnresolvedInstruction) insn).isResolved())
-        continue;
-      // Log unresolved type
-      if (insn instanceof UnresolvedJumpInsn) {
-        DexToASM.logger.error("   - {} : unresolved JUMP", i);
-      } else if (insn instanceof UnresolvedVarInsn) {
-        DexToASM.logger.error("   - {} : unresolved VARIABLE", i);
-      } else if (insn instanceof UnresolvedWideArrayInsn) {
-        DexToASM.logger.error("   - {} : unresolved WIDE ARRAY", i);
-      } else if (insn instanceof UnresolvedNumberInsn) {
-        DexToASM.logger.error("   - {} : unresolved NUMBER", i);
-      }
+    int unresolvedCount = UnresolvedUtils.countUnresolved(il);
+    if (unresolvedCount > 0) {
+      DexToASM.logger.error("{} missing unresolved instructions in {}: {}{}", unresolvedCount, owner, method.getName(), DexLibCommons.getMethodDesc(method));
     }
   }
 
