@@ -230,7 +230,8 @@ public class TypeResolver extends SourceInterpreter {
   public SourceValue ternaryOperation(AbstractInsnNode insn, SourceValue value1, SourceValue value2, SourceValue value3) {
     if (insn instanceof UnresolvedWideArrayInsn && !((IUnresolvedInstruction) insn).isResolved()) {
       UnresolvedWideArrayInsn unres = (UnresolvedWideArrayInsn) insn;
-      unres.setType(getPushType(getTop(value3))); // TODO find a better way
+      if (!isUnresolved(value3))
+        unres.setType(getPushType(getTop(value3)));
     } else {
       if (isUnresolved(value1))
         getTopUnresolved(value1).setType(OBJECT_TYPE);
@@ -464,6 +465,8 @@ public class TypeResolver extends SourceInterpreter {
   }
 
   private boolean isUnresolved(SourceValue value) {
+    if (value.insns.isEmpty())
+      return false; // why does this happen? i don't know.
     return getTop(value) instanceof IUnresolvedInstruction && !getTopUnresolved(value).isResolved();
   }
 

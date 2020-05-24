@@ -84,8 +84,6 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
     resolved = true;
-
-    // TODO: replace afterwards with MethodVisitor to simplify and replace null types with aconst_null
   }
 
   @Override

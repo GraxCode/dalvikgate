@@ -10,7 +10,7 @@ import org.objectweb.asm.tree.analysis.*;
 import me.nov.dalvikgate.DexToASM;
 import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
-import me.nov.dalvikgate.transform.instructions.unresolved.UnresolvedVarInsn;
+import me.nov.dalvikgate.transform.instructions.unresolved.*;
 import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class InstructionResolver implements Opcodes {
@@ -63,6 +63,12 @@ public class InstructionResolver implements Opcodes {
             if (resolvable.isResolved())
               continue;
             resolvable.tryResolveUnlinked(i, mn);
+          }
+          if(insn instanceof UnresolvedNumberInsn) {
+            if(((UnresolvedNumberInsn) insn).cst.equals(Type.getType("V"))) {
+              // replace actual null ldcs with aconst_null
+              il.set(insn, new InsnNode(ACONST_NULL));
+            }
           }
         }
         int newUnresolved = UnresolvedUtils.countUnresolved(il);
