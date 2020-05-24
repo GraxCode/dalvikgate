@@ -8,6 +8,7 @@ import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
 import me.nov.dalvikgate.DexToASM;
+import me.nov.dalvikgate.asm.Access;
 import me.nov.dalvikgate.dexlib.DexLibCommons;
 import me.nov.dalvikgate.transform.instructions.IUnresolvedInstruction;
 import me.nov.dalvikgate.transform.instructions.unresolved.*;
@@ -33,6 +34,26 @@ public class InstructionResolver implements Opcodes {
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
+      boolean isStatic = Access.isStatic(mn.access);
+      Type[] args = Type.getArgumentTypes(mn.desc);
+      // first resolve local variables linked with args
+      for (int i = il.size() - 1; i >= 0; i--) {
+        AbstractInsnNode insn = il.get(i);
+        if (insn instanceof UnresolvedVarInsn) {
+          UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
+          if (isStatic) {
+            if (resolvable.var < args.length)
+              resolvable.setType(args[resolvable.var]);
+          } else {
+            if (resolvable.var == 0)
+              resolvable.setType(Type.getType(Object.class)); // this reference
+            else if (resolvable.var <= args.length)
+              resolvable.setType(args[resolvable.var - 1]);
+          }
+        }
+      }
+
+      boolean usedAggressive = false;
       boolean aggressive = false;
       int unresolved = UnresolvedUtils.countUnresolved(il);
       while (true) {
@@ -50,7 +71,10 @@ public class InstructionResolver implements Opcodes {
         if (newUnresolved == 0)
           break; // everything resolved, break!
         if (newUnresolved < unresolved) {
-          aggressive = false; // use normal method again, no false resulutions wanted
+          if (aggressive) {
+            usedAggressive = true;
+            aggressive = false; // use normal method again, no false resulutions wanted
+          }
           unresolved = newUnresolved; // set state
           continue;
         }
@@ -60,6 +84,9 @@ public class InstructionResolver implements Opcodes {
           continue;
         }
         break;
+      }
+      if (aggressive || usedAggressive) {
+        addAnnotation("AggressivelyResolved");
       }
     } catch (AnalyzerException ex) {
       DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());

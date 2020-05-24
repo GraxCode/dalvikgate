@@ -352,6 +352,7 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
    * @param register The register to be converted
    */
   protected int regToLocal(int register) {
+    
     // The N arguments to a method land in the last N registers of the method's invocation frame, in order
     int startingArgs = builder.getRegisterCount() - argumentRegisterCount;
     if (register >= startingArgs) {

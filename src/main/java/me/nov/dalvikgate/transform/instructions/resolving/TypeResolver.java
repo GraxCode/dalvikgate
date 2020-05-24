@@ -267,7 +267,6 @@ public class TypeResolver extends SourceInterpreter {
     if (insn instanceof UnresolvedJumpInsn && !((IUnresolvedInstruction) insn).isResolved()) {
       if (!isUnresolved(value))
         ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value)));
-
       if (aggressive) {
         // type of jump or variable does not matter. set it to int.
         if (isUnresolved(value)) {
@@ -464,7 +463,7 @@ public class TypeResolver extends SourceInterpreter {
   }
 
   private boolean isUnresolved(SourceValue value) {
-    return getTop(value) instanceof IUnresolvedInstruction;
+    return getTop(value) instanceof IUnresolvedInstruction && !getTopUnresolved(value).isResolved();
   }
 
   public static AbstractInsnNode getTop(SourceValue value) {
