@@ -193,7 +193,7 @@ public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x
     case DIV_DOUBLE_2ADDR:
     case REM_DOUBLE_2ADDR:
       addLocalGet(destination, DOUBLE_TYPE);
-      addLocalGet(source, FLOAT_TYPE);
+      addLocalGet(source, DOUBLE_TYPE);
       break;
     default:
       throw new UnsupportedInsnException(i);

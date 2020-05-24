@@ -81,23 +81,38 @@ public class VariableTypeTests {
     mmi.addLabel("target");
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, 0));
     mmi.addInstruction(new BuilderInstruction30t(Opcode.GOTO_32, mmi.getLabel("return")));
-    Factory.saveDebug(Factory.runDexToASM(Type.getMethodType(Type.getType(Object.class)), mmi));
+
     assertEquals("test", Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.getType(Object.class)), mmi)));
   }
 
+  @Test
+  void uglyFloatDoubleCalculation() {
+    MethodImplementationBuilder mmi = new MethodImplementationBuilder(6);
+    mmi.addInstruction(new BuilderInstruction21ih(Opcode.CONST_HIGH16, 0, 1056964608));
+    mmi.addInstruction(new BuilderInstruction12x(Opcode.SUB_FLOAT_2ADDR, 5, 0));
+    mmi.addInstruction(new BuilderInstruction12x(Opcode.FLOAT_TO_DOUBLE, 0, 5));
+
+    mmi.addInstruction(new BuilderInstruction51l(Opcode.CONST_WIDE, 2, 4602160705557665991L));
+    mmi.addInstruction(new BuilderInstruction12x(Opcode.MUL_DOUBLE_2ADDR, 0, 2));
+    mmi.addInstruction(new BuilderInstruction12x(Opcode.DOUBLE_TO_FLOAT, 5, 0));
+    mmi.addInstruction(new BuilderInstruction12x(Opcode.FLOAT_TO_DOUBLE, 0, 5));
+
+    mmi.addInstruction(new BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, 1, 0, 0, 0, new CustomMethodReference("Ljava/lang/Math;", "sin", "(D)D")));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.MOVE_RESULT_WIDE, 0));
+    mmi.addInstruction(new BuilderInstruction12x(Opcode.DOUBLE_TO_FLOAT, 0, 0));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
+
+    assertEquals(0.8526401f, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE, Type.FLOAT_TYPE), mmi), 5f));
+  }
+
   /**
-   * NOT WORKING
-iget-object Format22c, 0, 1, Lcom/android/documentsui/DocumentsActivity;->mState:Lcom/android/documentsui/DocumentsActivity$State;
-iget-object Format22c, 0, 0, Lcom/android/documentsui/DocumentsActivity$State;->stack:Lcom/android/documentsui/model/DocumentStack;
-iget-object Format22c, 0, 0, Lcom/android/documentsui/model/DocumentStack;->root:Lcom/android/documentsui/model/RootInfo;
-if-eqz Format21t, 0
-iget-object Format22c, 0, 1, Lcom/android/documentsui/DocumentsActivity;->mState:Lcom/android/documentsui/DocumentsActivity$State;
-iget-object Format22c, 0, 0, Lcom/android/documentsui/DocumentsActivity$State;->stack:Lcom/android/documentsui/model/DocumentStack;
-iget-object Format22c, 0, 0, Lcom/android/documentsui/model/DocumentStack;->root:Lcom/android/documentsui/model/RootInfo;
-return-object Format11x, 0
-iget-object Format22c, 0, 1, Lcom/android/documentsui/DocumentsActivity;->mRoots:Lcom/android/documentsui/RootsCache;
-invoke-virtual Format35c, 1, 0, 0, 0, 0, 0, Lcom/android/documentsui/RootsCache;->getRecentsRoot()Lcom/android/documentsui/model/RootInfo;
-move-result-object Format11x, 0
-goto Format10t
+   * TODO NOT WORKING iget-object Format22c, 0, 1, Lcom/android/documentsui/DocumentsActivity;->mState:Lcom/android/documentsui/DocumentsActivity$State; iget-object Format22c, 0, 0,
+   * Lcom/android/documentsui/DocumentsActivity$State;->stack:Lcom/android/documentsui/model/DocumentStack; iget-object Format22c, 0, 0,
+   * Lcom/android/documentsui/model/DocumentStack;->root:Lcom/android/documentsui/model/RootInfo; if-eqz Format21t, 0 iget-object Format22c, 0, 1,
+   * Lcom/android/documentsui/DocumentsActivity;->mState:Lcom/android/documentsui/DocumentsActivity$State; iget-object Format22c, 0, 0,
+   * Lcom/android/documentsui/DocumentsActivity$State;->stack:Lcom/android/documentsui/model/DocumentStack; iget-object Format22c, 0, 0,
+   * Lcom/android/documentsui/model/DocumentStack;->root:Lcom/android/documentsui/model/RootInfo; return-object Format11x, 0 iget-object Format22c, 0, 1,
+   * Lcom/android/documentsui/DocumentsActivity;->mRoots:Lcom/android/documentsui/RootsCache; invoke-virtual Format35c, 1, 0, 0, 0, 0, 0,
+   * Lcom/android/documentsui/RootsCache;->getRecentsRoot()Lcom/android/documentsui/model/RootInfo; move-result-object Format11x, 0 goto Format10t
    */
 }
