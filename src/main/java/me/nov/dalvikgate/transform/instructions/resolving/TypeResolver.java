@@ -20,25 +20,27 @@ public class TypeResolver extends SourceInterpreter {
 
   @Override
   public SourceValue binaryOperation(AbstractInsnNode insn, SourceValue value1, SourceValue value2) {
-    if (insn instanceof UnresolvedJumpInsn && !((IUnresolvedInstruction) insn).isResolved()) {
-      if (!isUnresolved(value1))
-        ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value1)));
-      else if (!isUnresolved(value2))
-        ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value2)));
+    boolean unresolvedInsn = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
+    if (unresolvedInsn) {
+      if (insn instanceof UnresolvedJumpInsn) {
+        if (!isUnresolved(value1))
+          ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value1)));
+        else if (!isUnresolved(value2))
+          ((UnresolvedJumpInsn) insn).setType(getPushType(getTop(value2)));
 
-      if (aggressive) {
-        // type of jump or variable does not matter. set it to int.
-        if (isUnresolved(value1)) {
-          getTopUnresolved(value1).setType(Type.INT_TYPE);
+        if (aggressive) {
+          // type of jump or variable does not matter. set it to int.
+          if (isUnresolved(value1))
+            getTopUnresolved(value1).setType(Type.INT_TYPE);
+
+          if (isUnresolved(value2))
+            getTopUnresolved(value2).setType(Type.INT_TYPE);
+
+          ((IUnresolvedInstruction) insn).setType(Type.INT_TYPE);
         }
-        if (isUnresolved(value2)) {
-          getTopUnresolved(value2).setType(Type.INT_TYPE);
-        }
-        ((IUnresolvedInstruction) insn).setType(Type.INT_TYPE);
+      } else if (insn instanceof UnresolvedWideArrayInsn) {
+        ((UnresolvedWideArrayInsn) insn).setType(getPushType(getTop(value1)));
       }
-    }
-    if (insn instanceof UnresolvedWideArrayInsn && !((IUnresolvedInstruction) insn).isResolved()) {
-      throw new IllegalStateException("TODO"); // TODO
     } else {
       if (isUnresolved(value1)) {
         IUnresolvedInstruction iui = getTopUnresolved(value1);
@@ -166,7 +168,7 @@ public class TypeResolver extends SourceInterpreter {
   @Override
   public SourceValue naryOperation(AbstractInsnNode insn, List<? extends SourceValue> values) {
     if (insn.getOpcode() == MULTIANEWARRAY) {
-      values.stream().filter(v -> isUnresolved(v)).forEach(v -> getTopUnresolved(v).setType(Type.INT_TYPE));
+      values.stream().filter(this::isUnresolved).forEach(v -> getTopUnresolved(v).setType(Type.INT_TYPE));
     } else {
       boolean hasReference = false;
       String desc;
