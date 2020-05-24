@@ -81,6 +81,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
         cst = Type.getType("V");
       else
         throw new IllegalArgumentException("Expected const 0 for object type, but value is " + cst.toString());
+      break;
     case Type.VOID:
       throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
