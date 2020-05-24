@@ -89,6 +89,7 @@ public class InstructionResolver implements Opcodes {
         addAnnotation("AggressivelyResolved");
       }
     } catch (AnalyzerException ex) {
+      ex.printStackTrace();
       DexToASM.logger.error(" - Analyzer error: {}", ex.getMessage());
       mn.instructions = initialIl;
       addAnnotation("TypeResolutionFailed");

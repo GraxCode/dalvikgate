@@ -343,8 +343,8 @@ public class TypeResolver extends SourceInterpreter {
   }
 
   private Type getPushType(AbstractInsnNode insn) {
-    if (insn instanceof IUnresolvedInstruction)
-      throw new IllegalStateException("push type of unresolved instruction is unknown");
+    if (insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction)insn).isResolved())
+      throw new IllegalStateException("push type of unresolved instruction is unknown: " + insn.getClass().getSimpleName());
     switch (insn.getOpcode()) {
     case ACONST_NULL:
     case ALOAD:
