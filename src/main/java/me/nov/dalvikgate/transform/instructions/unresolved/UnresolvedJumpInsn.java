@@ -13,7 +13,7 @@ import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstruction, Opcodes {
   private final Opcode dalvikOp;
-  private boolean resolved;
+  private Type type;
 
   /**
    * Create new unresolved jump instruction.
@@ -63,11 +63,16 @@ public class UnresolvedJumpInsn extends JumpInsnNode implements IUnresolvedInstr
     default:
       throw new IllegalStateException("Jump cannot be unresolved! Got " + dalvikOp.name);
     }
-    resolved = true;
+    this.type = type;
   }
 
   @Override
   public boolean isResolved() {
-    return resolved;
+    return type != null;
+  }
+
+  @Override
+  public Type getResolvedType() {
+    return type;
   }
 }

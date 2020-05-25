@@ -67,6 +67,7 @@ public class VariableTypeTests {
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, 0)); // const null
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
     assertEquals(null, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.getType(Object.class)), mmi)));
+    
   }
 
   public static String test = "test";

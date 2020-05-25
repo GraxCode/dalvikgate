@@ -20,6 +20,11 @@ public interface IUnresolvedInstruction {
   void setType(Type type);
 
   /**
+   * @return type if resolved.
+   */
+  Type getResolvedType();
+
+  /**
    * @return {@code true} if instruction's value was resolved.
    */
   boolean isResolved();

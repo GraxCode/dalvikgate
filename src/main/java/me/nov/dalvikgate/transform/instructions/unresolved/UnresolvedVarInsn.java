@@ -15,9 +15,9 @@ import me.nov.dalvikgate.utils.UnresolvedUtils;
 public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruction, Opcodes {
   private final boolean store;
   private final Type initialType;
-  private boolean resolvedOp;
   private boolean resolvedVar;
   private boolean wide;
+  private Type type;
 
   /**
    * Create new unresolved variable instruction.
@@ -67,9 +67,6 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
   }
 
   public void setType(Type type) {
-    if (resolvedOp) {
-      return;
-    }
     if (type.getSize() != (wide ? 2 : 1)) {
       throw new IllegalArgumentException("Wrong size, expected a " + (wide ? "wide" : "single word") + " type, but got " + type.getClassName());
     }
@@ -97,7 +94,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
     default:
       throw new IllegalArgumentException("Unsupported var type: " + type.getDescriptor());
     }
-    resolvedOp = true;
+    this.type = type;
   }
 
   public boolean isStore() {
@@ -106,36 +103,37 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
 
   @Override
   public boolean isResolved() {
-    return resolvedVar && resolvedOp;
+    return resolvedVar && type != null;
   }
 
-  public boolean tryResolveUnlinked(int index, MethodNode method, boolean finalPass) {
-    if (var == -1)
+  @Override
+  public Type getResolvedType() {
+    return type;
+  }
+
+  public boolean tryResolveUnlinked(int index, MethodNode method) {
+    if (var == -1 || isResolved())
       throw new IllegalArgumentException();
-
-    // TODO try resolve backwards for loads
-    Type type = tryResolve(method.instructions.get(index).getNext());
-    visited.clear();
-    if (type != null) {
-      setType(type);
-    } else if (finalPass) {
-      setType(wide ? Type.LONG_TYPE : Type.INT_TYPE);
-      // type is unknown, just guess the type, as the local is never used, and it doesn't matter. only the size must be right.
-      // why int and not object? well, imagine this scenario:
-
-      // unresolved ldc 0
-      // unresolved var store 3
-      // unresolved var load 3
-      // unresolved jump ifeq/null label1
-
-      // the variable will never get resolved. type should be set to int and cause no problem as it is not used as "real register" (jump and number will get resolved properly too).
+    if (!store) {
+      visited.clear();
+      Type secondAttempt = tryResolveBackwards(method.instructions, method.instructions.get(index).getPrevious());
+      if (secondAttempt != null) {
+        setType(secondAttempt);
+        return true;
+      }
     }
-    return true;
+    visited.clear();
+    Type realType = tryResolveForwards(method.instructions.get(index).getNext());
+    if (realType != null) {
+      setType(realType);
+      return true;
+    }
+    return false;
   }
 
   private Set<AbstractInsnNode> visited = new HashSet<>();
 
-  private Type tryResolve(AbstractInsnNode ain) {
+  private Type tryResolveForwards(AbstractInsnNode ain) {
     while (ain != null && !isReturn(ain)) {
       if (visited.contains(ain)) {
         // prevent infinite loops
@@ -174,7 +172,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       if (op == GOTO) {
         ain = ((JumpInsnNode) ain).label;
       } else if (ain.getType() == AbstractInsnNode.JUMP_INSN) {
-        Type subroutineType = tryResolve(((JumpInsnNode) ain).label);
+        Type subroutineType = tryResolveForwards(((JumpInsnNode) ain).label);
         if (subroutineType != null) {
           return subroutineType;
         }
@@ -182,7 +180,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       } else if (ain.getType() == AbstractInsnNode.TABLESWITCH_INSN) {
         TableSwitchInsnNode tsin = (TableSwitchInsnNode) ain;
         for (LabelNode label : tsin.labels) {
-          Type subroutineType = tryResolve(label);
+          Type subroutineType = tryResolveForwards(label);
           if (subroutineType != null) {
             return subroutineType;
           }
@@ -191,7 +189,7 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       } else if (ain.getType() == AbstractInsnNode.LOOKUPSWITCH_INSN) {
         LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) ain;
         for (LabelNode label : lsin.labels) {
-          Type subroutineType = tryResolve(label);
+          Type subroutineType = tryResolveForwards(label);
           if (subroutineType != null) {
             return subroutineType;
           }
@@ -201,5 +199,77 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       ain = ain.getNext();
     }
     return null;
+  }
+
+  private Type tryResolveBackwards(InsnList instructions, AbstractInsnNode ain) {
+    // be careful with this, imagine try catch block handlers
+    while (ain != null && !isReturn(ain)) {
+      if (visited.contains(ain)) {
+        // prevent infinite loops
+        return null;
+      }
+      visited.add(ain);
+      int op = ain.getOpcode();
+      if (op == ATHROW || op == GOTO) {
+        // block end
+        return null;
+      }
+      if (ain.getType() == AbstractInsnNode.VAR_INSN) {
+        VarInsnNode vin = (VarInsnNode) ain;
+        boolean canBeReferencePoint = !(vin instanceof UnresolvedVarInsn) || ((UnresolvedVarInsn) vin).isResolved();
+        if (vin.var == var && canBeReferencePoint) {
+          switch (op) {
+          case ALOAD:
+          case ASTORE:
+            return OBJECT_TYPE;
+          case ILOAD:
+          case ISTORE:
+            return Type.INT_TYPE;
+          case FLOAD:
+          case FSTORE:
+            return Type.FLOAT_TYPE;
+          case DLOAD:
+          case DSTORE:
+            return Type.DOUBLE_TYPE;
+          case LLOAD:
+          case LSTORE:
+            return Type.LONG_TYPE;
+          }
+        }
+      }
+      if (ain.getType() == AbstractInsnNode.LABEL) {
+        List<AbstractInsnNode> references = findJumpsTargettingLabel(instructions, (LabelNode) ain);
+        for (AbstractInsnNode jump : references) {
+          Type subroutineType = tryResolveBackwards(instructions, jump);
+          if (subroutineType != null) {
+            return subroutineType;
+          }
+        }
+      }
+      ain = ain.getPrevious();
+    }
+    return null;
+  }
+
+  private List<AbstractInsnNode> findJumpsTargettingLabel(InsnList instructions, LabelNode label) {
+    ArrayList<AbstractInsnNode> jumps = new ArrayList<>();
+    for (AbstractInsnNode ain : instructions) {
+      if (ain.getType() == AbstractInsnNode.JUMP_INSN) {
+        if (((JumpInsnNode) ain).label == label) {
+          jumps.add(ain);
+        }
+      } else if (ain.getType() == AbstractInsnNode.TABLESWITCH_INSN) {
+        TableSwitchInsnNode tsin = (TableSwitchInsnNode) ain;
+        if (tsin.labels.contains(label)) {
+          jumps.add(ain);
+        }
+      } else if (ain.getType() == AbstractInsnNode.LOOKUPSWITCH_INSN) {
+        LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) ain;
+        if (lsin.labels.contains(label)) {
+          jumps.add(ain);
+        }
+      }
+    }
+    return jumps;
   }
 }

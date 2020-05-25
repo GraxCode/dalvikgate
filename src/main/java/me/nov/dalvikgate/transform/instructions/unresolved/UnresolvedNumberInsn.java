@@ -12,8 +12,9 @@ import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnExceptio
 public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInstruction, Opcodes {
   private Number wideValue;
   private boolean resolved;
-  private boolean isWide;
+  private boolean wide;
   private boolean possiblyNullConst;
+  private Type type;
 
   public UnresolvedNumberInsn(boolean wide, long wideValue) {
     super(wideValue);
@@ -21,7 +22,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       // don't check if wideValue has upper bits, as values can be negative too. dexlib already does checking.
       cst = ((int) wideValue);
     }
-    this.isWide = wide;
+    this.wide = wide;
     this.wideValue = wideValue;
     this.possiblyNullConst = wideValue == 0;
   }
@@ -53,8 +54,8 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     if (resolved) {
       return;
     }
-    if (type.getSize() != (isWide ? 2 : 1)) {
-      throw new IllegalArgumentException("Wrong size, expected a " + (isWide ? "wide" : "single word") + " type, but got " + type.getClassName());
+    if (type.getSize() != (wide ? 2 : 1)) {
+      throw new IllegalArgumentException("Wrong size, expected a " + (wide ? "wide" : "single word") + " type, but got " + type.getClassName());
     }
     switch (type.getSort()) {
     case Type.BOOLEAN:
@@ -68,7 +69,7 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
       cst = Float.intBitsToFloat(wideValue.intValue());
       break;
     case Type.LONG:
-      cst = (long) wideValue;
+      cst = wideValue.longValue();
       break;
     case Type.DOUBLE:
       cst = Double.longBitsToDouble(wideValue.longValue());
@@ -76,18 +77,31 @@ public class UnresolvedNumberInsn extends LdcInsnNode implements IUnresolvedInst
     case Type.OBJECT:
     case Type.ARRAY:
       if (possiblyNullConst)
-        cst = Type.getType("V");
+        cst = Type.getType("V"); // is replaced afterwards with aconst_null
       else
         throw new IllegalArgumentException("Expected const 0 for object type, but value is " + cst.toString());
       break;
     case Type.VOID:
       throw new IllegalArgumentException("Tried to set illegal type of unresolved number instruction");
     }
-    resolved = true;
+    this.type = type;
   }
 
   @Override
   public boolean isResolved() {
-    return resolved;
+    return type != null;
+  }
+
+  public boolean isWide() {
+    return wide;
+  }
+
+  public boolean isPossiblyNullConst() {
+    return possiblyNullConst;
+  }
+
+  @Override
+  public Type getResolvedType() {
+    return type;
   }
 }

@@ -1,6 +1,7 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
@@ -32,88 +33,22 @@ public class InstructionResolver implements Opcodes {
       // TODO: Properly set these beforehand
       mn.maxLocals = 100;
       mn.maxStack = 100;
-      boolean isStatic = Access.isStatic(mn.access);
-      Type[] args = Type.getArgumentTypes(mn.desc);
 
-      boolean aggressive = false;
-      boolean finalPass = false;
-      boolean resolvedByArgs = false;
-      int unresolvedCount = UnresolvedUtils.countUnresolved(il);
-
-      // ALGORITHM
-      // 1: multiple passes using type resolver -> repeat if unresolved decrease
-      // 2: try link locals -> go to 1 if unresolved decrease
-      // 3: continue with 4 if aggressive, else go to 1 and enable aggressive
-      // 4: enable final pass and go to 2
+      boolean resolvedUnused = false;
       while (true) {
-        new Analyzer<>(new TypeResolver(aggressive)).analyze(owner, mn);
-        for (int i = il.size() - 1; i >= 0; i--) {
-          AbstractInsnNode insn = il.get(i);
-          if (insn instanceof UnresolvedNumberInsn) {
-            if (((UnresolvedNumberInsn) insn).cst.equals(Type.getType("V"))) {
-              // replace actual null ldcs with aconst_null
-              il.set(insn, new InsnNode(ACONST_NULL));
-            }
-          }
+        while (linkByStack()) {
+          // repeat while unresolved instructions decrease
         }
-        int newUnresolvedCount = UnresolvedUtils.countUnresolved(il);
-        if (newUnresolvedCount == 0)
-          break; // everything resolved, break!
-        if (newUnresolvedCount < unresolvedCount) {
-          if (aggressive) {
-            aggressive = false; // use normal method again, no false resulutions wanted
-          }
-          unresolvedCount = newUnresolvedCount;
-          continue;
-        }
-        // link variable types together, see if we can improve something this way
-        for (int i = il.size() - 1; i >= 0; i--) {
-          AbstractInsnNode insn = il.get(i);
-          if (insn instanceof UnresolvedVarInsn) {
-            UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
-            if (resolvable.isResolved())
-              continue;
-            resolvable.tryResolveUnlinked(i, mn, finalPass);
-          }
-        }
-        newUnresolvedCount = UnresolvedUtils.countUnresolved(il);
-        if (newUnresolvedCount < unresolvedCount) {
-          // redo everything!
-          if (aggressive) {
-            aggressive = false; // use normal method again, no false resulutions wanted
-          }
-          unresolvedCount = newUnresolvedCount; // set state
-          continue;
-        }
-        // nothing has changed, still the same amount of unresolved instructions
-        if (!aggressive) {
-          aggressive = true;
-          continue;
-        }
-        if (!resolvedByArgs) {
-          for (int i = il.size() - 1; i >= 0; i--) {
-            AbstractInsnNode insn = il.get(i);
-            if (insn instanceof UnresolvedVarInsn) {
-              UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
-              if (isStatic) {
-                if (resolvable.var < args.length)
-                  resolvable.setType(args[resolvable.var]);
-              } else {
-                if (resolvable.var == 0)
-                  resolvable.setType(Type.getType(Object.class)); // this reference
-                else if (resolvable.var <= args.length)
-                  resolvable.setType(args[resolvable.var - 1]);
-              }
-            }
-          }
-          resolvedByArgs = true;
-          aggressive = false;
-          continue;
-        }
-        if (!finalPass) {
-          // resolve variables without any use
-          finalPass = true;
-          aggressive = false;
+
+        replaceNullLdcs(); // replace null ldcs with aconst_null
+
+        if (linkByLocals())
+          continue; // connected some locals, restart
+        if (linkByParameters())
+          continue; // inlined parameter types, restart
+        if (!resolvedUnused && resolveRemainingUnused()) {
+          // final pass, restart
+          resolvedUnused = true;
           continue;
         }
         break;
@@ -124,6 +59,7 @@ public class InstructionResolver implements Opcodes {
       addAnnotation("TypeResolutionFailed", ex.getMessage());
       return;
     } catch (Throwable t) {
+      // to find small samples: System.out.println(StreamSupport.stream(method.getImplementation().getInstructions().spliterator(), false).count());
       DexToASM.logger.error("Analyzer crash: {}: {}{}", t, owner, method.getName(), DexLibCommons.getMethodDesc(method));
       addAnnotation("TypeResolutionCrashed", t.getMessage());
       mn.instructions = initialIl;
@@ -134,6 +70,75 @@ public class InstructionResolver implements Opcodes {
       addAnnotation("TypeResolutionIncomplete", unresolvedCount + " instructions unresolved, used default opcode");
       DexToASM.logger.error("{} missing unresolved instructions in {}: {}{}", unresolvedCount, owner, method.getName(), DexLibCommons.getMethodDesc(method));
     }
+  }
+
+  private boolean resolveRemainingUnused() {
+    boolean resolved = false;
+    for (int i = il.size() - 1; i >= 0; i--) {
+      AbstractInsnNode insn = il.get(i);
+      if (insn instanceof UnresolvedNumberInsn && !((UnresolvedNumberInsn) insn).isResolved()) {
+        UnresolvedNumberInsn num = (UnresolvedNumberInsn) insn;
+        num.setType(num.isWide() ? Type.LONG_TYPE : Type.INT_TYPE);
+        resolved = true;
+      }
+    }
+    return resolved;
+  }
+
+  private void replaceNullLdcs() {
+    for (int i = il.size() - 1; i >= 0; i--) {
+      AbstractInsnNode insn = il.get(i);
+      if (insn instanceof UnresolvedNumberInsn) {
+        if (((UnresolvedNumberInsn) insn).cst.equals(Type.getType("V"))) {
+          // replace actual null ldcs with aconst_null
+          il.set(insn, new InsnNode(ACONST_NULL));
+        }
+      }
+    }
+  }
+
+  private boolean linkByParameters() {
+    int prevCount = UnresolvedUtils.countUnresolved(il);
+
+    boolean isStatic = Access.isStatic(mn.access);
+    Type[] args = Type.getArgumentTypes(mn.desc);
+
+    for (int i = il.size() - 1; i >= 0; i--) {
+      AbstractInsnNode insn = il.get(i);
+      if (insn instanceof UnresolvedVarInsn && !((UnresolvedVarInsn) insn).isResolved()) {
+        UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
+        if (isStatic) {
+          if (resolvable.var < args.length)
+            resolvable.setType(args[resolvable.var]);
+        } else {
+          if (resolvable.var == 0)
+            resolvable.setType(Type.getType(Object.class)); // this reference
+          else if (resolvable.var <= args.length)
+            resolvable.setType(args[resolvable.var - 1]);
+        }
+      }
+    }
+    return prevCount - UnresolvedUtils.countUnresolved(il) > 0;
+  }
+
+  private boolean linkByLocals() {
+    int prevCount = UnresolvedUtils.countUnresolved(il);
+    for (int i = il.size() - 1; i >= 0; i--) {
+      AbstractInsnNode insn = il.get(i);
+      if (insn instanceof UnresolvedVarInsn) {
+        UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
+        if (resolvable.isResolved())
+          continue;
+        resolvable.tryResolveUnlinked(i, mn);
+      }
+    }
+    return prevCount - UnresolvedUtils.countUnresolved(il) > 0;
+  }
+
+  private boolean linkByStack() throws AnalyzerException {
+    int prevCount = UnresolvedUtils.countUnresolved(il);
+    new Analyzer<>(new TypeResolver(false)).analyze(Type.getType(method.getDefiningClass()).getInternalName(), mn);
+    return prevCount - UnresolvedUtils.countUnresolved(il) > 0;
   }
 
   private void addAnnotation(String string, String description) {

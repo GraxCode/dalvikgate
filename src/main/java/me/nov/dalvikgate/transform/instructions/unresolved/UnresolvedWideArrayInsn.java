@@ -12,8 +12,8 @@ import me.nov.dalvikgate.utils.UnresolvedUtils;
 
 public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInstruction, Opcodes {
   private boolean store;
-  private boolean resolvedType;
   private boolean resolvedOp;
+  private Type type;
 
   /**
    * Create new unresolved wide array store or load instruction.
@@ -61,7 +61,7 @@ public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInst
     default:
       throw new IllegalArgumentException("Only wide array types can be unresolved! Got " + Type.getType("[" + type.getDescriptor()).getClassName());
     }
-    resolvedType = true;
+    this.type = type;
   }
 
   public void setOpcode(int opcode) {
@@ -71,6 +71,11 @@ public class UnresolvedWideArrayInsn extends InsnNode implements IUnresolvedInst
 
   @Override
   public boolean isResolved() {
-    return resolvedType && resolvedOp;
+    return type != null && resolvedOp;
+  }
+
+  @Override
+  public Type getResolvedType() {
+    return type;
   }
 }
