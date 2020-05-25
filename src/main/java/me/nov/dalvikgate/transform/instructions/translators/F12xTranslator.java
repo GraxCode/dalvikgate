@@ -173,11 +173,14 @@ public class F12xTranslator extends AbstractInsnTranslator<BuilderInstruction12x
     case AND_LONG_2ADDR:
     case OR_LONG_2ADDR:
     case XOR_LONG_2ADDR:
+      addLocalGet(destination, LONG_TYPE);
+      addLocalGet(source, LONG_TYPE);
+      break;
     case SHL_LONG_2ADDR:
     case SHR_LONG_2ADDR:
     case USHR_LONG_2ADDR:
       addLocalGet(destination, LONG_TYPE);
-      addLocalGet(source, LONG_TYPE);
+      addLocalGet(source, INT_TYPE); // special non-wide variable for shift instructions
       break;
     case ADD_FLOAT_2ADDR:
     case SUB_FLOAT_2ADDR:

@@ -165,11 +165,14 @@ public class F23xTranslator extends AbstractInsnTranslator<BuilderInstruction23x
     case AND_LONG:
     case OR_LONG:
     case XOR_LONG:
+      addLocalGet(i.getRegisterB(), LONG_TYPE);
+      addLocalGet(i.getRegisterC(), LONG_TYPE);
+      break;
     case SHL_LONG:
     case SHR_LONG:
     case USHR_LONG:
       addLocalGet(i.getRegisterB(), LONG_TYPE);
-      addLocalGet(i.getRegisterC(), LONG_TYPE);
+      addLocalGet(i.getRegisterC(), INT_TYPE); // special non-wide variable for shift instructions
       break;
     case ADD_FLOAT:
     case SUB_FLOAT:
