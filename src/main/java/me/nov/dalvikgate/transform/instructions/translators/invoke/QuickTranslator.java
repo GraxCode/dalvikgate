@@ -15,6 +15,7 @@ public class QuickTranslator extends AbstractInsnTranslator<BuilderInstruction35
   }
 
   public void translate(BuilderInstruction35ms i) {
+    // TODO: make UnresolvedQuickInvokeInsn to resolve desc by locals
     // optimized invoke instruction that uses indexes instead of method names and descs. This cannot be disassembled at all, only sort of
     Opcode real = i.getOpcode() == Opcode.INVOKE_VIRTUAL_QUICK ? Opcode.INVOKE_VIRTUAL : Opcode.INVOKE_SUPER;
     BuilderInstruction next = getNextOf(i);

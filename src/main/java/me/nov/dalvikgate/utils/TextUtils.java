@@ -20,4 +20,29 @@ public class TextUtils {
       }
     }).collect(Collectors.joining(", "));
   }
+
+  public static void printProgressPercentage(int done, int total) {
+    int size = 100;
+    if (done > total) {
+      throw new IllegalArgumentException();
+    }
+    int donePercents = (100 * done) / total;
+    int doneLength = size * donePercents / 100;
+
+    StringBuilder bar = new StringBuilder("[");
+    for (int i = 0; i < size; i++) {
+      if (i < doneLength) {
+        bar.append('\u25a0'); // "\u2588"
+      } else {
+        bar.append('.');
+      }
+    }
+    bar.append(']');
+
+    System.out.print("\r" + bar + " " + donePercents + "%");
+
+    if (done == total) {
+      System.out.print("\n");
+    }
+  }
 }

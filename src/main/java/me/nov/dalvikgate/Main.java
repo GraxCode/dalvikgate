@@ -25,6 +25,9 @@ public class Main implements Callable<Void> {
   @Option(names = { "-nf", "--namefilter" }, description = "regex whitelist filter", defaultValue = ".*")
   public String nameFilter;
 
+  @Option(names = { "-v", "--verbose" }, description = "print exceptions")
+  public boolean verbose;
+
   public static void main(String[] args) {
     new CommandLine(new Main()).execute(args);
   }
@@ -34,7 +37,10 @@ public class Main implements Callable<Void> {
     DexToASM.nameFilter = nameFilter;
     DexToASM.noOptimize = noOptimize;
     DexToASM.noResolve = noResolve;
-    DexToASM.dex2Jar(input, output);
+    if (verbose)
+      DexToASM.dex2Jar(input, output);
+    else
+      DexToASM.dex2JarConsole(input, output);
     return null;
   }
 }

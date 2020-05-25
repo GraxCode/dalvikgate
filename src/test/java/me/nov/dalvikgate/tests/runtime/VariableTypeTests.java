@@ -105,14 +105,19 @@ public class VariableTypeTests {
     assertEquals(0.8526401f, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.FLOAT_TYPE, Type.FLOAT_TYPE), mmi), 5f));
   }
 
-  /**
-   * TODO NOT WORKING iget-object Format22c, 0, 1, Lcom/android/documentsui/DocumentsActivity;->mState:Lcom/android/documentsui/DocumentsActivity$State; iget-object Format22c, 0, 0,
-   * Lcom/android/documentsui/DocumentsActivity$State;->stack:Lcom/android/documentsui/model/DocumentStack; iget-object Format22c, 0, 0,
-   * Lcom/android/documentsui/model/DocumentStack;->root:Lcom/android/documentsui/model/RootInfo; if-eqz Format21t, 0 iget-object Format22c, 0, 1,
-   * Lcom/android/documentsui/DocumentsActivity;->mState:Lcom/android/documentsui/DocumentsActivity$State; iget-object Format22c, 0, 0,
-   * Lcom/android/documentsui/DocumentsActivity$State;->stack:Lcom/android/documentsui/model/DocumentStack; iget-object Format22c, 0, 0,
-   * Lcom/android/documentsui/model/DocumentStack;->root:Lcom/android/documentsui/model/RootInfo; return-object Format11x, 0 iget-object Format22c, 0, 1,
-   * Lcom/android/documentsui/DocumentsActivity;->mRoots:Lcom/android/documentsui/RootsCache; invoke-virtual Format35c, 1, 0, 0, 0, 0, 0,
-   * Lcom/android/documentsui/RootsCache;->getRecentsRoot()Lcom/android/documentsui/model/RootInfo; move-result-object Format11x, 0 goto Format10t
-   */
+  public boolean bool = false;
+  public static VariableTypeTests instance = new VariableTypeTests();
+
+  @Test
+  void booleanVarStore() {
+    String vtt = Type.getType(VariableTypeTests.class).getDescriptor();
+    MethodImplementationBuilder mmi = new MethodImplementationBuilder(2);
+    mmi.addInstruction(new BuilderInstruction21c(Opcode.SGET_OBJECT, 0, new CustomFieldReference(vtt, "instance", vtt)));
+    mmi.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 1, 1));
+    mmi.addInstruction(new BuilderInstruction22c(Opcode.IPUT_BOOLEAN, 1, 0, new CustomFieldReference(vtt, "bool", "Z")));
+    mmi.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+    Factory.saveDebug(Factory.runDexToASM(Type.getMethodType(Type.VOID_TYPE), mmi));
+    Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.VOID_TYPE), mmi));
+    assertEquals(true, instance.bool);
+  }
 }

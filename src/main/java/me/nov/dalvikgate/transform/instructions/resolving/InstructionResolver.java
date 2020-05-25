@@ -1,6 +1,6 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
-import java.util.ArrayList;
+import java.util.*;
 
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
@@ -34,26 +34,10 @@ public class InstructionResolver implements Opcodes {
       mn.maxStack = 100;
       boolean isStatic = Access.isStatic(mn.access);
       Type[] args = Type.getArgumentTypes(mn.desc);
-      // first resolve local variables linked with args
-      for (int i = il.size() - 1; i >= 0; i--) {
-        AbstractInsnNode insn = il.get(i);
-        if (insn instanceof UnresolvedVarInsn) {
-          UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
-          if (isStatic) {
-            if (resolvable.var < args.length)
-              resolvable.setType(args[resolvable.var]);
-          } else {
-            if (resolvable.var == 0)
-              resolvable.setType(Type.getType(Object.class)); // this reference
-            else if (resolvable.var <= args.length)
-              resolvable.setType(args[resolvable.var - 1]);
-          }
-        }
-      }
 
       boolean aggressive = false;
       boolean finalPass = false;
-      
+      boolean resolvedByArgs = false;
       int unresolvedCount = UnresolvedUtils.countUnresolved(il);
 
       // ALGORITHM
@@ -106,6 +90,26 @@ public class InstructionResolver implements Opcodes {
           aggressive = true;
           continue;
         }
+        if (!resolvedByArgs) {
+          for (int i = il.size() - 1; i >= 0; i--) {
+            AbstractInsnNode insn = il.get(i);
+            if (insn instanceof UnresolvedVarInsn) {
+              UnresolvedVarInsn resolvable = (UnresolvedVarInsn) insn;
+              if (isStatic) {
+                if (resolvable.var < args.length)
+                  resolvable.setType(args[resolvable.var]);
+              } else {
+                if (resolvable.var == 0)
+                  resolvable.setType(Type.getType(Object.class)); // this reference
+                else if (resolvable.var <= args.length)
+                  resolvable.setType(args[resolvable.var - 1]);
+              }
+            }
+          }
+          resolvedByArgs = true;
+          aggressive = false;
+          continue;
+        }
         if (!finalPass) {
           // resolve variables without any use
           finalPass = true;
@@ -117,24 +121,26 @@ public class InstructionResolver implements Opcodes {
     } catch (AnalyzerException ex) {
       DexToASM.logger.error("Analyzer error: {}: {}{}", ex, owner, method.getName(), DexLibCommons.getMethodDesc(method));
       mn.instructions = initialIl;
-      addAnnotation("TypeResolutionFailed");
+      addAnnotation("TypeResolutionFailed", ex.getMessage());
       return;
     } catch (Throwable t) {
       DexToASM.logger.error("Analyzer crash: {}: {}{}", t, owner, method.getName(), DexLibCommons.getMethodDesc(method));
-      addAnnotation("TypeResolutionCrashed");
+      addAnnotation("TypeResolutionCrashed", t.getMessage());
       mn.instructions = initialIl;
       return;
     }
     int unresolvedCount = UnresolvedUtils.countUnresolved(il);
     if (unresolvedCount > 0) {
-      addAnnotation("TypeResolutionIncomplete");
+      addAnnotation("TypeResolutionIncomplete", unresolvedCount + " instructions unresolved, used default opcode");
       DexToASM.logger.error("{} missing unresolved instructions in {}: {}{}", unresolvedCount, owner, method.getName(), DexLibCommons.getMethodDesc(method));
     }
   }
 
-  private void addAnnotation(String string) {
+  private void addAnnotation(String string, String description) {
     if (mn.visibleAnnotations == null)
       mn.visibleAnnotations = new ArrayList<>();
-    mn.visibleAnnotations.add(new AnnotationNode("Lme/nov/dalvikgate/" + string + ";"));
+    AnnotationNode an = new AnnotationNode("Lme/nov/dalvikgate/" + string + ";");
+    an.values = Arrays.asList("cause", description);
+    mn.visibleAnnotations.add(an);
   }
 }

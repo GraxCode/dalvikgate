@@ -38,7 +38,9 @@ public class TypeResolver extends SourceInterpreter {
           ((IUnresolvedInstruction) insn).setType(Type.INT_TYPE);
         }
       } else if (insn instanceof UnresolvedWideArrayInsn) {
-        ((UnresolvedWideArrayInsn) insn).setType(getPushType(getTop(value1)));
+        // we cannot resolve this way:
+        // this does mostly not work, as the top is not an array, but an aload instruction.
+        // ((UnresolvedWideArrayInsn) insn).setType(getPushType(getTop(value1)));
       }
     } else {
       if (isUnresolved(value1)) {
@@ -137,9 +139,11 @@ public class TypeResolver extends SourceInterpreter {
   public SourceValue copyOperation(AbstractInsnNode insn, SourceValue value) {
     if (insn.getOpcode() >= ISTORE) {
       // don't fix loads with value
-      if (insn instanceof UnresolvedVarInsn && !((IUnresolvedInstruction) insn).isResolved()) {
-        if (!isUnresolved(value))
+      boolean insnUnresolved = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
+      if (insnUnresolved) {
+        if (insn instanceof UnresolvedVarInsn && !isUnresolved(value)) {
           ((UnresolvedVarInsn) insn).setType(getPushType(getTop(value)));
+        }
       } else if (isUnresolved(value)) {
         IUnresolvedInstruction iui = getTopUnresolved(value);
         switch (insn.getOpcode()) {
@@ -204,6 +208,7 @@ public class TypeResolver extends SourceInterpreter {
   @Override
   public void returnOperation(AbstractInsnNode insn, SourceValue value, SourceValue expected) {
     if (isUnresolved(value)) {
+      // insn cannot be unresolved
       IUnresolvedInstruction unres = getTopUnresolved(value);
       switch (insn.getOpcode()) {
       case IRETURN:
@@ -228,7 +233,8 @@ public class TypeResolver extends SourceInterpreter {
 
   @Override
   public SourceValue ternaryOperation(AbstractInsnNode insn, SourceValue value1, SourceValue value2, SourceValue value3) {
-    if (insn instanceof UnresolvedWideArrayInsn && !((IUnresolvedInstruction) insn).isResolved()) {
+    boolean insnUnresolved = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
+    if (insnUnresolved && insn instanceof UnresolvedWideArrayInsn) {
       UnresolvedWideArrayInsn unres = (UnresolvedWideArrayInsn) insn;
       if (!isUnresolved(value3))
         unres.setType(getPushType(getTop(value3)));
@@ -237,7 +243,7 @@ public class TypeResolver extends SourceInterpreter {
         getTopUnresolved(value1).setType(OBJECT_TYPE);
       if (isUnresolved(value2))
         getTopUnresolved(value2).setType(Type.INT_TYPE);
-      if (isUnresolved(value3)) {
+      if (isUnresolved(value3) && !insnUnresolved) {
         IUnresolvedInstruction unres = getTopUnresolved(value3);
         switch (insn.getOpcode()) {
         case IASTORE:

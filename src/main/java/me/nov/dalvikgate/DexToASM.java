@@ -3,6 +3,7 @@ package me.nov.dalvikgate;
 import java.io.*;
 import java.util.*;
 import java.util.jar.*;
+import java.util.stream.Collectors;
 
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.dexbacked.*;
@@ -12,6 +13,7 @@ import me.nov.dalvikgate.asm.Conversion;
 import me.nov.dalvikgate.logging.LogWrapper;
 import me.nov.dalvikgate.transform.classes.ClassTransformer;
 import me.nov.dalvikgate.transform.instructions.exception.UnresolvedInsnException;
+import me.nov.dalvikgate.utils.TextUtils;
 
 public class DexToASM {
   public static final LogWrapper logger = new LogWrapper();
@@ -23,6 +25,26 @@ public class DexToASM {
     saveAsJar(outJar, convertToASMTree(inDex));
   }
 
+  public static void dex2JarConsole(File inDex, File outJar) throws IOException {
+    if (!inDex.exists()) {
+      throw new FileNotFoundException();
+    }
+    DexBackedDexFile baseBackedDexFile = DexFileFactory.loadDexFile(inDex, Opcodes.forApi(52));
+    List<ClassNode> asmClasses = new ArrayList<>();
+    List<DexBackedClassDef> toConvert = baseBackedDexFile.getClasses().stream().filter(clazz -> clazz.getType().substring(1, clazz.getType().length() - 1).matches(nameFilter))
+        .collect(Collectors.toList());
+    int size = toConvert.size();
+    logger.disableConsoleLog();
+    for (int i = 0; i < size; i++) {
+      TextUtils.printProgressPercentage(i, size);
+      DexBackedClassDef clazz = toConvert.get(i);
+      ClassTransformer ct = new ClassTransformer();
+      ct.visit(clazz);
+      asmClasses.add(ct.getTransformed());
+    }
+    saveAsJar(outJar, asmClasses);
+  }
+
   public static List<ClassNode> convertToASMTree(File file) throws IOException {
     if (!file.exists()) {
       throw new FileNotFoundException();
@@ -32,12 +54,10 @@ public class DexToASM {
   }
 
   public static List<ClassNode> convertToASMTree(DexBackedDexFile baseBackedDexFile) throws IOException {
-    // Create new inheritance tree that includes files in the dex we want to convert
-    // Conversion process
     List<ClassNode> asmClasses = new ArrayList<>();
-    for (DexBackedClassDef clazz : baseBackedDexFile.getClasses()) {
-      if (!clazz.getType().substring(1, clazz.getType().length() - 1).matches(nameFilter))
-        continue;
+    List<DexBackedClassDef> toConvert = baseBackedDexFile.getClasses().stream().filter(clazz -> clazz.getType().substring(1, clazz.getType().length() - 1).matches(nameFilter))
+        .collect(Collectors.toList());
+    for (DexBackedClassDef clazz : toConvert) {
       ClassTransformer ct = new ClassTransformer();
       ct.visit(clazz);
       asmClasses.add(ct.getTransformed());
@@ -46,8 +66,7 @@ public class DexToASM {
   }
 
   public static void saveAsJar(File output, List<ClassNode> classes) {
-    try {
-      JarOutputStream out = new JarOutputStream(new FileOutputStream(output));
+    try (JarOutputStream out = new JarOutputStream(new FileOutputStream(output))) {
       out.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"));
       out.write(makeManifest().getBytes());
       out.closeEntry();
@@ -59,15 +78,13 @@ public class DexToASM {
           out.write(Conversion.toBytecode(c));
           out.closeEntry();
         } catch (UnresolvedInsnException e) {
-          DexToASM.logger.error("SKIP: {} - Reason: {}", c.name, e.getMessage());
+          DexToASM.logger.error("SKIP: {}", c.name, e);
         } catch (Exception e) {
-          DexToASM.logger.error("FAIL: {} - Reason: {}", c.name, e.getMessage());
-          e.printStackTrace();
+          DexToASM.logger.error("FAIL: {}", c.name, e);
         }
       }
-      out.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      DexToASM.logger.error("IO exception", e);
     }
   }
 

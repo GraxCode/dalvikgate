@@ -6,7 +6,7 @@ import org.slf4j.*;
 
 public class LogWrapper {
   private final Logger logfile = LoggerFactory.getLogger("logfile");
-  private final Logger console = LoggerFactory.getLogger("console");
+  private Logger console = LoggerFactory.getLogger("console");
 
   public void info(String format, Object... args) {
     String msg = compile(format, args);
@@ -50,6 +50,10 @@ public class LogWrapper {
     String msg = compile(format, args);
     console.trace(msg);
     logfile.trace(msg);
+  }
+
+  public void disableConsoleLog() {
+    console = LoggerFactory.getLogger("null");
   }
 
   /**
