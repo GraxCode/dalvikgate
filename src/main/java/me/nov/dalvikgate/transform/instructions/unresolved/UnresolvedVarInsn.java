@@ -148,12 +148,14 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       if (ain.getType() == AbstractInsnNode.VAR_INSN) {
         VarInsnNode vin = (VarInsnNode) ain;
         boolean canBeReferencePoint = !(vin instanceof UnresolvedVarInsn) || ((UnresolvedVarInsn) vin).isResolved();
-        if (vin.var == var && canBeReferencePoint) {
+        if (vin.var == var) {
           if (isVarStore(op)) {
             // variable is set before it is loaded, we don't know the type, as the register could now store something else.
             // TODO test if in dalvik the same is possible as in java, reusing locals with different type sorts, otherwise this can be removed
+
+            // even unresolved instructions can store a type that may be not the type we are looking for.
             return null;
-          } else {
+          } else if (canBeReferencePoint) {
             switch (op) {
             case ALOAD:
               return OBJECT_TYPE;
@@ -217,23 +219,28 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       if (ain.getType() == AbstractInsnNode.VAR_INSN) {
         VarInsnNode vin = (VarInsnNode) ain;
         boolean canBeReferencePoint = !(vin instanceof UnresolvedVarInsn) || ((UnresolvedVarInsn) vin).isResolved();
-        if (vin.var == var && canBeReferencePoint) {
-          switch (op) {
-          case ALOAD:
-          case ASTORE:
-            return OBJECT_TYPE;
-          case ILOAD:
-          case ISTORE:
-            return Type.INT_TYPE;
-          case FLOAD:
-          case FSTORE:
-            return Type.FLOAT_TYPE;
-          case DLOAD:
-          case DSTORE:
-            return Type.DOUBLE_TYPE;
-          case LLOAD:
-          case LSTORE:
-            return Type.LONG_TYPE;
+        if (vin.var == var) {
+          if (canBeReferencePoint) {
+            switch (op) {
+            case ALOAD:
+            case ASTORE:
+              return OBJECT_TYPE;
+            case ILOAD:
+            case ISTORE:
+              return Type.INT_TYPE;
+            case FLOAD:
+            case FSTORE:
+              return Type.FLOAT_TYPE;
+            case DLOAD:
+            case DSTORE:
+              return Type.DOUBLE_TYPE;
+            case LLOAD:
+            case LSTORE:
+              return Type.LONG_TYPE;
+            }
+          } else if (isVarStore(op)) {
+            // var type could be changed, return.
+            return null;
           }
         }
       }

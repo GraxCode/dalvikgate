@@ -66,8 +66,6 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     this.buildLabels();
 
     for (BuilderInstruction i : dexInstructions) {
-      if(method.getName().equals("f") && method.getDefiningClass().endsWith("/n;") && dexInstructions.size() == 11)
-        System.out.println(TextUtils.toString(i));
       if (labels.containsKey(i)) {
         // add labels to the code
         il.add(labels.get(i));
