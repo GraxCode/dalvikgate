@@ -1,7 +1,6 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
 import java.util.*;
-import java.util.stream.StreamSupport;
 
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;

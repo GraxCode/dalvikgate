@@ -9,7 +9,8 @@ public class CustomFieldReference implements FieldReference {
   private String type;
 
   public CustomFieldReference(String defClass, String name, String type) {
-    super();
+    if (!defClass.endsWith(";") || !defClass.startsWith("L"))
+      throw new IllegalArgumentException();
     this.defClass = defClass;
     this.name = name;
     this.type = type;

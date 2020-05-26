@@ -67,7 +67,6 @@ public class VariableTypeTests {
     mmi.addInstruction(new BuilderInstruction31i(Opcode.CONST, 0, 0)); // const null
     mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
     assertEquals(null, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.getType(Object.class)), mmi)));
-    
   }
 
   public static String test = "test";
@@ -117,7 +116,6 @@ public class VariableTypeTests {
     mmi.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 1, 1));
     mmi.addInstruction(new BuilderInstruction22c(Opcode.IPUT_BOOLEAN, 1, 0, new CustomFieldReference(vtt, "bool", "Z")));
     mmi.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
-    Factory.saveDebug(Factory.runDexToASM(Type.getMethodType(Type.VOID_TYPE), mmi));
     Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.VOID_TYPE), mmi));
     assertEquals(true, instance.bool);
   }
