@@ -116,9 +116,9 @@ public class UnresolvedVarInsn extends VarInsnNode implements IUnresolvedInstruc
       throw new IllegalArgumentException();
     if (!store) {
       visited.clear();
-      Type secondAttempt = tryResolveBackwards(method.instructions, method.instructions.get(index).getPrevious());
-      if (secondAttempt != null) {
-        setType(secondAttempt);
+      Type realType = tryResolveBackwards(method.instructions, method.instructions.get(index).getPrevious());
+      if (realType != null) {
+        setType(realType);
         return true;
       }
     }

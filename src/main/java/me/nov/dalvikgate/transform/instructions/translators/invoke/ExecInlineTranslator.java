@@ -3,9 +3,9 @@ package me.nov.dalvikgate.transform.instructions.translators.invoke;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.instruction.*;
 
+import me.nov.dalvikgate.reference.CustomMethodReference;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.TranslationException;
-import me.nov.dalvikgate.utils.CustomMethodReference;
 
 public class ExecInlineTranslator extends AbstractInsnTranslator<BuilderInstruction35mi> {
 

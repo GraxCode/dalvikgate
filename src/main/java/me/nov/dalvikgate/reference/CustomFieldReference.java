@@ -1,4 +1,4 @@
-package me.nov.dalvikgate.utils;
+package me.nov.dalvikgate.reference;
 
 import org.jf.dexlib2.iface.reference.FieldReference;
 

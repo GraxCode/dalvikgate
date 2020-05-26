@@ -8,8 +8,8 @@ import org.jf.dexlib2.builder.instruction.*;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
+import me.nov.dalvikgate.reference.*;
 import me.nov.dalvikgate.tests.utils.Factory;
-import me.nov.dalvikgate.utils.*;
 
 public class VariableTypeTests {
 
@@ -118,5 +118,21 @@ public class VariableTypeTests {
     mmi.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
     Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.VOID_TYPE), mmi));
     assertEquals(true, instance.bool);
+  }
+
+  @Test
+  void intCompareWithVarRangeTest() {
+    MethodImplementationBuilder mmi = new MethodImplementationBuilder(3);
+    mmi.addInstruction(new BuilderInstruction21c(Opcode.CONST_STRING, 0, new CustomStringReference("string")));
+    mmi.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 1, -1));
+    mmi.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 1));
+    mmi.addInstruction(new BuilderInstruction22t(Opcode.IF_NE, 0, 1, mmi.getLabel("target")));
+    mmi.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 0));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
+    mmi.addLabel("target");
+    mmi.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 2, 1));
+    mmi.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 2));
+    Factory.saveDebug(Factory.runDexToASM(Type.getMethodType(Type.BOOLEAN_TYPE), mmi));
+    assertEquals(true, Factory.executeMethodAtRuntime(Factory.runDexToASM(Type.getMethodType(Type.BOOLEAN_TYPE), mmi)));
   }
 }

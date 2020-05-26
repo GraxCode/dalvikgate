@@ -1,4 +1,4 @@
-package me.nov.dalvikgate.utils;
+package me.nov.dalvikgate.reference;
 
 import java.util.*;
 import java.util.stream.Collectors;

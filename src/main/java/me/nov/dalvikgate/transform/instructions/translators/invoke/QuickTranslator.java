@@ -5,8 +5,8 @@ import org.jf.dexlib2.builder.BuilderInstruction;
 import org.jf.dexlib2.builder.instruction.*;
 
 import me.nov.dalvikgate.dexlib.DexLibCommons;
+import me.nov.dalvikgate.reference.CustomMethodReference;
 import me.nov.dalvikgate.transform.instructions.*;
-import me.nov.dalvikgate.utils.CustomMethodReference;
 
 public class QuickTranslator extends AbstractInsnTranslator<BuilderInstruction35ms> {
 

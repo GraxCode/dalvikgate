@@ -1,6 +1,7 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
@@ -58,7 +59,7 @@ public class InstructionResolver implements Opcodes {
       addAnnotation("TypeResolutionFailed", ex.getMessage());
       return;
     } catch (Throwable t) {
-      // to find small samples: System.out.println(StreamSupport.stream(method.getImplementation().getInstructions().spliterator(), false).count());
+      // to find small samples: StreamSupport.stream(method.getImplementation().getInstructions().spliterator(), false).count()
       DexToASM.logger.error("Analyzer crash: {}: {}{}", t, owner, method.getName(), DexLibCommons.getMethodDesc(method));
       addAnnotation("TypeResolutionCrashed", t.getMessage());
       mn.instructions = initialIl;

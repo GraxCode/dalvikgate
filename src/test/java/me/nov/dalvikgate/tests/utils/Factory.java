@@ -6,7 +6,7 @@ import java.security.ProtectionDomain;
 import java.util.*;
 
 import org.jf.dexlib2.builder.*;
-import org.jf.dexlib2.dexbacked.DexBackedMethod;
+import org.jf.dexlib2.dexbacked.*;
 import org.mockito.Mockito;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -94,6 +94,7 @@ public class Factory implements Opcodes {
     Mockito.when(dm.getReturnType()).thenReturn(desc.getReturnType().getDescriptor());
     Mockito.when(dm.getDefiningClass()).thenReturn("Lcom/TestClass;");
     Mockito.when(dm.getAccessFlags()).thenReturn(Opcodes.ACC_STATIC);
+    //Mockito.when(dm.getImplementation()).thenReturn((DexBackedMethodImplementation) builder.getMethodImplementation());
     it.visit(dm);
     mn.instructions = it.getTransformed();
     return mn;

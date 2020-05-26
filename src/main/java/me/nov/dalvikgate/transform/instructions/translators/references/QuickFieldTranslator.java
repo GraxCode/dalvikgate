@@ -6,9 +6,9 @@ import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.instruction.*;
 import org.objectweb.asm.Type;
 
+import me.nov.dalvikgate.reference.CustomFieldReference;
 import me.nov.dalvikgate.transform.instructions.*;
 import me.nov.dalvikgate.transform.instructions.exception.UnsupportedInsnException;
-import me.nov.dalvikgate.utils.CustomFieldReference;
 
 public class QuickFieldTranslator extends AbstractInsnTranslator<BuilderInstruction22cs> {
 

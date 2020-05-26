@@ -24,6 +24,7 @@ import me.nov.dalvikgate.transform.instructions.translators.*;
 import me.nov.dalvikgate.transform.instructions.translators.invoke.*;
 import me.nov.dalvikgate.transform.instructions.translators.jump.*;
 import me.nov.dalvikgate.transform.instructions.translators.references.*;
+import me.nov.dalvikgate.utils.TextUtils;
 
 /**
  * TODO: make a variable analyzer, as it is not determinable if ifeqz takes an object or an int. also const 0 can mean aconst_null or iconst_0.
@@ -65,6 +66,8 @@ public class InstructionTransformer implements ITransformer<DexBackedMethod, Ins
     this.buildLabels();
 
     for (BuilderInstruction i : dexInstructions) {
+      if(method.getName().equals("f") && method.getDefiningClass().endsWith("/n;") && dexInstructions.size() == 11)
+        System.out.println(TextUtils.toString(i));
       if (labels.containsKey(i)) {
         // add labels to the code
         il.add(labels.get(i));
