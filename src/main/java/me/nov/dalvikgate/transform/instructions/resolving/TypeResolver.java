@@ -1,6 +1,6 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
-import java.util.List;
+import java.util.*;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -11,11 +11,24 @@ import me.nov.dalvikgate.transform.instructions.unresolved.*;
 
 public class TypeResolver extends SourceInterpreter {
   private static final Type OBJECT_TYPE = Type.getType("Ljava/lang/Object;");
-  private boolean aggressive;
+  private final boolean aggressive;
 
-  public TypeResolver(boolean aggs) {
+  // TODO use this information to resolve vars
+  // TODO how do i do this backwards? List<Set<UnresolvedVarInsn>> ?
+  private final List<Type> varTypes;
+  private final List<Set<UnresolvedVarInsn>> depending; // also TODO
+
+  public TypeResolver(boolean aggs, Type[] arguments, int maxStack) {
     super(ASM8);
     this.aggressive = aggs;
+    this.varTypes = new ArrayList<>(Arrays.asList(arguments));
+    while (varTypes.size() < maxStack) {
+      varTypes.add(null);
+    }
+    this.depending = new ArrayList<>();
+    while (depending.size() < maxStack) {
+      depending.add(new HashSet<>());
+    }
   }
 
   @Override
@@ -137,12 +150,16 @@ public class TypeResolver extends SourceInterpreter {
 
   @Override
   public SourceValue copyOperation(AbstractInsnNode insn, SourceValue value) {
+    boolean insnUnresolved = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
     if (insn.getOpcode() >= ISTORE) {
       // don't fix loads with value
-      boolean insnUnresolved = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
       if (insnUnresolved) {
-        if (insn instanceof UnresolvedVarInsn && !isUnresolved(value)) {
-          ((UnresolvedVarInsn) insn).setType(getPushType(getTop(value)));
+        if (insn instanceof UnresolvedVarInsn) {
+          if (!isUnresolved(value)) {
+            ((UnresolvedVarInsn) insn).setType(getPushType(getTop(value)));
+          } else {
+            // cannot resolve, resolve at next var load.
+          }
         }
       } else if (isUnresolved(value)) {
         IUnresolvedInstruction iui = getTopUnresolved(value);
@@ -163,6 +180,31 @@ public class TypeResolver extends SourceInterpreter {
           iui.setType(OBJECT_TYPE);
           break;
         }
+      }
+    }
+    if (!insnUnresolved && insn.getType() == AbstractInsnNode.VAR_INSN) {
+      int var = ((VarInsnNode) insn).var;
+      switch (insn.getOpcode()) {
+      case ALOAD:
+      case ASTORE:
+        varTypes.set(var, OBJECT_TYPE);
+        break;
+      case ILOAD:
+      case ISTORE:
+        varTypes.set(var, Type.INT_TYPE);
+        break;
+      case FLOAD:
+      case FSTORE:
+        varTypes.set(var, Type.FLOAT_TYPE);
+        break;
+      case DLOAD:
+      case DSTORE:
+        varTypes.set(var, Type.DOUBLE_TYPE);
+        break;
+      case LLOAD:
+      case LSTORE:
+        varTypes.set(var, Type.LONG_TYPE);
+        break;
       }
     }
     return super.copyOperation(insn, value);
@@ -353,10 +395,10 @@ public class TypeResolver extends SourceInterpreter {
   private Type getPushType(AbstractInsnNode insn) {
     if (insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved())
       throw new IllegalStateException("push type of unresolved instruction is unknown: " + insn.getClass().getSimpleName());
-    
+
     if (insn instanceof IUnresolvedInstruction)
       return ((IUnresolvedInstruction) insn).getResolvedType();
-    
+
     switch (insn.getOpcode()) {
     case ACONST_NULL:
     case ALOAD:

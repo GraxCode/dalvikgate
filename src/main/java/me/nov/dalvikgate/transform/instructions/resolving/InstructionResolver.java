@@ -1,7 +1,6 @@
 package me.nov.dalvikgate.transform.instructions.resolving;
 
 import java.util.*;
-import java.util.stream.StreamSupport;
 
 import org.jf.dexlib2.dexbacked.DexBackedMethod;
 import org.objectweb.asm.*;
@@ -42,10 +41,13 @@ public class InstructionResolver implements Opcodes {
 
         replaceNullLdcs(); // replace null ldcs with aconst_null
 
+        // TODO: remove the next two, replace them by using varTypes list in TypeResolver.
         if (linkByLocals())
           continue; // connected some locals, restart
         if (linkByParameters())
           continue; // inlined parameter types, restart
+        
+        
         if (!resolvedUnused && resolveRemainingUnused()) {
           // final pass, restart
           resolvedUnused = true;
@@ -137,7 +139,7 @@ public class InstructionResolver implements Opcodes {
 
   private boolean linkByStack() throws AnalyzerException {
     int prevCount = UnresolvedUtils.countUnresolved(il);
-    new Analyzer<>(new TypeResolver(false)).analyze(Type.getType(method.getDefiningClass()).getInternalName(), mn);
+    new Analyzer<>(new TypeResolver(false, Type.getArgumentTypes(mn.desc), mn.maxStack)).analyze(Type.getType(method.getDefiningClass()).getInternalName(), mn);
     return prevCount - UnresolvedUtils.countUnresolved(il) > 0;
   }
 
