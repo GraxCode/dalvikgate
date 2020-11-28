@@ -44,9 +44,9 @@ public class InstructionResolver implements Opcodes {
         // TODO: remove the next two, replace them by using varTypes list in TypeResolver.
         if (linkByLocals())
           continue; // connected some locals, restart
-        if (linkByParameters())
-          continue; // inlined parameter types, restart
-        
+//        if (linkByParameters())
+//          continue; // inlined parameter types, restart
+//        
         
         if (!resolvedUnused && resolveRemainingUnused()) {
           // final pass, restart

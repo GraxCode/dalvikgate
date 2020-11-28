@@ -16,7 +16,7 @@ public class TypeResolver extends SourceInterpreter {
   // TODO use this information to resolve vars
   // TODO how do i do this backwards? List<Set<UnresolvedVarInsn>> ?
   private final List<Type> varTypes;
-  private final List<Set<UnresolvedVarInsn>> depending; // also TODO
+  // private final List<Set<UnresolvedVarInsn>> depending; // also TODO
 
   public TypeResolver(boolean aggs, Type[] arguments, int maxStack) {
     super(ASM8);
@@ -25,10 +25,10 @@ public class TypeResolver extends SourceInterpreter {
     while (varTypes.size() < maxStack) {
       varTypes.add(null);
     }
-    this.depending = new ArrayList<>();
-    while (depending.size() < maxStack) {
-      depending.add(new HashSet<>());
-    }
+//    this.depending = new ArrayList<>();
+//    while (depending.size() < maxStack) {
+//      depending.add(new HashSet<>());
+//    }
   }
 
   @Override
@@ -151,7 +151,8 @@ public class TypeResolver extends SourceInterpreter {
   @Override
   public SourceValue copyOperation(AbstractInsnNode insn, SourceValue value) {
     boolean insnUnresolved = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
-    if (insn.getOpcode() >= ISTORE) {
+    boolean store = insn.getOpcode() >= ISTORE;
+    if (store) {
       // don't fix loads with value
       if (insnUnresolved) {
         if (insn instanceof UnresolvedVarInsn) {
@@ -181,30 +182,43 @@ public class TypeResolver extends SourceInterpreter {
           break;
         }
       }
-    }
-    if (!insnUnresolved && insn.getType() == AbstractInsnNode.VAR_INSN) {
+    } else if (insn.getType() == AbstractInsnNode.VAR_INSN) {
       int var = ((VarInsnNode) insn).var;
-      switch (insn.getOpcode()) {
-      case ALOAD:
-      case ASTORE:
-        varTypes.set(var, OBJECT_TYPE);
-        break;
-      case ILOAD:
-      case ISTORE:
-        varTypes.set(var, Type.INT_TYPE);
-        break;
-      case FLOAD:
-      case FSTORE:
-        varTypes.set(var, Type.FLOAT_TYPE);
-        break;
-      case DLOAD:
-      case DSTORE:
-        varTypes.set(var, Type.DOUBLE_TYPE);
-        break;
-      case LLOAD:
-      case LSTORE:
-        varTypes.set(var, Type.LONG_TYPE);
-        break;
+      Type varType = varTypes.get(var);
+      if (varType != null) {
+        ((UnresolvedVarInsn) insn).setType(varType);
+      }
+    }
+
+    boolean insnStillUnresolved = insn instanceof IUnresolvedInstruction && !((IUnresolvedInstruction) insn).isResolved();
+    if (insn.getType() == AbstractInsnNode.VAR_INSN) {
+      int var = ((VarInsnNode) insn).var;
+      if (!(insn instanceof IUnresolvedInstruction) || !insnStillUnresolved) {
+        switch (insn.getOpcode()) {
+        case ALOAD:
+        case ASTORE:
+          varTypes.set(var, OBJECT_TYPE);
+          break;
+        case ILOAD:
+        case ISTORE:
+          varTypes.set(var, Type.INT_TYPE);
+          break;
+        case FLOAD:
+        case FSTORE:
+          varTypes.set(var, Type.FLOAT_TYPE);
+          break;
+        case DLOAD:
+        case DSTORE:
+          varTypes.set(var, Type.DOUBLE_TYPE);
+          break;
+        case LLOAD:
+        case LSTORE:
+          varTypes.set(var, Type.LONG_TYPE);
+          break;
+        }
+      } else if (store) {
+        // type could be changed
+        varTypes.set(var, null);
       }
     }
     return super.copyOperation(insn, value);
